@@ -386,3 +386,88 @@ html body #tp-dev-plan-switch {
 }
 html body #tp-dev-plan-switch :is(.tp-dev-label,.tp-dev-value) { color: #39434e !important; }
 html body #tp-dev-plan-switch .tp-dev-dot { background: #697586 !important; box-shadow: none !important; }
+
+/* Refined light surfaces: a little depth, with solid contrast on small text. */
+html body .tp-v1 { background: #f5f6f8 !important; }
+html body .tp-v1 .tp-home-field {
+  background: #fff !important;
+  border-color: #dce2e8 !important;
+  box-shadow: 0 8px 28px #27344212 !important;
+}
+html body .tp-v1 .tp-mini,
+html body .tp-v1 .tp-today > .tp-home-data-status,
+html body .tp-v1 .tp-home-forecast {
+  background: #eef1f4 !important;
+  border-color: #d7dde4 !important;
+  box-shadow: 0 3px 10px #2734420b !important;
+}
+html body .tp-v1 .tp-home-map-pusula-strip {
+  background: #edf1f4 !important;
+  border-color: #d7dde4 !important;
+}
+html body .tp-v1 :is(.tp-mini,.tp-home-forecast,.tp-home-data-status) :is(small,span),
+html body .tp-v1 .tp-home-forecast-day :is(span,small),
+html body .tp-v1 .tp-home-map-pusula-kicker span { color: #4f5c69 !important; }
+html body .tp-v1 .tp-home-forecast-heading > span,
+html body .tp-v1 .tp-home-data-status-chevron,
+html body .tp-v1 .tp-home-map-pusula-actions button { color: #303d4a !important; }
+html body .tp-v1 .tp-home-map-pusula-kicker,
+html body .tp-v1 .tp-home-forecast-heading strong { color: #26313c !important; }
+html body .tp-v1 .tp-home-map-pusula-text,
+html body .tp-v1 .tp-home-forecast-day strong,
+html body .tp-v1 .tp-home-data-status-heading strong { color: #1e2933 !important; }
+html body .tp-v1 .tp-home-forecast-day { border-color: #d7dde4 !important; }
+
+/* The drawer uses the same tonal hierarchy; its legacy nested white text
+   and gold point labels otherwise disappear against the light surface. */
+html body .tp-premium-drawer {
+  background: #f4f6f8 !important;
+  border-color: #dce2e8 !important;
+  box-shadow: 14px 0 38px #26344329 !important;
+}
+html body .tp-premium-drawer .tp-premium-drawer-top,
+html body .tp-premium-drawer .tp-premium-drawer-nav {
+  border-color: #d9e0e6 !important;
+}
+html body .tp-premium-drawer .tp-premium-drawer-brand-name,
+html body .tp-premium-drawer .tp-premium-drawer-brand-name em,
+html body .tp-premium-drawer .tp-premium-drawer-welcome strong {
+  color: #1e2933 !important;
+}
+html body .tp-premium-drawer .tp-premium-drawer-welcome :is(small,p) { color: #536170 !important; }
+html body .tp-premium-drawer .tp-premium-drawer-nav > button {
+  background: #fff !important;
+  border-bottom: 1px solid #dce2e8 !important;
+  color: #26313c !important;
+}
+html body .tp-premium-drawer .tp-premium-drawer-nav > button:is(:hover,.active) {
+  background: #e9eef2 !important;
+}
+html body .tp-premium-drawer .tp-premium-drawer-nav > button > span:nth-child(2) {
+  color: #26313c !important;
+  font-size: 14px !important;
+  font-weight: 720 !important;
+}
+html body .tp-premium-drawer .tp-premium-drawer-nav > button > i { color: #566574 !important; }
+html body .tp-premium-drawer .tp-premium-drawer-icon {
+  background: #e9edf1 !important;
+  border-color: #d5dde4 !important;
+  box-shadow: none !important;
+}
+html body .tp-premium-drawer .tp-premium-points-opd {
+  background: #e9edf1 !important;
+  border: 1px solid #cfd8e0 !important;
+  box-shadow: 0 2px 8px #2634430b !important;
+}
+html body .tp-premium-drawer .tp-premium-points-opd span:not(.tp-premium-points-opd-emblem),
+html body .tp-premium-drawer .tp-premium-points-opd strong,
+html body .tp-premium-drawer .tp-premium-points-opd i { color: #26313c !important; }
+html body .tp-premium-drawer .tp-premium-points-opd span:not(.tp-premium-points-opd-emblem) { font-size: 11px !important; }
+html body .tp-premium-drawer .tp-premium-drawer-logout {
+  background: #e9edf1 !important;
+  border-color: #d5dde4 !important;
+  color: #26313c !important;
+}
+html body .tp-premium-drawer .tp-premium-drawer-foot-art { background: transparent !important; }
+html body .tp-premium-drawer .tp-premium-drawer-foot-art span { color: #536170 !important; }
+html body:has(.tp-premium-drawer) #tp-dev-plan-switch { visibility: hidden !important; }
