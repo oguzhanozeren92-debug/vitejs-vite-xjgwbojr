@@ -86,6 +86,10 @@ const weatherCodeToCondition = (code: number) => {
   return 'Değişken';
 };
 
+const forecastNumber = (value: unknown): number | null =>
+  value === null || value === undefined || value === '' ||
+  !Number.isFinite(Number(value)) ? null : Number(value);
+
 export const fetchOpenMeteoForecast = async (
   latitude: number,
   longitude: number,
@@ -113,24 +117,12 @@ export const fetchOpenMeteoForecast = async (
 
   return daily.time.slice(0, 5).map((date: string, index: number) => ({
     date,
-    tempMin: Number.isFinite(Number(daily.temperature_2m_min?.[index]))
-      ? Number(daily.temperature_2m_min[index])
-      : null,
-    tempMax: Number.isFinite(Number(daily.temperature_2m_max?.[index]))
-      ? Number(daily.temperature_2m_max[index])
-      : null,
+    tempMin: forecastNumber(daily.temperature_2m_min?.[index]),
+    tempMax: forecastNumber(daily.temperature_2m_max?.[index]),
     humidity: null,
-    precipitation: Number.isFinite(Number(daily.precipitation_sum?.[index]))
-      ? Number(daily.precipitation_sum[index])
-      : null,
-    precipitationProbability: Number.isFinite(
-      Number(daily.precipitation_probability_max?.[index]),
-    )
-      ? Number(daily.precipitation_probability_max[index])
-      : null,
-    windSpeed: Number.isFinite(Number(daily.wind_speed_10m_max?.[index]))
-      ? Number(daily.wind_speed_10m_max[index])
-      : null,
+    precipitation: forecastNumber(daily.precipitation_sum?.[index]),
+    precipitationProbability: forecastNumber(daily.precipitation_probability_max?.[index]),
+    windSpeed: forecastNumber(daily.wind_speed_10m_max?.[index]),
     condition: weatherCodeToCondition(Number(daily.weather_code?.[index] ?? -1)),
   }));
 };

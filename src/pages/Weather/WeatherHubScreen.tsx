@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import type { Field, FieldWeatherState, Screen } from '../../types';
+import SprayWeatherGuide from '../../features/weather/components/SprayWeatherGuide';
 
 type Setter<T> = (value: T) => void;
 
@@ -1304,6 +1305,13 @@ export default function WeatherHubScreen(props: WeatherHubScreenProps) {
     });
   };
 
+  const goToSprayGuide = () => {
+    document.getElementById('tp-spray-guide')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+  };
+
   return (
     <div className="tp-wxr-page">
       <style>{cmsRuntimeCss + WEATHER_STYLES}</style>
@@ -1441,8 +1449,8 @@ export default function WeatherHubScreen(props: WeatherHubScreenProps) {
               </div>
             </div>
 
-            <button type="button" className="tp-wxr-detail-btn">
-              Detaylı Tarımsal Analiz
+            <button type="button" className="tp-wxr-detail-btn" onClick={goToSprayGuide}>
+              İlaçlama Hava Kontrolü
               <Icon name="chevron" size={16} />
             </button>
           </article>
@@ -1542,6 +1550,11 @@ export default function WeatherHubScreen(props: WeatherHubScreenProps) {
             </div>
           )}
         </section>
+
+        <SprayWeatherGuide
+          fieldName={weatherField?.name || 'Seçili tarla'}
+          forecast={consensus.length ? consensus : providers[0]?.forecast ?? []}
+        />
 
         <section className="tp-wxr-alert">
           <div>

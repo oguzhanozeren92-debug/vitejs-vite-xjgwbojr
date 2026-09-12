@@ -13,6 +13,7 @@ type HomeWeatherSignalsInput = {
 
 function firstFiniteNumber(...values: unknown[]) {
   for (const value of values) {
+    if (value === null || value === undefined || value === '') continue;
     const number = Number(value);
     if (Number.isFinite(number)) return number;
   }
@@ -156,32 +157,29 @@ export function useHomeWeatherSignals({
         title: 'Veriyi Bekle',
         detail: 'Rüzgâr ve yağış verisi olmadan karar verme',
       };
-    } else if (
-      (windKmh != null && windKmh >= 20) ||
-      (rainChance != null && rainChance >= 45)
-    ) {
+    } else if ((windKmh != null && windKmh >= 20) ||
+      (rainChance != null && rainChance >= 45) || (rainMm != null && rainMm >= 1)) {
       sprayingQuick = {
         tone: 'red',
         title: 'Bugün Bekle',
         detail:
           windKmh != null && windKmh >= 20
             ? `Rüzgâr ${Math.round(windKmh)} km/sa`
-            : `Yağış ihtimali %${Math.round(rainChance ?? 0)}`,
+            : rainChance != null && rainChance >= 45
+              ? `Yağış ihtimali %${Math.round(rainChance)}`
+              : `${rainMm?.toFixed(1)} mm yağış tahmini`,
       };
-    } else if (
-      (windKmh == null || windKmh <= 12) &&
-      (temperature == null || (temperature >= 10 && temperature <= 28))
-    ) {
+    } else if (windKmh == null || rainChance == null || rainMm == null) {
       sprayingQuick = {
-        tone: 'green',
-        title: 'Uygun Pencere Var',
-        detail: 'Sabah erken saatleri kontrol et',
+        tone: 'neutral',
+        title: 'Veriyi Bekle',
+        detail: 'Yağış ve rüzgâr verisi tamamlanmadı',
       };
     } else {
       sprayingQuick = {
         tone: 'amber',
-        title: 'Koşulları Kontrol Et',
-        detail: 'Rüzgâr ve sıcaklığı yeniden değerlendir',
+        title: 'Saatini Kontrol Et',
+        detail: 'Günlük tahmin uygun saati göstermez',
       };
     }
 
