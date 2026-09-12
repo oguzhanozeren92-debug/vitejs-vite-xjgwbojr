@@ -8,6 +8,7 @@ import HomeNotificationsCard from '../../features/notifications/components/HomeN
 import { persistHomeNotifications } from '../../features/notifications/services/notificationQueue';
 import HomeTodayCard from '../../features/today/components/HomeTodayCard';
 import { useHomeFieldSelection } from '../../features/fields/hooks/useHomeFieldSelection';
+import HomeFieldsSheet from '../../features/fields/components/HomeFieldsSheet';
 import { useHomeWeatherSignals } from '../../features/weather/hooks/useHomeWeatherSignals';
 import { useNextCalendarItem } from '../../features/calendar/hooks/useNextCalendarItem';
 import { useHomeIrrigationDecision } from '../../features/irrigation/hooks/useHomeIrrigationDecision';
@@ -41,6 +42,7 @@ const HOME_NAV_V2 = {
   ai: 'https://xwyfidtktauxivsosmex.supabase.co/storage/v1/object/public/ui-icons/transparent/nav-v2/pusula-ai.webp',
   calendar: 'https://xwyfidtktauxivsosmex.supabase.co/storage/v1/object/public/ui-icons/transparent/nav-v2/calendar.webp',
   depot: 'https://xwyfidtktauxivsosmex.supabase.co/storage/v1/object/public/ui-icons/transparent/nav-v2/depot.webp',
+  fields: 'https://xwyfidtktauxivsosmex.supabase.co/storage/v1/object/public/ui-icons/02-tarlalarim-4.webp',
 } as const;
 
 const PREMIUM_ICON_BASE =
@@ -111,7 +113,7 @@ function Ui3DIcon({
 }
 
 
-type HomeNavIconName = 'menu' | 'home' | 'weather' | 'ai' | 'calendar' | 'depot';
+type HomeNavIconName = 'menu' | 'home' | 'weather' | 'ai' | 'calendar' | 'fields';
 
 function HomeNavIcon({
   name,
@@ -158,6 +160,7 @@ export default function HomeScreen(props: HomeScreenProps) {
     reason?: string;
   } | null>(null);
   const [irrigationDetailOpen, setIrrigationDetailOpen] = useState(false);
+  const [fieldsSheetOpen, setFieldsSheetOpen] = useState(false);
   const [activeHomeLayer, setActiveHomeLayer] =
     useState<HomeLayer>('vegetation');
   const [soilMenuOpen, setSoilMenuOpen] = useState(false);
@@ -789,6 +792,23 @@ export default function HomeScreen(props: HomeScreenProps) {
           }}
         />
 
+        <HomeFieldsSheet
+          open={fieldsSheetOpen}
+          fields={realFields ?? []}
+          selectedId={fieldKey}
+          onClose={() => setFieldsSheetOpen(false)}
+          onSelect={(id) => {
+            setHomeFieldId(id);
+            setFieldControlFieldId?.(id);
+            setFieldsSheetOpen(false);
+            window.setTimeout(() => document.querySelector('.tp-home-field')?.scrollIntoView({ behavior: 'smooth' }), 80);
+          }}
+          onAdd={() => {
+            setFieldsSheetOpen(false);
+            handleAddFieldClick();
+          }}
+        />
+
         <nav className="tp-bottom" aria-label="Ana menü">
           <button className="active" type="button">
             <span className="tp-bottom-icon-shell">
@@ -822,11 +842,11 @@ export default function HomeScreen(props: HomeScreenProps) {
             Takvim
           </button>
 
-          <button type="button" onClick={() => setScreen('inventoryHub')}>
+          <button type="button" onClick={() => setFieldsSheetOpen(true)} aria-label="Tarlalarım listesini aç">
             <span className="tp-bottom-icon-shell">
-              <HomeNavIcon name="depot" className="tp-ui3d-bottom" />
+              <HomeNavIcon name="fields" className="tp-ui3d-bottom" />
             </span>
-            Depom
+            Tarlalarım
           </button>
         </nav>
       </div>

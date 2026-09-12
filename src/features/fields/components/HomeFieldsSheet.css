@@ -1,0 +1,53 @@
+.tp-fields-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483500;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0, 5, 2, .70);
+  backdrop-filter: blur(7px);
+}
+
+.tp-fields-sheet {
+  box-sizing: border-box;
+  width: min(100%, 560px);
+  max-height: min(78dvh, 720px);
+  overflow: auto;
+  padding: 23px 18px calc(24px + env(safe-area-inset-bottom));
+  border: 1px solid #1e3a24;
+  border-bottom: 0;
+  border-radius: 26px 26px 0 0;
+  background: linear-gradient(160deg, #092012, #020804 72%);
+  color: #e5f5e8;
+  box-shadow: 0 -15px 55px rgba(0, 0, 0, .6), 0 -2px 20px rgba(34, 197, 94, .12);
+}
+
+.tp-fields-sheet-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+.tp-fields-sheet-head small { color: #7fbc8d; font-size: 10px; letter-spacing: .14em; }
+.tp-fields-sheet-head h2 { margin: 5px 0 0; color: #e5f5e8; font-size: 25px; }
+.tp-fields-sheet-close {
+  width: 42px; height: 42px; border: 1px solid #34523a; border-radius: 13px;
+  background: #0b1d10; color: #e5f5e8; font-size: 27px; line-height: 1; cursor: pointer;
+}
+.tp-fields-sheet-list { display: grid; gap: 9px; max-height: 48dvh; overflow: auto; }
+.tp-fields-sheet-field {
+  display: flex; align-items: center; width: 100%; min-height: 69px; gap: 12px;
+  padding: 10px 12px; border: 1px solid #1e3a24; border-radius: 16px;
+  background: rgba(6, 19, 8, .85); color: #e5f5e8; text-align: left; cursor: pointer;
+}
+.tp-fields-sheet-field.is-selected { border-color: #22c55e; background: rgba(20, 65, 32, .5); }
+.tp-fields-sheet-field-icon {
+  display: grid; place-items: center; flex: 0 0 40px; height: 40px; border: 1px solid #356947;
+  border-radius: 12px; background: #0a2916; color: #57dc82; box-shadow: inset 0 0 12px rgba(34, 197, 94, .12);
+}
+.tp-fields-sheet-field-copy { display: grid; gap: 3px; min-width: 0; flex: 1; }
+.tp-fields-sheet-field-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.tp-fields-sheet-field-copy small { color: #99a99c; font-size: 11px; }
+.tp-fields-sheet-field-status { flex: 0 0 auto; color: #75ce90; font-size: 11px; }
+.tp-fields-sheet-empty { color: #aebcaf; padding: 15px 3px; }
+.tp-fields-sheet-add {
+  display: block; width: 100%; min-height: 48px; margin-top: 18px;
+  border: 1px solid #348548; border-radius: 14px; background: #133a20;
+  color: #e5f5e8; font-size: 14px; font-weight: 700; cursor: pointer;
+}
