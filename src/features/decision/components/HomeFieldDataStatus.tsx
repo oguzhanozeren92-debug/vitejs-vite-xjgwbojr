@@ -16,10 +16,12 @@ export default function HomeFieldDataStatus({
   fieldName,
   items,
   onOpen,
+  onReveal,
 }: {
   fieldName?: string | null;
   items: HomeFieldDataStatusItem[];
   onOpen: (target: FieldDataTarget) => void;
+  onReveal?: () => void;
 }) {
   const readyCount = items.filter((item) => item.status === 'ready').length;
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -32,7 +34,10 @@ export default function HomeFieldDataStatus({
         type="button"
         className="tp-home-data-status"
         aria-haspopup="dialog"
-        onClick={() => dialogRef.current?.showModal()}
+        onClick={() => {
+          dialogRef.current?.showModal();
+          onReveal?.();
+        }}
       >
         <span className="tp-home-data-status-heading">
           <small>Tarla verileri</small>

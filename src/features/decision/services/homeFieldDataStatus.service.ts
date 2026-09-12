@@ -1,5 +1,6 @@
 import type { HomeFieldDataStatusItem } from '../components/HomeFieldDataStatus';
 import { isRecentSatelliteObservation } from '../../satellite/services/buildHomeSatelliteDecision';
+import type { FieldWeatherState } from '../../../types';
 
 type LoadStatus = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -18,6 +19,14 @@ function dayLabel(value: string | null | undefined) {
     : null;
 }
 
+export function hasUsableFieldWeatherForecast(state: FieldWeatherState | null | undefined, now: Date = new Date()) {
+  return state?.status === 'ready' && state.forecast.some((day) => {
+    const date = Date.parse(day.date ?? '');
+    return Number.isFinite(date) && date >= now.getTime() - 86_400_000 &&
+      [day.tempMax, day.tempMin, day.precipitation].some((value) => value != null && Number.isFinite(value));
+  });
+}
+
 export function buildHomeFieldDataStatuses(sources: Sources): HomeFieldDataStatusItem[] {
   const { weather, phenology, satellite, soil, irrigation } = sources;
   const satelliteDate = dayLabel(satellite.latestDate);
@@ -30,7 +39,7 @@ export function buildHomeFieldDataStatuses(sources: Sources): HomeFieldDataStatu
       target: 'weather',
       actionLabel: 'Havayı aç',
       status: weather.status === 'error' ? 'error' : weather.available ? 'ready' : weather.status === 'loading' ? 'loading' : 'missing',
-      detail: weather.status === 'error' ? 'Veri alınamadı' : weather.available ? 'Güncel hava verisi var' : weather.status === 'loading' ? 'Yükleniyor' : 'Hava verisi yok',
+      detail: weather.status === 'error' ? 'Tarla tahmini alınamadı' : weather.available ? 'Bu tarla için güncel tahmin var' : weather.status === 'loading' ? 'Tarla tahmini yükleniyor' : 'Tarla tahmini henüz yok',
     },
     {
       label: 'Ürün evresi',

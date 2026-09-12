@@ -17,7 +17,7 @@ import { useHomeNutrientContext } from '../../features/nutrition/hooks/useHomeNu
 import IrrigationDecisionDetailModal from '../../features/irrigation/components/IrrigationDecisionDetailModal';
 import { useHomeDecisionEngine } from '../../features/decision/hooks/useHomeDecisionEngine';
 import HomeFieldDataStatus from '../../features/decision/components/HomeFieldDataStatus';
-import { buildHomeFieldDataStatuses } from '../../features/decision/services/homeFieldDataStatus.service';
+import { buildHomeFieldDataStatuses, hasUsableFieldWeatherForecast } from '../../features/decision/services/homeFieldDataStatus.service';
 import { useHomeProfile } from '../../features/home/hooks/useHomeProfile';
 import { useEnsureHomeSatellite } from '../../features/home-map/hooks/useEnsureHomeSatellite';
 import { useHomeSatelliteDate } from '../../features/home-map/hooks/useHomeSatelliteDate';
@@ -146,6 +146,7 @@ export default function HomeScreen(props: HomeScreenProps) {
     satelliteByField,
     loadFieldSatellite,
     fieldWeather,
+    loadFieldWeather,
     openAddField,
     openAiAnalysisScreen,
     openCalendarScreen,
@@ -351,8 +352,10 @@ export default function HomeScreen(props: HomeScreenProps) {
 
   const homeNotificationPreview = homeSystemNotifications.slice(0, 3);
   const homeNotificationCount = homeSystemNotifications.length;
+  const selectedFieldWeather = fieldKey ? fieldWeather?.[fieldKey] : null;
+  const hasRecentFieldForecast = hasUsableFieldWeatherForecast(selectedFieldWeather);
   const fieldDataStatuses = buildHomeFieldDataStatuses({
-    weather: { status: weather?.status, available: hasUsableTodayWeather },
+    weather: { status: selectedFieldWeather?.status, available: Boolean(hasRecentFieldForecast) },
     phenology: {
       status: homePhenology.phenologyContextStatus,
       usable: decisionPhenology?.dataStatus === 'usable' && decisionPhenology.stage !== 'unknown',
@@ -758,6 +761,13 @@ export default function HomeScreen(props: HomeScreenProps) {
               fieldName={homeField?.demo || String(homeField?.id ?? '').startsWith('demo') ? null : homeField?.name}
               items={fieldDataStatuses}
               onOpen={openHomeInsightTarget}
+              onReveal={() => {
+                if (!homeField || homeField.demo || !fieldKey || typeof loadFieldWeather !== 'function') return;
+                if (!selectedFieldWeather || selectedFieldWeather.status === 'idle' || selectedFieldWeather.status === 'error' ||
+                    (selectedFieldWeather.status === 'ready' && !hasRecentFieldForecast)) {
+                  void loadFieldWeather(homeField);
+                }
+              }}
             />
           </section>
 

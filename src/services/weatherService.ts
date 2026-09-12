@@ -17,6 +17,20 @@ export const geocodeFieldLocation = async (
     };
   }
 
+  const rawLatitude = field.parcelCentroidLat ?? field.latitude;
+  const rawLongitude = field.parcelCentroidLng ?? field.longitude;
+  const latitude = Number(rawLatitude);
+  const longitude = Number(rawLongitude);
+  if (rawLatitude != null && rawLongitude != null &&
+      Number.isFinite(latitude) && Number.isFinite(longitude) &&
+      latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180) {
+    return {
+      latitude,
+      longitude,
+      label: [field.village, field.district, field.city].filter(Boolean).join(' / ') || field.name || 'Tarla konumu',
+    };
+  }
+
   const searchCandidates = [
     [field.village, field.district, field.city].filter(Boolean).join(', '),
     [field.district, field.city].filter(Boolean).join(', '),

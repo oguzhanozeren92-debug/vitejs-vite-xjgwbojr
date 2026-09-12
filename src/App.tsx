@@ -1204,6 +1204,7 @@ export default function App() {
       satelliteByField={satelliteByField}
       loadFieldSatellite={loadFieldSatellite}
       fieldWeather={fieldWeather}
+      loadFieldWeather={loadFieldWeather}
       openAddField={openAddField}
       openAiAnalysisScreen={openAiAnalysisScreen}
       openCalendarScreen={openCalendarScreen}
