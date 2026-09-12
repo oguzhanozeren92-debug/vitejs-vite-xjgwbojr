@@ -168,9 +168,9 @@ const CSS = String.raw`
 }
 
 .tp-home-map-pusula-signal.positive {
-  border-color: rgba(34, 197, 94, .20);
-  background: rgba(34, 197, 94, .065);
-  color: rgba(134, 239, 172, .90);
+  border-color: #cbd2d9;
+  background: #e8ebee;
+  color: #303942;
 }
 
 .tp-home-map-pusula-signal.attention {
@@ -485,9 +485,9 @@ const CSS = String.raw`
 }
 
 .tp-home-map-why-layer-status.normal {
-  border-color: rgba(34, 197, 94, .15);
-  background: rgba(34, 197, 94, .04);
-  color: rgba(134, 239, 172, .72);
+  border-color: #cbd2d9;
+  background: #e8ebee;
+  color: #303942;
 }
 
 @media (max-width: 560px) {
@@ -1036,8 +1036,8 @@ export default function HomeMapPusulaStrip({
 
   const compactText = useMemo(() => {
     if (decision) return `${decision.title}: ${completeSentence(decision.detail)}`;
-    if (loading) return `${layerLabel} verisi yorumlanıyor…`;
-    if (error) return 'Pusula bu katmanı şu an yorumlayamadı.';
+    if (loading && !result) return `${layerLabel} verisi yorumlanıyor…`;
+    if (error && !result) return 'Pusula bu katmanı şu an yorumlayamadı.';
 
     if (signal?.text) {
       return signal.text;
@@ -1065,6 +1065,7 @@ export default function HomeMapPusulaStrip({
     decision,
     loading,
     error,
+    result,
     signal?.text,
     importantArea,
     analysis?.headline,
@@ -1110,8 +1111,6 @@ export default function HomeMapPusulaStrip({
           );
 
   const canShowOnMap =
-    !loading &&
-    !error &&
     Boolean(result) &&
     hasSpatialRaster;
 
@@ -1122,8 +1121,8 @@ export default function HomeMapPusulaStrip({
       <section
         className={[
           'tp-home-map-pusula-strip',
-          loading && !decision ? 'is-loading' : '',
-          error && !decision ? 'has-error' : '',
+          loading && !decision && !result ? 'is-loading' : '',
+          error && !decision && !result ? 'has-error' : '',
         ]
           .filter(Boolean)
           .join(' ')}
@@ -1147,6 +1146,11 @@ export default function HomeMapPusulaStrip({
           </div>
 
           <p className="tp-home-map-pusula-text">{compactText}</p>
+          {error && result ? (
+            <small className="tp-home-map-pusula-refresh-error" role="status">
+              Yeni yorum alınamadı; önceki yorum gösteriliyor. Tekrar deneyebilirsin.
+            </small>
+          ) : null}
         </div>
 
         <div className="tp-home-map-pusula-actions">

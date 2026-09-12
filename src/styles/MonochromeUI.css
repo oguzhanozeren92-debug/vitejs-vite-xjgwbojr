@@ -230,3 +230,11 @@ html body .tp-map-first-shell .tp-real-home-map .tp-map-compass__center {
   background: #20252b !important;
   box-shadow: none !important;
 }
+
+html body .tp-v1 .tp-home-map-pusula-refresh-error {
+  display: block;
+  margin-top: 4px;
+  color: #39434e !important;
+  font-size: 10px;
+  line-height: 1.35;
+}

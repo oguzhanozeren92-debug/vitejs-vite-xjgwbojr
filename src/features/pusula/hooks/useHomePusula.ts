@@ -341,7 +341,11 @@ export function useHomePusula({
     } catch (runError) {
       if (requestId !== requestRef.current) return;
 
-      setResult(null);
+      // A failed manual refresh must not erase the last useful field reading.
+      // Switching fields/layers still clears it via the scope effect above.
+      if (!forceRefresh || resultScope !== scope) {
+        setResult(null);
+      }
       setError(
         runError instanceof Error
           ? runError.message
