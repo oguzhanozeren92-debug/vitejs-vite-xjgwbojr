@@ -599,17 +599,17 @@ const CSS = String.raw`
 
 
 /* =========================================================
-   NDVI — ORTADA KÜÇÜK KULP, SAĞA DOĞRU AÇILIR
+   NDVI — SOL ÜST KÖŞEDE KÜÇÜK KULP, SAĞA DOĞRU AÇILIR
    ========================================================= */
 .tp-mf-ndvi{
   position:absolute;
   z-index:34;
-  top:50%;
+  top:10px;
   left:9px;
   display:flex;
   align-items:stretch;
   max-width:calc(100% - 105px);
-  transform:translateY(-50%);
+  transform:none;
   border:1px solid rgba(128,161,136,.18);
   border-radius:10px;
   background:rgba(2,10,5,.86);
@@ -791,6 +791,7 @@ const CSS = String.raw`
   }
 
   .tp-mf-ndvi{
+    top:8px;
     left:7px;
     max-width:calc(100% - 92px);
   }
