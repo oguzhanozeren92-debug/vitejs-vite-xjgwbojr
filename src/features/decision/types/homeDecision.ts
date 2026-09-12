@@ -2,8 +2,9 @@ import type { IrrigationDecisionResult } from '../../irrigation/types/irrigation
 import type { PhenologyResult } from '../../phenology/types/phenology';
 import type { FieldOperation } from '../../field-operations/types/fieldOperation';
 import type { HomeNutrientSignal } from '../../nutrition/services/buildNutrientDecision';
+import type { HomeSatelliteTrendSignal } from '../../satellite/services/buildHomeSatelliteDecision';
 
-export type HomeDecisionTarget = 'home' | 'weather' | 'calendar' | 'ai' | 'irrigation_detail' | 'soil';
+export type HomeDecisionTarget = 'home' | 'weather' | 'calendar' | 'ai' | 'irrigation_detail' | 'soil' | 'map_vegetation';
 export type HomeDecisionSource =
   | 'field' | 'weather' | 'calendar' | 'satellite' | 'pusula'
   | 'irrigation' | 'phenology' | 'operation' | 'nutrition';
@@ -73,6 +74,7 @@ export type HomeDecisionEngineInput = {
   irrigationLoading?: boolean;
   irrigationError?: string | null;
   nutrient?: HomeNutrientSignal | null;
+  satelliteTrend?: HomeSatelliteTrendSignal | null;
   phenology?: HomePhenologySignal | null;
   phenologyTimeSeriesStatus?: 'idle' | 'loading' | 'ready' | 'error';
   irrigationQuick?: HomeQuickDecision | null;

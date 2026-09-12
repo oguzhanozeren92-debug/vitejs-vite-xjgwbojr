@@ -8,16 +8,24 @@ export function persistHomeNotifications(input: {
   notifications: HomeSystemNotification[];
 }) {
   if (typeof window === 'undefined') return;
-  if (!input.fieldId || input.notifications.length === 0) return;
+  if (!input.fieldId) return;
 
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     const previous = raw ? JSON.parse(raw) : [];
     const previousItems = Array.isArray(previous) ? previous : [];
     const byId = new Map<string, any>();
+    const activeIds = new Set(input.notifications.map((item) => item.id));
 
     previousItems.forEach((item: any) => {
-      if (item?.id) byId.set(String(item.id), item);
+      if (!item?.id) return;
+      // Canlı uydu/besin sinyali ortadan kalktıysa eski uyarıyı aktif listede tutma.
+      if (
+        String(item.fieldId ?? '') === input.fieldId &&
+        (item.source === 'satellite' || item.source === 'nutrition') &&
+        !activeIds.has(String(item.id))
+      ) return;
+      byId.set(String(item.id), item);
     });
 
     const nowIso = new Date().toISOString();

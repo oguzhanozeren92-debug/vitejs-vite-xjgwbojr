@@ -327,6 +327,17 @@ export default function HomeScreen(props: HomeScreenProps) {
     irrigationLoading: homeIrrigation.loading,
     irrigationError: homeIrrigation.error,
     nutrient: homeNutrient,
+    satelliteTrend: homePhenology.ndviTrend && homeField?.id != null
+      ? {
+          fieldId: fieldKey,
+          status: homePhenology.timeSeriesStatus,
+          quality: homePhenology.ndviTrend.quality,
+          direction: homePhenology.ndviTrend.direction,
+          observationCount: homePhenology.timeSeriesObservationCount,
+          spanDays: homePhenology.timeSeriesSpanDays,
+          latestDate: homePhenology.timeSeriesLatestDate,
+        }
+      : null,
     phenology: decisionPhenology,
     phenologyTimeSeriesStatus: homePhenology.timeSeriesStatus,
     irrigationQuick,
@@ -347,8 +358,16 @@ export default function HomeScreen(props: HomeScreenProps) {
   const pusulaGuideAway = Boolean(pusulaFieldQuestion || ndviPhotoFollowUp);
 
   const openHomeInsightTarget = (
-    target: 'weather' | 'calendar' | 'ai' | 'home' | 'irrigation_detail' | 'soil',
+    target: 'weather' | 'calendar' | 'ai' | 'home' | 'irrigation_detail' | 'soil' | 'map_vegetation',
   ) => {
+    if (target === 'map_vegetation') {
+      openMapLayer('vegetation');
+      window.setTimeout(() => {
+        document.querySelector('.tp-map-stage')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 80);
+      return;
+    }
+
     if (target === 'irrigation_detail') {
       if (homeIrrigation.decision) {
         setIrrigationDetailOpen(true);

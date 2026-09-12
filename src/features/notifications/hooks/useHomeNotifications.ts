@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import type { HomeLayer } from '../../home-map/HomeMapEngine';
 import { formatHomeSatelliteDate } from '../../home/homeFormatters';
 
-export type HomeNotificationTarget = 'weather' | 'calendar' | 'ai' | 'home' | 'soil' | 'irrigation_detail';
+export type HomeNotificationTarget = 'weather' | 'calendar' | 'ai' | 'home' | 'soil' | 'irrigation_detail' | 'map_vegetation';
 export type HomeNotificationIconKey = 'leaf' | 'rain' | 'document';
 
 export type HomeSystemNotification = {

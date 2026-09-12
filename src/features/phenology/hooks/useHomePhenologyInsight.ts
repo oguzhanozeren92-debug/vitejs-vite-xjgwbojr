@@ -514,6 +514,12 @@ export function useHomePhenologyInsight(
       rawTrend?.spanDays ??
       null,
 
+    timeSeriesLatestDate:
+      seriesState?.data?.points
+        ?.map((point) => point.date)
+        .sort()
+        .at(-1) ?? null,
+
     phenologyDataStatus:
       phenology?.dataStatus ??
       'insufficient_data',

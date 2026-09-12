@@ -7,6 +7,7 @@ import type {
   HomeQuickDecision,
 } from '../types/homeDecision';
 import { buildNutrientDecision } from '../../nutrition/services/buildNutrientDecision';
+import { buildHomeSatelliteDecision } from '../../satellite/services/buildHomeSatelliteDecision';
 
 const HOUR_MS = 60 * 60 * 1000;
 
@@ -416,6 +417,13 @@ export function buildHomeDecisionEvents(
   const rainChance = finiteNumber(input.quickRainChance);
   const rainMm = finiteNumber(input.quickRainMm);
   const phenology = phenologyState(input.phenology);
+  const satelliteTrendEvent = buildHomeSatelliteDecision(
+    String(input.homeFieldId ?? ''),
+    input.satelliteTrend,
+    phenology.activeGrowth,
+    now,
+  );
+  if (satelliteTrendEvent) pushEvent(items, satelliteTrendEvent);
   const hasIrrigationDecision = Boolean(input.irrigationDecision?.decision);
   const latestIrrigationOperation = latestOperation(
     input.recentFieldOperations,
