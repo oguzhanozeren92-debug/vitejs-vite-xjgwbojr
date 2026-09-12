@@ -699,6 +699,7 @@ export default function HomeScreen(props: HomeScreenProps) {
               error={homePusulaError}
               decision={pusulaDecision}
               onOpenDecision={openHomeInsightTarget}
+              onRefresh={homeField?.id ? () => void runHomePusula(activeHomeLayer, true) : undefined}
               onOpenLayer={(layer) => {
                 openMapLayer(layer as HomeLayer);
 

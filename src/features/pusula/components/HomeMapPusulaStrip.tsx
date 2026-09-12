@@ -14,6 +14,7 @@ type Props = {
   decision?: HomeDecisionEvent | null;
   onOpenDecision?: (target: HomeDecisionTarget) => void;
   onOpenLayer?: (layer: string) => void;
+  onRefresh?: () => void;
   onShowOnMap: () => void;
 };
 
@@ -231,6 +232,10 @@ const CSS = String.raw`
   color: rgba(180, 207, 186, .86);
 }
 
+.tp-home-map-pusula-refresh {
+  color: rgba(180, 207, 186, .86);
+}
+
 .tp-home-map-pusula-actions button:hover {
   color: rgba(221, 236, 225, .96);
   background: rgba(145, 176, 153, .055);
@@ -238,6 +243,12 @@ const CSS = String.raw`
 
 .tp-home-map-pusula-actions button:disabled {
   display: none;
+}
+
+.tp-home-map-pusula-actions .tp-home-map-pusula-refresh:disabled {
+  display: inline-block;
+  opacity: .55;
+  cursor: wait;
 }
 
 /*
@@ -989,6 +1000,7 @@ export default function HomeMapPusulaStrip({
   decision,
   onOpenDecision,
   onOpenLayer,
+  onRefresh,
   onShowOnMap,
 }: Props) {
   const [whyOpen, setWhyOpen] = useState(false);
@@ -1138,6 +1150,18 @@ export default function HomeMapPusulaStrip({
         </div>
 
         <div className="tp-home-map-pusula-actions">
+          {onRefresh ? (
+            <button
+              type="button"
+              className="tp-home-map-pusula-refresh"
+              disabled={loading}
+              aria-label={loading ? 'Pusula harita yorumu yenileniyor' : 'Pusula harita yorumunu yenile'}
+              title="Haritayı yeniden yorumla"
+              onClick={onRefresh}
+            >
+              {loading ? 'Yenileniyor…' : '↻ Yenile'}
+            </button>
+          ) : null}
           <button
             type="button"
             className="tp-home-map-pusula-why"
