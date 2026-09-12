@@ -87,26 +87,28 @@
 }
 
 /* Keep the data breakdown behind a single accessible control on the map. */
-.tp-real-home-map > .tp-home-map-info {
-  position: absolute !important;
-  z-index: 1000 !important;
-  right: 12px !important;
-  bottom: 12px !important;
-  width: 42px !important;
-  height: 42px !important;
-  min-height: 42px !important;
+.tp-map-first-shell .tp-map-control-rail > .tp-map-control-btn.tp-home-map-info:last-child {
+  position: relative !important;
   display: grid !important;
   place-items: center !important;
+  flex: 0 0 40px !important;
+  width: 40px !important;
+  height: 40px !important;
+  min-height: 40px !important;
   padding: 0 !important;
-  border: 1px solid #d5dce3 !important;
-  border-radius: 13px !important;
-  background: #fff !important;
-  color: #25313c !important;
-  box-shadow: 0 3px 14px #15212e38 !important;
-  font: 800 22px Georgia, serif !important;
+  border-radius: 0 !important;
+  font: 800 20px Georgia, serif !important;
   cursor: pointer;
 }
-.tp-real-home-map > .tp-home-map-info:focus-visible { outline: 3px solid #25313c; outline-offset: 3px; }
+.tp-map-first-shell .tp-map-control-rail > .tp-home-map-info:focus-visible { outline: 2px solid #25313c; outline-offset: -3px; }
+@media(max-width:560px) {
+  .tp-map-first-shell .tp-map-control-rail > .tp-map-control-btn.tp-home-map-info:last-child {
+    flex-basis: 36px !important;
+    width: 36px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+  }
+}
 .tp-home-data-dialog {
   position: fixed;
   inset: auto 0 0;

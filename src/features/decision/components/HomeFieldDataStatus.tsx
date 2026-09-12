@@ -33,7 +33,7 @@ export default function HomeFieldDataStatus({
 
   useEffect(() => {
     if (!mapCorner) return;
-    const syncStage = () => setMapStage(document.querySelector<HTMLElement>('.tp-map-first-shell .tp-map-stage .tp-real-home-map'));
+    const syncStage = () => setMapStage(document.querySelector<HTMLElement>('.tp-map-first-shell .tp-map-control-rail'));
     syncStage();
     const observer = new MutationObserver(syncStage);
     observer.observe(document.body, { childList: true, subtree: true });
@@ -44,7 +44,7 @@ export default function HomeFieldDataStatus({
     <button
       ref={triggerRef}
       type="button"
-      className={mapCorner ? 'tp-home-data-status tp-home-map-info' : 'tp-home-data-status'}
+      className={mapCorner ? 'tp-map-control-btn tp-home-map-info' : 'tp-home-data-status'}
       aria-label={fieldName ? `${fieldName} tarla verileri` : 'Tarla verileri'}
       title="Tarla verileri"
       aria-haspopup="dialog"
