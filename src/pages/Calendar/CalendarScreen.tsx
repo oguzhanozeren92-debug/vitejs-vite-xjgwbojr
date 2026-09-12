@@ -1,5 +1,7 @@
 import type { CSSProperties, FormEvent } from 'react';
 import MobileWheelPicker from '../../components/MobileWheelPicker';
+import WeeklyFieldPlan from '../../features/calendar/components/WeeklyFieldPlan';
+import { calendarLocalDate } from '../../features/calendar/services/weeklyFieldPlan';
 import { onboardingStyles } from '../../styles/onboardingStyles';
 import type {
   CalendarReminder,
@@ -110,7 +112,7 @@ export default function CalendarScreen({
   const calendarPushBlock = cmsBlockFor('calendar', 'push-card');
   const calendarToolbarBlock = cmsBlockFor('calendar', 'toolbar');
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = calendarLocalDate(new Date());
   const upcoming = calendarReminders.filter(
     (item) => !item.completed && item.reminderDate >= today,
   );
@@ -232,6 +234,16 @@ export default function CalendarScreen({
               </div>
             </div>
           </section>
+
+          <WeeklyFieldPlan
+            reminders={calendarReminders}
+            fields={realFields}
+            loading={calendarLoading}
+            onAdd={(date, fieldId) => {
+              openReminderModal(realFields.find((field) => String(field.id) === fieldId));
+              setReminderDate(date);
+            }}
+          />
 
           <section className={`tp-push-card ${pushEnabled ? 'enabled' : ''}`}>
             <div className="tp-push-icon">{pushEnabled ? '🔔' : '🔕'}</div>
