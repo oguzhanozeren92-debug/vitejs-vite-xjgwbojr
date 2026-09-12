@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Dispatch, FormEvent, SetStateAction } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { urlBase64ToUint8Array } from '../../../utils/fileUtils';
+import { calendarLocalDate } from '../services/weeklyFieldPlan';
 import type { CalendarReminder, Field, Screen } from '../../../types';
 
 type UseCalendarControllerOptions = {
@@ -23,7 +24,7 @@ export function useCalendarController({
   const [reminderFieldId, setReminderFieldId] = useState('');
   const [reminderType, setReminderType] = useState('Saha Kontrolü');
   const [reminderTitle, setReminderTitle] = useState('');
-  const [reminderDate, setReminderDate] = useState(new Date().toISOString().slice(0, 10));
+  const [reminderDate, setReminderDate] = useState(calendarLocalDate(new Date()));
   const [reminderTime, setReminderTime] = useState('');
   const [reminderNotes, setReminderNotes] = useState('');
 
@@ -193,7 +194,7 @@ export function useCalendarController({
     setReminderFieldId(field ? String(field.id) : '');
     setReminderType('Saha Kontrolü');
     setReminderTitle('');
-    setReminderDate(new Date().toISOString().slice(0, 10));
+    setReminderDate(calendarLocalDate(new Date()));
     setReminderTime('');
     setReminderNotes('');
     setReminderMessage('');

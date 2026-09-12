@@ -22,6 +22,7 @@ type WeatherHubScreenProps = {
   fieldWeather?: Record<string, FieldWeatherState>;
   fieldHourlyWeather?: Record<string, HourlySprayState>;
   loadFieldHourlyWeather?: (field: Field, force?: boolean) => void | Promise<void>;
+  onPlanSprayWindow?: (field: Field, date: string, time: string, until: string) => void;
   weatherHubFieldId?: string;
   nasaPowerState?: {
     status: 'idle' | 'loading' | 'ready' | 'error';
@@ -1576,6 +1577,9 @@ export default function WeatherHubScreen(props: WeatherHubScreenProps) {
           forecast={consensus.length ? consensus : providers[0]?.forecast ?? []}
           hourly={fieldHourlyWeather[weatherKey]}
           onRefreshHourly={weatherField ? () => void loadFieldHourlyWeather(weatherField, true) : undefined}
+          onPlanWindow={weatherField && props.onPlanSprayWindow
+            ? (date, time, until) => props.onPlanSprayWindow?.(weatherField, date, time, until)
+            : undefined}
         />
 
         <section className="tp-wxr-alert">

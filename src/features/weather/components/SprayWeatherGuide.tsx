@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { WeatherForecastDay } from '../../../types';
 import { screenSprayWeather } from '../services/sprayWeatherScreening';
-import { buildHourlySprayPlan, formatForecastHour, type HourlySprayState } from '../services/hourlySprayForecast';
+import { buildHourlySprayPlan, formatForecastHour, localForecastDay, type HourlySprayState } from '../services/hourlySprayForecast';
 import './SprayWeatherGuide.css';
 
 type Props = {
@@ -9,6 +9,7 @@ type Props = {
   forecast: WeatherForecastDay[];
   hourly?: HourlySprayState;
   onRefreshHourly?: () => void;
+  onPlanWindow?: (date: string, time: string, until: string) => void;
 };
 
 function dayLabel(date: string, index: number): string {
@@ -20,7 +21,7 @@ function dayLabel(date: string, index: number): string {
     : new Intl.DateTimeFormat('tr-TR', { weekday: 'short', day: 'numeric', month: 'short' }).format(parsed);
 }
 
-export default function SprayWeatherGuide({ fieldName, forecast, hourly, onRefreshHourly }: Props) {
+export default function SprayWeatherGuide({ fieldName, forecast, hourly, onRefreshHourly, onPlanWindow }: Props) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const days = forecast.slice(0, 5);
   const index = Math.max(0, days.findIndex((day) => day.date === selectedDate));
@@ -56,6 +57,13 @@ export default function SprayWeatherGuide({ fieldName, forecast, hourly, onRefre
                     <div key={window.from} className="tp-spray-hourly-window">
                       <strong>{formatForecastHour(window.from, hourlyData.timezone)}–{formatForecastHour(window.to, hourlyData.timezone)}</strong>
                       <small>Rüzgâr en çok {Math.round(window.maxWindKmh)} km/sa · yağış olasılığı en çok %{Math.round(window.maxRainChance)}</small>
+                      {onPlanWindow && (
+                        <button type="button" className="tp-spray-hourly-plan" onClick={() => onPlanWindow(
+                          localForecastDay(window.from, hourlyData.timezone),
+                          formatForecastHour(window.from, hourlyData.timezone),
+                          formatForecastHour(window.to, hourlyData.timezone),
+                        )}>Bu saati takvime ekle →</button>
+                      )}
                     </div>
                   ))}
                 </div>

@@ -1097,6 +1097,15 @@ export default function App() {
         fieldWeather={fieldWeather}
         fieldHourlyWeather={fieldHourlyWeather}
         loadFieldHourlyWeather={loadFieldHourlyWeather}
+        onPlanSprayWindow={(field, date, time, until) => {
+          openCalendarScreen();
+          openReminderModal(field);
+          setReminderType('İlaçlama');
+          setReminderTitle('İlaçlama hava kontrolü');
+          setReminderDate(date);
+          setReminderTime(time);
+          setReminderNotes(`${time}–${until} aralığı saatlik hava tahmininde değerlendirilebilir görünüyor. İşlem öncesi tarladaki hava koşullarını ve kullanacağın ürünün etiketini kontrol et.`);
+        }}
         weatherHubFieldId={weatherHubFieldId}
         nasaPowerState={nasaPowerState}
         era5ClimateState={era5ClimateState}

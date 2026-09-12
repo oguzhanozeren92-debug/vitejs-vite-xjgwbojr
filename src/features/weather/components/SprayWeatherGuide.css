@@ -32,4 +32,6 @@
 .tp-spray-hourly-window { display: flex; flex-direction: column; gap: 4px; padding: 11px 13px; border: 1px solid #cbd2d9; border-radius: 13px; background: #f7f8fa; }
 .tp-spray-hourly-window strong { font-size: 18px; }
 .tp-spray-hourly-window small, .tp-spray-hourly > small { color: #4b5563; font-size: 11px; line-height: 1.4; }
+.tp-spray-hourly-window .tp-spray-hourly-plan { align-self: stretch; min-height: 40px; margin-top: 6px; padding: 8px 11px; border: 1px solid #cbd2d9; border-radius: 10px; background: #fff; color: #20252b; font-size: 12px; font-weight: 750; text-align: left; }
+.tp-spray-hourly-window .tp-spray-hourly-plan:focus-visible { outline: 2px solid #303942; outline-offset: 2px; }
 .tp-spray-hourly .tp-spray-hourly-risk { color: #20252b; font-weight: 700; }

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildHourlySprayPlan, formatForecastHour, sprayWindowStartsSoon } from './hourlySprayForecast.ts';
+import { buildHourlySprayPlan, formatForecastHour, localForecastDay, sprayWindowStartsSoon } from './hourlySprayForecast.ts';
 
 const at = (hour) => Date.UTC(2026, 8, 12, hour - 3);
 const forecast = (overrides = () => ({})) => ({
@@ -23,6 +23,7 @@ test('sabah bakıldığında bugün için iki saatlik uygun aralığın saatini 
   })), at(7));
   assert.equal(formatForecastHour(plan.windows[0].from, 'Europe/Istanbul'), '08:00');
   assert.equal(formatForecastHour(plan.windows[0].to, 'Europe/Istanbul'), '10:00');
+  assert.equal(localForecastDay(plan.windows[0].from, 'Europe/Istanbul'), '2026-09-12');
   assert.match(plan.message, /değerlendirilebilecek saatler/);
 });
 
