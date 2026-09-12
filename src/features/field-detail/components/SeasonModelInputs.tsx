@@ -13,8 +13,9 @@ function localDay(offset = 0) {
 }
 
 export default function SeasonModelInputs({ field, seasons, seasonsLoading }: Props) {
-  const annualCrop = field.cropCycle === 'annual' &&
-    TURKEY_CROPS.find((crop) => crop.name.toLocaleLowerCase('tr-TR') === field.crop.trim().toLocaleLowerCase('tr-TR'))?.cycle === 'annual';
+  const catalogueCycle = TURKEY_CROPS.find((crop) => crop.name.toLocaleLowerCase('tr-TR') === field.crop.trim().toLocaleLowerCase('tr-TR'))?.cycle;
+  const annualCrop = (field.cropCycle ?? 'annual') === 'annual' &&
+    catalogueCycle === 'annual';
   const [selected, setSelected] = useState('');
   const [coverage, setCoverage] = useState<SeasonWeatherCoverage | null>(null);
   const [report, setReport] = useState<boolean | null>(null);
@@ -58,7 +59,14 @@ export default function SeasonModelInputs({ field, seasons, seasonsLoading }: Pr
     } finally { if (requestVersion.current === version) setLoading(false); }
   };
 
-  if (!annualCrop) return null;
+  if (!annualCrop) return <section className="tp-season-model-inputs" aria-label="Sezonluk model girdi kontrolü"><details>
+    <summary>Sezon verilerini kontrol et <span aria-hidden="true">⌄</span></summary>
+    <div className="tp-season-model-inputs-body">
+      <small>SEZON VERİLERİ · MODEL HAZIRLIĞI</small>
+      <h3>{field.crop} için durum</h3>
+      <p>Bu gelişim modeli kontrolü tek yıllık ürünler için hazırlandı. {field.cropCycle === 'perennial' || catalogueCycle === 'perennial' ? `${field.crop} çok yıllık ürün olduğu için` : `${field.crop} tek yıllık ürün olarak doğrulanmadığı için`} bu tarlada geçmiş hava sorgusu ve PCSE denemesi açılmıyor.</p>
+    </div>
+  </details></section>;
 
   return <section className="tp-season-model-inputs" aria-label="Sezonluk model girdi kontrolü"><details>
     <summary>Sezon verilerini kontrol et <span aria-hidden="true">⌄</span></summary>

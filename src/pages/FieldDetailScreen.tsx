@@ -534,7 +534,7 @@ export default function FieldDetailScreen(props: FieldDetailScreenProps) {
                   <FieldGrowthObservations fieldId={String(selectedField.id)} seasons={annualSeasons} />
                 )}
 
-                {!selectedField.demo && (selectedField.cropCycle ?? 'annual') === 'annual' && (
+                {!selectedField.demo && (
                   <SeasonModelInputs field={selectedField} seasons={annualSeasons} seasonsLoading={historyLoading} />
                 )}
 
