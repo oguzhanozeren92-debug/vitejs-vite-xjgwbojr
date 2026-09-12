@@ -538,6 +538,48 @@ html body .tp-v1 .tp-v1-header::after {
   display: none !important;
 }
 
+/* Shared page header: compact monochrome glyphs and readable weather/points. */
+html body .tp-global-page-header :is(.tp-3d-menu-icon,.tp-3d-location-icon,.tp-3d-sun,.tp-3d-star,.tp-3d-bell) {
+  color: #26313c !important;
+  stroke: currentColor !important;
+  filter: none !important;
+}
+html body .tp-global-page-header .tp-global-weather-copy :is(strong,em),
+html body .tp-global-page-header .tp-global-points-copy strong {
+  color: #26313c !important;
+}
+
+/* Weather dashboard: neutral impact panel and a genuinely compact mobile layout. */
+html body .tp-wxr-page .tp-wxr-impact-message {
+  background: #eef1f4 !important;
+  border: 1px solid #d4dce4 !important;
+  box-shadow: none !important;
+}
+html body .tp-wxr-page .tp-wxr-impact-message::after,
+html body .tp-wxr-page .tp-wxr-impact::before { display: none !important; }
+html body .tp-wxr-page .tp-wxr-impact-message > span {
+  color: #26313c !important;
+  border-color: #cbd4dd !important;
+  box-shadow: none !important;
+}
+html body .tp-wxr-page .tp-wxr-impact-message p,
+html body .tp-wxr-page .tp-wxr-risks b,
+html body .tp-wxr-page .tp-wxr-card-title span { color: #26313c !important; }
+@media (max-width: 720px) {
+  html body .tp-wxr-page .tp-wxr-hero { grid-template-columns: minmax(0,1fr) !important; gap: 9px !important; }
+  html body .tp-wxr-page :is(.tp-wxr-current,.tp-wxr-impact) { min-height: 0 !important; padding: 14px !important; }
+  html body .tp-wxr-page .tp-wxr-current-top { grid-template-columns: 94px minmax(0,1fr) !important; gap: 12px !important; min-height: 0 !important; }
+  html body .tp-wxr-page .tp-wxr-big-weather { width: 94px !important; height: 100px !important; overflow: hidden !important; }
+  html body .tp-wxr-page .tp-wxr-big-weather img { width: 88px !important; height: 88px !important; max-width: 100% !important; }
+  html body .tp-wxr-page .tp-wxr-weather-halo { width: 82px !important; height: 82px !important; }
+  html body .tp-wxr-page .tp-wxr-temp { font-size: 36px !important; }
+  html body .tp-wxr-page .tp-wxr-current-copy h2 { font-size: 14px !important; margin: 3px 0 7px !important; }
+  html body .tp-wxr-page .tp-wxr-impact-message { min-height: 0 !important; margin-top: 9px !important; grid-template-columns: 40px minmax(0,1fr) !important; }
+  html body .tp-wxr-page .tp-wxr-impact-message p { font: 500 12px/1.4 Inter,system-ui,sans-serif !important; }
+  html body .tp-wxr-page .tp-wxr-risks div { grid-template-columns: minmax(0,1fr) auto auto !important; font-size: 12px !important; }
+  html body .tp-wxr-page .tp-wxr-detail-btn { font-size: 12px !important; }
+}
+
 /* Reuse the drawer's original artwork as a monochrome layer behind solid menu rows. */
 html body .tp-premium-drawer .tp-premium-drawer-atmosphere {
   display: block !important;

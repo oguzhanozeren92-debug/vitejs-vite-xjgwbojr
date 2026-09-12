@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { Bell, CloudSun, MapPin, Menu, Star } from 'lucide-react';
 import PusulaGuide, { type PusulaInsight } from '../assets/pusula/PusulaGuide';
 import { supabase } from '../supabaseClient';
 import { useGamificationStore } from '../gamification/useGamificationStore';
@@ -9,19 +10,6 @@ const PUSULA_BODY_SRC =
 
 const PUSULA_NEEDLE_SRC =
   'https://xwyfidtktauxivsosmex.supabase.co/storage/v1/object/public/pusula/compass-needle-centered.webp';
-
-const UI_3D_ICONS = {
-  home: 'https://fkrqvwarxzmdrexsxtzw.supabase.co/storage/v1/object/public/ui-icons/premium/01-anasayfa.webp',
-  fields: 'https://fkrqvwarxzmdrexsxtzw.supabase.co/storage/v1/object/public/ui-icons/premium/02-tarlalarim.webp',
-  ai: 'https://fkrqvwarxzmdrexsxtzw.supabase.co/storage/v1/object/public/ui-icons/premium/03-pusula-ai.webp',
-  calendar: 'https://fkrqvwarxzmdrexsxtzw.supabase.co/storage/v1/object/public/ui-icons/premium/04-takvim.webp',
-  profile: 'https://fkrqvwarxzmdrexsxtzw.supabase.co/storage/v1/object/public/ui-icons/premium/05-profil.webp',
-  points: 'https://fkrqvwarxzmdrexsxtzw.supabase.co/storage/v1/object/public/ui-icons/premium/06-puan.webp',
-  notification: 'https://fkrqvwarxzmdrexsxtzw.supabase.co/storage/v1/object/public/ui-icons/premium/07-bildirim.webp',
-  weather: 'https://fkrqvwarxzmdrexsxtzw.supabase.co/storage/v1/object/public/ui-icons/premium/08-hava-durumu.webp',
-  menu: 'https://fkrqvwarxzmdrexsxtzw.supabase.co/storage/v1/object/public/ui-icons/premium/09-menu.webp',
-  location: 'https://fkrqvwarxzmdrexsxtzw.supabase.co/storage/v1/object/public/ui-icons/premium/10-konum.webp',
-} as const;
 
 type GlobalPusulaBandProps = {
   screen: string;
@@ -164,63 +152,23 @@ function saveHeaderWeatherCache(value: HeaderWeatherState) {
 }
 
 function NatureMenuIcon() {
-  return (
-    <img
-      className="tp-3d-menu-icon"
-      src={UI_3D_ICONS.menu}
-      alt=""
-      aria-hidden="true"
-      draggable={false}
-    />
-  );
+  return <Menu className="tp-3d-menu-icon" aria-hidden="true" />;
 }
 
 function LeafPinIcon() {
-  return (
-    <img
-      className="tp-3d-location-icon"
-      src={UI_3D_ICONS.location}
-      alt=""
-      aria-hidden="true"
-      draggable={false}
-    />
-  );
+  return <MapPin className="tp-3d-location-icon" aria-hidden="true" />;
 }
 
 function Sunny3DIcon() {
-  return (
-    <img
-      className="tp-3d-sun"
-      src={UI_3D_ICONS.weather}
-      alt=""
-      aria-hidden="true"
-      draggable={false}
-    />
-  );
+  return <CloudSun className="tp-3d-sun" aria-hidden="true" />;
 }
 
 function StarPointIcon() {
-  return (
-    <img
-      className="tp-3d-star"
-      src={UI_3D_ICONS.points}
-      alt=""
-      aria-hidden="true"
-      draggable={false}
-    />
-  );
+  return <Star className="tp-3d-star" aria-hidden="true" />;
 }
 
 function LeafBellIcon() {
-  return (
-    <img
-      className="tp-3d-bell"
-      src={UI_3D_ICONS.notification}
-      alt=""
-      aria-hidden="true"
-      draggable={false}
-    />
-  );
+  return <Bell className="tp-3d-bell" aria-hidden="true" />;
 }
 
 type CachedWeatherPusula = {
