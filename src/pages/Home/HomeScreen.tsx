@@ -12,6 +12,7 @@ import HomeFieldsSheet from '../../features/fields/components/HomeFieldsSheet';
 import { useHomeWeatherSignals } from '../../features/weather/hooks/useHomeWeatherSignals';
 import { useNextCalendarItem } from '../../features/calendar/hooks/useNextCalendarItem';
 import { useHomeIrrigationDecision } from '../../features/irrigation/hooks/useHomeIrrigationDecision';
+import { useHomePhenologyInsight } from '../../features/phenology/hooks/useHomePhenologyInsight';
 import IrrigationDecisionDetailModal from '../../features/irrigation/components/IrrigationDecisionDetailModal';
 import { useHomeDecisionEngine } from '../../features/decision/hooks/useHomeDecisionEngine';
 import { useHomeProfile } from '../../features/home/hooks/useHomeProfile';
@@ -191,6 +192,12 @@ export default function HomeScreen(props: HomeScreenProps) {
   });
 
   const homeIrrigation = useHomeIrrigationDecision(homeField);
+  const homePhenology = useHomePhenologyInsight(homeField);
+  const decisionPhenology =
+    homePhenology.phenologyContextStatus === 'ready' &&
+    homePhenology.phenologyContext?.fieldId === fieldKey
+      ? homePhenology.phenology
+      : null;
 
   const satState = satelliteByField?.[fieldKey];
   const sat = satState?.data;
@@ -316,6 +323,8 @@ export default function HomeScreen(props: HomeScreenProps) {
     irrigationDecision: homeIrrigation.decision,
     irrigationLoading: homeIrrigation.loading,
     irrigationError: homeIrrigation.error,
+    phenology: decisionPhenology,
+    phenologyTimeSeriesStatus: homePhenology.timeSeriesStatus,
     irrigationQuick,
     sprayingQuick,
     resolvedHomeSatelliteDate,
