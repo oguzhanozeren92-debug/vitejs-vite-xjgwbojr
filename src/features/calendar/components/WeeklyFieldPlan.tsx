@@ -53,7 +53,7 @@ export default function WeeklyFieldPlan({ reminders, fields, loading, onAdd }: P
         })}
       </div>
 
-      <div className="tp-week-plan-detail">
+      <div className="tp-week-plan-detail" aria-live="polite">
         <strong>{dateLabel(activeDate, { weekday: 'long', day: 'numeric', month: 'long' })}</strong>
         {loading ? <p>Tarla işleri yükleniyor…</p> : tasks.length ? (
           <ul>{tasks.map((task) => (
