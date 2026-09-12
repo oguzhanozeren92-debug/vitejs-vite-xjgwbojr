@@ -14,6 +14,8 @@ import {
   resolveCropCoefficient,
 } from './cropCoefficient.service';
 
+import { saveDailyKcSnapshot } from './dailyKcSnapshot.service';
+
 import {
   getCanopyDevelopmentLabel,
   getCanopyHeightLabel,
@@ -491,6 +493,23 @@ export async function calculateCropWaterUse(
       ? coefficient.kc
       : null;
 
+  const generatedAt = new Date().toISOString();
+
+  if (kc !== null && coefficient.source?.label) {
+    void saveDailyKcSnapshot({
+      fieldId,
+      calculatedAt: generatedAt,
+      kc,
+      cropName: String(dbField.crop ?? ''),
+      stage: phenology.phenology.stage,
+      stageLabel: phenology.phenology.stageLabel,
+      confidence: coefficient.confidence,
+      sourceLabel: coefficient.source.label,
+    }).catch((error) => {
+      console.warn('[TarlaPusula] Bugünkü Kc kaydedilemedi:', error);
+    });
+  }
+
   const pastDays =
     buildDays(
       climate
@@ -706,7 +725,7 @@ export async function calculateCropWaterUse(
         'Bitkinin Tahmini Su Tüketimi',
 
       pastLabel:
-        `Son 7 gün: ${formatMm(
+        `Son 7 gün (bugünkü Kc ile): ${formatMm(
           past7Days
             .estimatedCropWaterUseMm,
         )}`,
@@ -727,8 +746,6 @@ export async function calculateCropWaterUse(
     caution:
       'Bitkinin Tahmini Su Tüketimi = FAO-56 referans evapotranspirasyon (ET₀) × ürün/fenoloji katsayısı (Kc). Bu değer toprak su açığı veya doğrudan verilmesi gereken sulama suyu değildir.',
 
-    generatedAt:
-      new Date()
-        .toISOString(),
+    generatedAt,
   };
 }

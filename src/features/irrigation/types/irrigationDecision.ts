@@ -115,6 +115,9 @@ export type IrrigationDecisionResult = {
     | 'partial'
     | 'unknown';
 
+  /* Kc calculated for the current visit; never a measurement for past days. */
+  currentKc: number | null;
+
   waterBalance: {
     /*
       Son tam sulamadan bugüne tahmini kök bölgesi açığı.

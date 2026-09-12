@@ -1159,6 +1159,7 @@ export async function calculateIrrigationDecision(
           ? 'low'
           : 'medium',
       irrigationStatus,
+      currentKc: cropWaterUse.coefficient.status === 'usable' ? kc : null,
       waterBalance: {
         currentDeficitMm:
           null,
@@ -1272,6 +1273,7 @@ export async function calculateIrrigationDecision(
       confidence:
         'low',
       irrigationStatus,
+      currentKc: cropWaterUse.coefficient.status === 'usable' ? kc : null,
       waterBalance: {
         currentDeficitMm:
           null,
@@ -1365,6 +1367,7 @@ export async function calculateIrrigationDecision(
       confidence:
         'low',
       irrigationStatus,
+      currentKc: cropWaterUse.coefficient.status === 'usable' ? kc : null,
       waterBalance: {
         currentDeficitMm:
           null,
@@ -1690,6 +1693,8 @@ export async function calculateIrrigationDecision(
     decision,
     confidence,
     irrigationStatus,
+
+    currentKc: cropWaterUse.coefficient.status === 'usable' ? kc : null,
 
     waterBalance: {
       currentDeficitMm,

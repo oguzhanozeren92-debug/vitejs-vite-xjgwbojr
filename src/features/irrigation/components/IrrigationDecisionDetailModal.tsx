@@ -431,6 +431,16 @@ export default function IrrigationDecisionDetailModal({
           {decision.display?.action ? <p>{decision.display.action}</p> : null}
         </div>
 
+        {decision.currentKc != null && Number.isFinite(decision.currentKc) ? (
+          <p className="tp-irrigation-detail-note">
+            Bugün hesaplanan ürün katsayısı (Kc): {decision.currentKc.toFixed(2)}. Geçmiş günlerin Kc ölçümü değildir.
+          </p>
+        ) : (
+          <p className="tp-irrigation-detail-note">
+            Bugünkü Kc henüz hesaplanamadı. Tarlanın ürün, gelişim ve taç bilgilerini kontrol et.
+          </p>
+        )}
+
         <div className="tp-irrigation-detail-grid">
           <article>
             <small>SON 7 GÜN</small>
@@ -438,7 +448,7 @@ export default function IrrigationDecisionDetailModal({
             <strong>{formatMm(stress?.past7DayPrecipitationMm)}</strong>
             <em>
               {stress?.past7DayCropWaterUseMm != null
-                ? `Tahmini bitki tüketimi ${formatMm(stress.past7DayCropWaterUseMm)}`
+                ? `Bugünkü Kc ile tahmini tüketim ${formatMm(stress.past7DayCropWaterUseMm)}`
                 : 'Ürün bazlı tüketim için veri eksik'}
             </em>
           </article>
@@ -493,6 +503,10 @@ export default function IrrigationDecisionDetailModal({
 
         <p className="tp-irrigation-detail-note">
           Bu değerlendirme gerçek toprak nemi ölçümü değildir. Susuz tarlada sulama miktarı önermez; yağış, ET₀, ürün katsayısı ve kök bölgesi verileriyle erken uyarı üretir.
+        </p>
+
+        <p className="tp-irrigation-detail-note">
+          Son 7 günün bitki tüketiminde bugünkü Kc sabit kabul edilir; geçmiş günlere ait ölçülmüş Kc değildir.
         </p>
 
         {onAddIrrigationRecord && decision.irrigationStatus !== 'rainfed' &&
