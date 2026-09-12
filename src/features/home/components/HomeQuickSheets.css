@@ -112,6 +112,7 @@ html body .tp-v1 .tp-map-first-shell .tp-map-stage {
   cursor: pointer;
 }
 .tp-home-quick-item img { width: 36px; height: 36px; object-fit: contain; }
+.tp-home-quick-weather-icon { justify-self: center; color: #303942; }
 .tp-home-quick-item > span:nth-child(2) { display: grid; gap: 3px; min-width: 0; }
 .tp-home-quick-item small { color: #697586; font-size: 10px; font-weight: 700; }
 .tp-home-quick-item strong { color: #20252b; font-size: 14px; line-height: 1.35; }

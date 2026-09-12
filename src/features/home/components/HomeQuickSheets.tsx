@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowLeft, Bell, ClipboardList, X } from 'lucide-react';
+import { ArrowLeft, Bell, ClipboardList, Wind, X } from 'lucide-react';
 import type { HomeTodayDecision } from '../../today/components/HomeTodayCard';
 import type { HomeSystemNotification } from '../../notifications/hooks/useHomeNotifications';
 import type { IrrigationDecisionResult } from '../../irrigation/types/irrigationDecision';
@@ -11,6 +11,7 @@ type Props = {
   active: 'today' | 'notifications' | null;
   onClose: () => void;
   decisions: HomeTodayDecision[];
+  sprayWeather?: { title: string; detail: string } | null;
   notifications: HomeSystemNotification[];
   fieldName?: string;
   irrigationDecision?: IrrigationDecisionResult | null;
@@ -22,6 +23,7 @@ export default function HomeQuickSheets({
   active,
   onClose,
   decisions,
+  sprayWeather,
   notifications,
   fieldName,
   irrigationDecision,
@@ -31,6 +33,22 @@ export default function HomeQuickSheets({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const lastActiveRef = useRef<'today' | 'notifications'>('today');
   const [selectedDecision, setSelectedDecision] = useState<HomeTodayDecision | null>(null);
+  // Saatlik hava, diğer kararların iki satırlık öncelik sınırına takılmamalı.
+  const sprayDecision: HomeTodayDecision | null = sprayWeather ? {
+    id: 'spray-weather:today',
+    visual: '',
+    tone: 'neutral',
+    target: 'spray_weather',
+    iconClass: '',
+    iconSrc: '',
+    label: 'İLAÇLAMA HAVASI',
+    title: sprayWeather.title,
+    detail: sprayWeather.detail,
+  } : null;
+  const todayDecisions = sprayDecision
+    ? [sprayDecision, ...decisions.filter((decision) => decision.target !== 'spray_weather')]
+    : decisions;
+  const currentDecision = selectedDecision?.id === sprayDecision?.id ? sprayDecision : selectedDecision;
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -45,7 +63,7 @@ export default function HomeQuickSheets({
     onClose();
   };
 
-  const rainfed = selectedDecision?.id.startsWith('irrigation:') && irrigationDecision
+  const rainfed = currentDecision?.id.startsWith('irrigation:') && irrigationDecision
     ? buildRainfedTodaySummary(irrigationDecision)
     : null;
 
@@ -76,7 +94,7 @@ export default function HomeQuickSheets({
         )}
         <div>
           <small>{fieldName || 'Tarlan'}</small>
-          <h2>{active === 'notifications' ? 'Bildirimler' : selectedDecision ? selectedDecision.title : 'Bugün Ne Yapmalısın?'}</h2>
+          <h2>{active === 'notifications' ? 'Bildirimler' : currentDecision ? currentDecision.title : 'Bugün Ne Yapmalısın?'}</h2>
         </div>
         <button type="button" className="tp-home-quick-close" aria-label="Pencereyi kapat" onClick={close}>
           <X size={21} aria-hidden="true" />
@@ -85,9 +103,11 @@ export default function HomeQuickSheets({
 
       {active === 'today' && !selectedDecision && (
         <div className="tp-home-quick-list">
-          {decisions.length ? decisions.map((decision) => (
+          {todayDecisions.length ? todayDecisions.map((decision) => (
             <button key={decision.id} type="button" className="tp-home-quick-item" onClick={() => setSelectedDecision(decision)}>
-              <img src={decision.iconSrc} alt="" aria-hidden="true" />
+              {decision.id === 'spray-weather:today'
+                ? <Wind className="tp-home-quick-weather-icon" size={26} aria-hidden="true" />
+                : <img src={decision.iconSrc} alt="" aria-hidden="true" />}
               <span>
                 <small>{decision.label}</small>
                 <strong>{decision.title}</strong>
@@ -99,7 +119,7 @@ export default function HomeQuickSheets({
         </div>
       )}
 
-      {active === 'today' && selectedDecision && (
+      {active === 'today' && currentDecision && (
         <div className="tp-home-quick-detail">
           {rainfed ? (
             <>
@@ -110,9 +130,9 @@ export default function HomeQuickSheets({
               <p><strong>Özet:</strong> {rainfed.conclusion}</p>
               <small>Bu yağış ve tahmini su ihtiyacı farkıdır; ölçülmüş toprak nemi ya da sulama miktarı değildir.</small>
             </>
-          ) : <p>{selectedDecision.detail}</p>}
+          ) : <p>{currentDecision.detail}</p>}
           <button type="button" className="tp-home-quick-link" onClick={() => {
-            const target = selectedDecision.target;
+            const target = currentDecision.target;
             close();
             onOpenDecision(target);
           }}>Detayına git <span aria-hidden="true">→</span></button>

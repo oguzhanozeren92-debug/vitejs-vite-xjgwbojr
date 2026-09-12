@@ -808,6 +808,13 @@ export default function HomeScreen(props: HomeScreenProps) {
             active={quickSheet}
             onClose={() => setQuickSheet(null)}
             decisions={todayDecisionCards}
+            sprayWeather={homeField && !homeField.demo ? (
+              decisionPhenology?.dataStatus === 'usable' && decisionPhenology.stage === 'post_harvest'
+                ? { title: 'Bu tarlada hasat tamamlandı', detail: 'Hasat edilen ürün için ilaçlama önerisi gösterilmiyor. Güncel hava tahminine göz atabilirsin.' }
+                : selectedHourlyWeather
+                  ? { title: sprayingQuick.title, detail: sprayingQuick.detail }
+                  : { title: 'Saatlik hava hazırlanıyor', detail: 'İlaçlama için uygun saatleri görmek üzere tarla tahmini bekleniyor.' }
+            ) : null}
             notifications={homeSystemNotifications}
             fieldName={homeField?.name?.trim() || undefined}
             irrigationDecision={homeIrrigation.decision}
