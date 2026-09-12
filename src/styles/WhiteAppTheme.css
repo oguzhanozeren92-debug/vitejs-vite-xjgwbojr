@@ -290,3 +290,99 @@ html body .tp-authv2-wordmark span,
 html body .tp-authv2-wordmark strong { color: #20252b !important; text-shadow: none !important; }
 html body .tp-authv2-primary { background: #303942 !important; border-color: #303942 !important; color: #fff !important; box-shadow: none !important; }
 html body .tp-authv2 :is(.tp-authv2-features,.tp-authv2-feature) { background: #fff !important; box-shadow: none !important; }
+
+/* Home modules rendered from their own CSS/inline style blocks. These are
+   outside the shared card selectors above, so explicitly give each a surface. */
+html body .tp-v1 .tp-today { box-shadow: none !important; }
+html body .tp-v1 .tp-today::before,
+html body .tp-v1 .tp-mini::before { display: none !important; }
+html body .tp-v1 .tp-mini,
+html body .tp-v1 .tp-today > .tp-home-data-status {
+  background: #f7f8fa !important;
+  border: 1px solid #e5e8eb !important;
+  color: #20252b !important;
+  box-shadow: none !important;
+}
+html body .tp-v1 .tp-mini :is(strong,small),
+html body .tp-v1 .tp-home-data-status-heading strong { color: #20252b !important; }
+html body .tp-v1 .tp-home-data-status-heading small { color: #697586 !important; }
+html body .tp-v1 .tp-home-data-status-chevron { color: #56616e !important; }
+
+html body .tp-v1 .tp-home-forecast {
+  background: #f7f8fa !important;
+  border: 1px solid #e5e8eb !important;
+  color: #20252b !important;
+  box-shadow: none !important;
+}
+html body .tp-v1 .tp-home-forecast-heading :is(strong,span),
+html body .tp-v1 .tp-home-forecast-day strong { color: #20252b !important; }
+html body .tp-v1 .tp-home-forecast-day :is(span,small),
+html body .tp-v1 .tp-home-forecast-empty { color: #697586 !important; }
+html body .tp-v1 .tp-home-forecast-day { border-color: #e5e8eb !important; }
+
+/* The compass summary is part of the map card, beneath the satellite image. */
+html body .tp-v1 .tp-home-map-pusula-strip {
+  background: #f7f8fa !important;
+  border-top: 1px solid #e5e8eb !important;
+  color: #20252b !important;
+  backdrop-filter: none !important;
+}
+html body .tp-v1 .tp-home-map-pusula-strip::before { display: none !important; }
+html body .tp-v1 .tp-home-map-pusula-logo img { filter: none !important; opacity: 1 !important; }
+html body .tp-v1 .tp-home-map-pusula-kicker { color: #39434e !important; }
+html body .tp-v1 .tp-home-map-pusula-kicker span { color: #697586 !important; }
+html body .tp-v1 .tp-home-map-pusula-text { color: #20252b !important; }
+html body .tp-v1 .tp-home-map-pusula-strip:is(.is-loading,.has-error) .tp-home-map-pusula-text { color: #697586 !important; }
+html body .tp-v1 .tp-home-map-pusula-actions button { color: #39434e !important; background: transparent !important; }
+html body .tp-v1 .tp-home-map-pusula-signal { color: #56616e !important; background: #e9ecef !important; border-color: #dce1e5 !important; }
+html body .tp-v1 .tp-home-map-pusula-signal.negative { color: #a53737 !important; background: #fff1f1 !important; border-color: #efc7c7 !important; }
+html body .tp-v1 .tp-home-map-pusula-signal.positive { color: #24734c !important; background: #eaf6ee !important; border-color: #c8e7d2 !important; }
+html body .tp-v1 .tp-home-map-pusula-signal.attention { color: #88621a !important; background: #fff6e5 !important; border-color: #f1dcae !important; }
+
+/* Related details open as readable white bottom sheets. */
+html body :is(.tp-home-map-why-sheet,dialog.tp-home-data-dialog,dialog.tp-home-today-dialog) {
+  background: #fff !important;
+  border-color: #e5e8eb !important;
+  color: #20252b !important;
+  box-shadow: 0 12px 40px #20252b22 !important;
+}
+html body :is(.tp-home-map-why-sheet,.tp-home-data-dialog,.tp-home-today-dialog)
+  :is(h2,h3,strong,dt,li) { color: #20252b !important; }
+html body :is(.tp-home-map-why-sheet,.tp-home-data-dialog,.tp-home-today-dialog)
+  :is(p,small,dd,span) { color: #56616e !important; }
+html body :is(.tp-home-map-why-sheet,.tp-home-data-dialog,.tp-home-today-dialog)
+  :is(button,.tp-home-map-why-action,.tp-home-map-why-layer,.tp-home-today-water-summary dl div) {
+  background: #f7f8fa !important;
+  border-color: #e5e8eb !important;
+  color: #20252b !important;
+  box-shadow: none !important;
+}
+html body .tp-home-data-status-dot.is-ready { background: #2e8356 !important; box-shadow: none !important; }
+html body .tp-home-data-status-list { border-color: #e5e8eb !important; }
+
+/* White map controls stay legible against the satellite photograph. */
+html body .tp-v1 .tp-map-first-shell .tp-map-control-rail,
+html body .tp-v1 .tp-map-stage .tp-map-control-rail {
+  background: #fff !important;
+  border-color: #e5e8eb !important;
+  box-shadow: 0 3px 12px #20252b28 !important;
+}
+html body .tp-v1 .tp-map-first-shell .tp-map-control-rail .tp-map-control-btn {
+  color: #20252b !important;
+  background: #fff !important;
+  border-color: #e5e8eb !important;
+}
+html body .tp-v1 .tp-map-first-shell .tp-map-control-rail .tp-map-control-btn svg { color: #20252b !important; }
+
+/* The plan preview toggle is part of the mobile shell, not map data. */
+html body #tp-dev-plan-switch {
+  min-width: 100px !important;
+  min-height: 38px !important;
+  background: #fff !important;
+  border: 1px solid #e5e8eb !important;
+  color: #20252b !important;
+  box-shadow: 0 3px 12px #20252b20 !important;
+  backdrop-filter: none !important;
+}
+html body #tp-dev-plan-switch :is(.tp-dev-label,.tp-dev-value) { color: #39434e !important; }
+html body #tp-dev-plan-switch .tp-dev-dot { background: #697586 !important; box-shadow: none !important; }
