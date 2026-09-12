@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { CalendarDays, CloudSun, House, MapPinned, Sparkles } from 'lucide-react';
 import './HomeScreen.css';
 import './ClassicPusula.css';
 import { onboardingStyles } from '../../styles/onboardingStyles';
@@ -920,7 +921,7 @@ export default function HomeScreen(props: HomeScreenProps) {
         <nav className="tp-bottom" aria-label="Ana menü">
           <button className="active" type="button">
             <span className="tp-bottom-icon-shell">
-              <HomeNavIcon name="home" className="tp-ui3d-bottom" />
+              <House className="tp-bottom-line-icon" aria-hidden="true" strokeWidth={1.8} />
             </span>
             Ana Sayfa
           </button>
@@ -931,28 +932,28 @@ export default function HomeScreen(props: HomeScreenProps) {
             aria-label="Hava Durumu"
           >
             <span className="tp-bottom-icon-shell">
-              <HomeNavIcon name="weather" className="tp-ui3d-bottom" />
+              <CloudSun className="tp-bottom-line-icon" aria-hidden="true" strokeWidth={1.8} />
             </span>
             Hava Durumu
           </button>
 
           <button className="ai" type="button" onClick={openAiAnalysisScreen}>
             <span className="tp-bottom-ai-shell">
-              <HomeNavIcon name="ai" className="tp-ui3d-bottom-ai" />
+              <Sparkles className="tp-bottom-line-icon" aria-hidden="true" strokeWidth={1.8} />
             </span>
             Pusula AI
           </button>
 
           <button type="button" onClick={openCalendarScreen}>
             <span className="tp-bottom-icon-shell">
-              <HomeNavIcon name="calendar" className="tp-ui3d-bottom" />
+              <CalendarDays className="tp-bottom-line-icon" aria-hidden="true" strokeWidth={1.8} />
             </span>
             Takvim
           </button>
 
           <button type="button" onClick={() => setFieldsSheetOpen(true)} aria-label="Tarlalarım listesini aç">
             <span className="tp-bottom-icon-shell">
-              <HomeNavIcon name="fields" className="tp-ui3d-bottom" />
+              <MapPinned className="tp-bottom-line-icon" aria-hidden="true" strokeWidth={1.8} />
             </span>
             Tarlalarım
           </button>
