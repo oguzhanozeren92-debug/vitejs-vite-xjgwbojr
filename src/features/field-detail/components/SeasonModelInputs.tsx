@@ -93,6 +93,14 @@ export default function SeasonModelInputs({ field, seasons, seasonsLoading }: Pr
         <strong>NASA POWER · {coverage.start} – {coverage.end}</strong>
         <p>{coverage.expectedDays} günün {coverage.completeDays} gününde sıcaklık, yağış, güneş ışınımı ve rüzgâr birlikte mevcut.</p>
         <p>Eksik gün: sıcaklık {coverage.missing.temperature}, yağış {coverage.missing.rain}, güneş ışınımı {coverage.missing.radiation}, rüzgâr {coverage.missing.wind}.</p>
+        {coverage.heatSum10C !== null ? (
+          <div className="tp-season-model-heat">
+            <small>EKİMDEN BERİ ISI BİRİKİMİ · 10 °C EŞİĞİ</small>
+            <strong>{coverage.heatSum10C.toLocaleString('tr-TR', { maximumFractionDigits: 1 })} °C·gün</strong>
+            <p>Her günün en düşük ve en yüksek sıcaklığının ortalamasından 10 °C çıkarılıp sıfırın üstündeki değerler toplandı.</p>
+          </div>
+        ) : <p>Isı birikimi hesaplanmadı: {coverage.missing.temperature} günün sıcaklığı eksik veya tutarsız.</p>}
+        <p>10 °C yalnızca karşılaştırma eşiğidir; ürünün çeşidine göre gelişim evresi ya da hasat tarihi tahmini değildir.</p>
         <p>Bunlar bölgesel, uydu ve model kaynaklı geçmiş hava verileridir; tarlada ölçülen hava değildir. PCSE için buhar basıncı, rakım, ürün/toprak parametreleri ve saha gözlemi ayrıca gerekli.</p>
       </div>}
       {message && <p role="alert">{message}</p>}

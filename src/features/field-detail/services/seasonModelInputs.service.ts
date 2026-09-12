@@ -5,6 +5,8 @@ import { supabase } from '../../../supabaseClient';
 export type SeasonWeatherCoverage = {
   expectedDays: number;
   completeDays: number;
+  /** Sum of max(0, (daily min + max) / 2 - 10°C); null if any temperature day is missing. */
+  heatSum10C: number | null;
   missing: { temperature: number; rain: number; radiation: number; wind: number };
   start: string;
   end: string;
@@ -21,6 +23,7 @@ export function countSeasonWeatherDays(days: NasaPowerDay[], start: string, end:
   const missing = { temperature: 0, rain: 0, radiation: 0, wind: 0 };
   let expectedDays = 0;
   let completeDays = 0;
+  let heatSum10C = 0;
   const first = Date.parse(`${start}T00:00:00Z`);
   const last = Date.parse(`${end}T00:00:00Z`);
   if (!Number.isFinite(first) || !Number.isFinite(last) || last < first || last - first > 730 * 86400000) {
@@ -29,17 +32,20 @@ export function countSeasonWeatherDays(days: NasaPowerDay[], start: string, end:
   for (let time = first; time <= last; time += 86400000) {
     expectedDays += 1;
     const row = byDate.get(new Date(time).toISOString().slice(0, 10));
-    const temperature = Boolean(row && isValue(row.minTemperature, true) && isValue(row.maxTemperature, true));
+    const temperature = Boolean(row && isValue(row.minTemperature, true) && isValue(row.maxTemperature, true) &&
+      row.maxTemperature! >= row.minTemperature!);
     const rain = Boolean(row && isValue(row.precipitation));
     const radiation = Boolean(row && isValue(row.solarRadiation));
     const wind = Boolean(row && isValue(row.windSpeed));
     if (!temperature) missing.temperature += 1;
+    else heatSum10C += Math.max(0, (row!.minTemperature! + row!.maxTemperature!) / 2 - 10);
     if (!rain) missing.rain += 1;
     if (!radiation) missing.radiation += 1;
     if (!wind) missing.wind += 1;
     if (temperature && rain && radiation && wind) completeDays += 1;
   }
-  return { expectedDays, completeDays, missing, start, end, source: 'NASA POWER' };
+  return { expectedDays, completeDays, heatSum10C: missing.temperature === 0 ? Math.round(heatSum10C * 10) / 10 : null,
+    missing, start, end, source: 'NASA POWER' };
 }
 
 const cache = new Map<string, { coverage: SeasonWeatherCoverage; at: number }>();
