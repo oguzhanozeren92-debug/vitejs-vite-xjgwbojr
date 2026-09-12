@@ -154,6 +154,7 @@ export default function HomeScreen(props: HomeScreenProps) {
     openCalendarScreen,
     openSoilAnalysisForField,
     openFieldDetail,
+    handleDeleteField,
     setFieldControlFieldId,
     setScreen,
     setSideMenuOpen,
@@ -909,6 +910,11 @@ export default function HomeScreen(props: HomeScreenProps) {
             setHomeFieldId(id);
             setFieldControlFieldId?.(id);
             openFieldDetail(field);
+          }}
+          onDelete={async (id) => {
+            const field = (realFields ?? []).find((item: { id: string | number }) => String(item.id) === id);
+            if (!field) throw new Error('Tarla bulunamadı.');
+            await handleDeleteField(field);
           }}
           onAdd={() => {
             setFieldsSheetOpen(false);

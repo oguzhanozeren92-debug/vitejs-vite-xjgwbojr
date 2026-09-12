@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 type HomeFieldSelectionInput = {
   fields?: any[] | null;
@@ -9,24 +9,13 @@ export function useHomeFieldSelection({
   fields,
   favoriteFieldId,
 }: HomeFieldSelectionInput) {
-  const [fieldId, setFieldId] = useState(() =>
-    String(favoriteFieldId ?? fields?.[0]?.id ?? ''),
-  );
-
-  useEffect(() => {
-    if (!fieldId) {
-      setFieldId(String(favoriteFieldId ?? fields?.[0]?.id ?? ''));
-      return;
-    }
-
-    const stillExists = fields?.some(
-      (field: any) => String(field?.id) === String(fieldId),
-    );
-
-    if (fields?.length && !stillExists) {
-      setFieldId(String(favoriteFieldId ?? fields[0]?.id ?? ''));
-    }
-  }, [fields, favoriteFieldId, fieldId]);
+  const fallbackId = fields?.some((field: any) => String(field?.id) === String(favoriteFieldId))
+    ? String(favoriteFieldId)
+    : String(fields?.[0]?.id ?? '');
+  const [selectedId, setFieldId] = useState('');
+  const fieldId = fields?.some((field: any) => String(field?.id) === selectedId)
+    ? selectedId
+    : fallbackId;
 
   const field = useMemo(
     () =>
