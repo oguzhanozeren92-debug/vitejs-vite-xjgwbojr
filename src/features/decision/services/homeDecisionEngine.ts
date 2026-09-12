@@ -28,6 +28,10 @@ function compactText(value: unknown, maxLength: number): string {
   return `${text.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
 }
 
+function fullText(value: unknown): string {
+  return String(value ?? '').replace(/\s+/g, ' ').trim();
+}
+
 function localDayKey(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -73,8 +77,8 @@ function quickCopy(
   fallbackDetail: string,
 ) {
   return {
-    title: compactText(quick?.title, 54) || fallbackTitle,
-    detail: compactText(quick?.detail, 76) || fallbackDetail,
+    title: fullText(quick?.title) || fallbackTitle,
+    detail: fullText(quick?.detail) || fallbackDetail,
     tone: compactText(quick?.tone, 20) || 'neutral',
   };
 }
@@ -158,10 +162,10 @@ function irrigationEvent(
   decision: HomeIrrigationDecisionSignal,
 ): HomeDecisionEvent | null {
   const code = String(decision.decision ?? '').trim();
-  const headline = compactText(decision.display?.headline, 54);
-  const action = compactText(decision.display?.action, 76);
-  const summary = compactText(decision.display?.summary, 76);
-  const waterLabel = compactText(decision.display?.waterLabel, 76);
+  const headline = fullText(decision.display?.headline);
+  const action = fullText(decision.display?.action);
+  const summary = fullText(decision.display?.summary);
+  const waterLabel = fullText(decision.display?.waterLabel);
   const netWaterMm = finiteNumber(decision.recommendation?.netWaterMm);
   const daysToThreshold = finiteNumber(decision.waterBalance?.daysToStressThreshold);
   const evidence = (decision.reasons ?? []).map((reason) => String(reason).trim()).filter(Boolean).slice(0, 3);
@@ -303,20 +307,18 @@ function irrigationEvent(
 
     const detail =
       riskIsElevated
-        ? compactText(
+        ? fullText(
             [
               summary,
               action,
             ]
               .filter(Boolean)
               .join(' '),
-            150,
           ) ||
           riskEvidence ||
           'Su stresi riski yükseliyor; tarlayı sahada kontrol et.'
-        : compactText(
+        : fullText(
             summary,
-            145,
           ) ||
           riskEvidence ||
           action ||
@@ -621,7 +623,7 @@ export function buildHomeDecisionEvents(
     if (calendarDateMs != null) {
       const calendarHours = (calendarDateMs - nowMs) / HOUR_MS;
       const title =
-        compactText(input.nextCalendarItem?._tpTitle, 58) || 'Yaklaşan Takvim Görevi';
+        fullText(input.nextCalendarItem?._tpTitle) || 'Yaklaşan Takvim Görevi';
 
       pushEvent(items, {
         id: `calendar:${String(input.nextCalendarItem?.id ?? calendarDateMs)}`,
@@ -674,7 +676,7 @@ export function buildHomeDecisionEvents(
       },
     });
   } else if (phenology.activeGrowth && Array.isArray(input.phenology?.warnings)) {
-    const warning = compactText(input.phenology?.warnings?.[0], 82);
+    const warning = fullText(input.phenology?.warnings?.[0]);
     if (warning) {
       pushEvent(items, {
         id: `phenology:${fieldKey}:${phenology.stage}:warning:${dayKey}`,
@@ -704,15 +706,16 @@ export function buildHomeDecisionEvents(
     }
   }
 
-  const pusulaAction = compactText(
+  const pusulaAction = fullText(
     input.fieldSynthesis?.action ?? input.homePusulaResult?.analysis?.action,
-    76,
   );
-  const pusulaArea = compactText(
+  const pusulaArea = fullText(
     input.fieldSynthesis?.importantArea?.area ??
       input.homePusulaResult?.analysis?.importantArea?.area,
-    28,
   );
+  const pusulaAreaTitle = pusulaArea
+    ? `Tarlanın ${pusulaArea.toLocaleLowerCase('tr-TR')} bölümünü kontrol et`
+    : 'Pusula önerisini kontrol et';
   const synthesisStatus = String(input.fieldSynthesis?.status ?? '').trim();
   const synthesisNeedsAttention =
     Boolean(pusulaArea) || Boolean(synthesisStatus && synthesisStatus !== 'normal');
@@ -733,7 +736,7 @@ export function buildHomeDecisionEvents(
       target: 'ai',
       channels: ['today', 'notification'],
       label: 'PUSULA',
-      title: pusulaArea ? `${pusulaArea} Bölümünü Kontrol Et` : 'Pusula Önerisini Kontrol Et',
+      title: pusulaAreaTitle,
       detail: pusulaAction,
       today: {
         tone: 'amber',

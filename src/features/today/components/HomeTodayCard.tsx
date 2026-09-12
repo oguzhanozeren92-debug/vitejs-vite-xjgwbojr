@@ -17,10 +17,11 @@ export type HomeTodayDecision = {
 
 type Props = {
   decisions: HomeTodayDecision[];
+  fieldName?: string;
   onOpenDecision: (target: any) => void;
 };
 
-export default function HomeTodayCard({ decisions, onOpenDecision }: Props) {
+export default function HomeTodayCard({ decisions, fieldName, onOpenDecision }: Props) {
   const [selectedDecision, setSelectedDecision] = useState<HomeTodayDecision | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -111,6 +112,7 @@ export default function HomeTodayCard({ decisions, onOpenDecision }: Props) {
               <span>{selectedDecision.label}</span>
               <button type="button" aria-label="Pencereyi kapat" onClick={() => dialogRef.current?.close()}>×</button>
             </div>
+            {fieldName && <p className="tp-home-today-dialog-field">Tarla: <strong>{fieldName}</strong></p>}
             <h2 id="tp-home-today-dialog-title">{selectedDecision.title}</h2>
             <p id="tp-home-today-dialog-detail">{selectedDecision.detail}</p>
             <button

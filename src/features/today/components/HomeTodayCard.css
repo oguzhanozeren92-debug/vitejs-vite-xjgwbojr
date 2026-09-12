@@ -33,6 +33,13 @@ dialog.tp-home-today-dialog::backdrop { background: rgba(0, 0, 0, .72); backdrop
   font-size: 24px;
   cursor: pointer;
 }
+.tp-home-today-dialog p.tp-home-today-dialog-field {
+  margin: 15px 0 0;
+  color: #a7bdb0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.tp-home-today-dialog-field strong { color: #f1f4ec; font-weight: 700; }
 .tp-home-today-dialog h2 {
   margin: 18px 0 10px;
   color: #f4efe3;

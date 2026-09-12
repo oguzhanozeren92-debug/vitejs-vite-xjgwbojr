@@ -644,6 +644,7 @@ export default function HomeScreen(props: HomeScreenProps) {
           >
             <HomeTodayCard
               decisions={todayDecisionCards}
+              fieldName={homeField?.name?.trim() || undefined}
               onOpenDecision={openHomeInsightTarget}
             />
             <HomeNotificationsCard
