@@ -1,4 +1,7 @@
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { HOME_REFERENCE_ASSETS } from '../../home/homeAssets';
+import './HomeTodayCard.css';
 
 export type HomeTodayDecision = {
   id: string;
@@ -18,7 +21,16 @@ type Props = {
 };
 
 export default function HomeTodayCard({ decisions, onOpenDecision }: Props) {
+  const [selectedDecision, setSelectedDecision] = useState<HomeTodayDecision | null>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    if (selectedDecision && !dialogRef.current?.open) dialogRef.current?.showModal();
+  }, [selectedDecision]);
+
   return (
+    <>
     <article className="tp-home-today-reference">
       <div
         className="tp-home-today-bg"
@@ -52,7 +64,11 @@ export default function HomeTodayCard({ decisions, onOpenDecision }: Props) {
               type="button"
               key={decision.id}
               className={`tp-home-today-action ${decision.visual} ${decision.tone}`}
-              onClick={() => onOpenDecision(decision.target)}
+              aria-haspopup="dialog"
+              onClick={(event) => {
+                triggerRef.current = event.currentTarget;
+                setSelectedDecision(decision);
+              }}
             >
               <img
                 className={`tp-home-today-action-icon ${decision.iconClass}`}
@@ -74,5 +90,44 @@ export default function HomeTodayCard({ decisions, onOpenDecision }: Props) {
         </div>
       </div>
     </article>
+    {createPortal(
+      <dialog
+        ref={dialogRef}
+        className={`tp-home-today-dialog ${selectedDecision?.visual ?? ''}`}
+        aria-labelledby="tp-home-today-dialog-title"
+        aria-describedby="tp-home-today-dialog-detail"
+        onClose={() => {
+          setSelectedDecision(null);
+          triggerRef.current?.focus();
+        }}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) event.currentTarget.close();
+        }}
+      >
+        {selectedDecision && (
+          <div className="tp-home-today-dialog-content">
+            <div className="tp-home-today-dialog-head">
+              <img src={selectedDecision.iconSrc} alt="" aria-hidden="true" />
+              <span>{selectedDecision.label}</span>
+              <button type="button" aria-label="Pencereyi kapat" onClick={() => dialogRef.current?.close()}>×</button>
+            </div>
+            <h2 id="tp-home-today-dialog-title">{selectedDecision.title}</h2>
+            <p id="tp-home-today-dialog-detail">{selectedDecision.detail}</p>
+            <button
+              type="button"
+              className="tp-home-today-dialog-link"
+              onClick={() => {
+                dialogRef.current?.close();
+                onOpenDecision(selectedDecision.target);
+              }}
+            >
+              Detayına git <span aria-hidden="true">→</span>
+            </button>
+          </div>
+        )}
+      </dialog>,
+      document.body,
+    )}
+    </>
   );
 }
