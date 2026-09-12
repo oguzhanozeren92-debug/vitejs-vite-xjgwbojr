@@ -4,9 +4,8 @@ import './ClassicPusula.css';
 import { onboardingStyles } from '../../styles/onboardingStyles';
 import { useGamificationStore } from '../../gamification/useGamificationStore';
 import AppDrawer from '../../components/AppDrawer';
-import HomeNotificationsCard from '../../features/notifications/components/HomeNotificationsCard';
 import { persistHomeNotifications } from '../../features/notifications/services/notificationQueue';
-import HomeTodayCard from '../../features/today/components/HomeTodayCard';
+import HomeQuickSheets from '../../features/home/components/HomeQuickSheets';
 import { useHomeFieldSelection } from '../../features/fields/hooks/useHomeFieldSelection';
 import HomeFieldsSheet from '../../features/fields/components/HomeFieldsSheet';
 import { useHomeWeatherSignals } from '../../features/weather/hooks/useHomeWeatherSignals';
@@ -172,6 +171,7 @@ export default function HomeScreen(props: HomeScreenProps) {
   const [irrigationDetailOpen, setIrrigationDetailOpen] = useState(false);
   const [irrigationRecordOpen, setIrrigationRecordOpen] = useState(false);
   const [fieldsSheetOpen, setFieldsSheetOpen] = useState(false);
+  const [quickSheet, setQuickSheet] = useState<'today' | 'notifications' | null>(null);
   const [activeHomeLayer, setActiveHomeLayer] =
     useState<HomeLayer>('vegetation');
   const [soilMenuOpen, setSoilMenuOpen] = useState(false);
@@ -356,7 +356,6 @@ export default function HomeScreen(props: HomeScreenProps) {
     homeFieldCrop: homeField?.crop,
   });
 
-  const homeNotificationPreview = homeSystemNotifications.slice(0, 3);
   const homeNotificationCount = homeSystemNotifications.length;
   const selectedFieldWeather = fieldKey ? fieldWeather?.[fieldKey] : null;
   const hasRecentFieldForecast = hasUsableFieldWeatherForecast(selectedFieldWeather);
@@ -641,26 +640,11 @@ export default function HomeScreen(props: HomeScreenProps) {
         </header>
 
         <main className="tp-main">
-          <section
-            className="tp-home-top-split"
-            aria-label="Bugünün kararları ve bildirimler"
-          >
-            <HomeTodayCard
-              decisions={todayDecisionCards}
-              fieldName={homeField?.name?.trim() || undefined}
-              irrigationDecision={homeIrrigation.decision}
-              onOpenDecision={openHomeInsightTarget}
-            />
-            <HomeNotificationsCard
-              notifications={homeNotificationPreview}
-              notificationCount={homeNotificationCount}
-              fieldName={homeField?.name?.trim() || undefined}
-              onOpen={() => setScreen('notificationsHub')}
-            />
-          </section>
-
           <div className="tp-home-map-pusula-shell">
             <HomeMapSection
+              onOpenToday={() => setQuickSheet('today')}
+              onOpenNotifications={() => setQuickSheet('notifications')}
+              notificationCount={homeNotificationCount}
               homeField={homeField}
               realFields={realFields}
               setHomeFieldId={setHomeFieldId}
@@ -753,6 +737,17 @@ export default function HomeScreen(props: HomeScreenProps) {
               }}
             />
           </div>
+
+          <HomeQuickSheets
+            active={quickSheet}
+            onClose={() => setQuickSheet(null)}
+            decisions={todayDecisionCards}
+            notifications={homeSystemNotifications}
+            fieldName={homeField?.name?.trim() || undefined}
+            irrigationDecision={homeIrrigation.decision}
+            onOpenDecision={openHomeInsightTarget}
+            onOpenNotifications={() => setScreen('notificationsHub')}
+          />
 
           <section className="tp-today">
             <div className="tp-mini">

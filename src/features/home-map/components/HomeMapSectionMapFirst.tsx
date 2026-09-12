@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { Bell, ClipboardList } from 'lucide-react';
 import HomeMapSection from './HomeMapSection';
 import {
   HOME_CLIMATE_DEPTH_LABELS,
@@ -1207,6 +1208,35 @@ export default function HomeMapSectionMapFirst(
         )
       : null;
 
+  const quickToolbarButtons = fieldToolbar != null
+    ? createPortal(
+        <>
+          <button
+            type="button"
+            className="tp-mf-quick-action tp-mf-quick-today"
+            onClick={() => props.onOpenToday?.()}
+            aria-label="Bugün ne yapmalısın?"
+            aria-haspopup="dialog"
+            title="Bugün ne yapmalısın?"
+          >
+            <ClipboardList size={19} strokeWidth={1.9} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className="tp-mf-quick-action tp-mf-quick-notifications"
+            onClick={() => props.onOpenNotifications?.()}
+            aria-label={`Bildirimler${props.notificationCount > 0 ? `, ${props.notificationCount} yeni gelişme` : ''}`}
+            aria-haspopup="dialog"
+            title="Bildirimler"
+          >
+            <Bell size={19} strokeWidth={1.9} aria-hidden="true" />
+            {props.notificationCount > 0 && <span className="tp-mf-notification-dot" aria-hidden="true" />}
+          </button>
+        </>,
+        fieldToolbar,
+      )
+    : null;
+
   const mapOverlay =
     mapStage != null
       ? createPortal(
@@ -1522,6 +1552,7 @@ export default function HomeMapSectionMapFirst(
       <HomeMapSection {...props} />
 
       {operationToolbarButton}
+      {quickToolbarButtons}
       {mapOverlay}
       {portraitClose}
     </div>
