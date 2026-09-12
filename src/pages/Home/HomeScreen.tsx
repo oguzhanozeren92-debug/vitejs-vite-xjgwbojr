@@ -10,6 +10,7 @@ import HomeTodayCard from '../../features/today/components/HomeTodayCard';
 import { useHomeFieldSelection } from '../../features/fields/hooks/useHomeFieldSelection';
 import HomeFieldsSheet from '../../features/fields/components/HomeFieldsSheet';
 import { useHomeWeatherSignals } from '../../features/weather/hooks/useHomeWeatherSignals';
+import HomeFiveDayForecast from '../../features/weather/components/HomeFiveDayForecast';
 import { useNextCalendarItem } from '../../features/calendar/hooks/useNextCalendarItem';
 import { useHomeIrrigationDecision } from '../../features/irrigation/hooks/useHomeIrrigationDecision';
 import { useHomePhenologyInsight } from '../../features/phenology/hooks/useHomePhenologyInsight';
@@ -756,8 +757,8 @@ export default function HomeScreen(props: HomeScreenProps) {
               <Ui3DIcon name="weather" className="tp-ui3d-weather-today" />
               <small>Bugün</small>
               <strong>
-                {todayWeather?.temperatureMax != null
-                  ? `${Math.round(todayWeather.temperatureMax)}°C`
+                {todayWeather?.tempMax != null
+                  ? `${Math.round(todayWeather.tempMax)}°C`
                   : 'Hava'}
               </strong>
               <small>
@@ -778,6 +779,8 @@ export default function HomeScreen(props: HomeScreenProps) {
               }}
             />
           </section>
+
+          <HomeFiveDayForecast weather={weather} onOpen={() => setScreen?.('weatherHub')} />
 
           {!realFields?.length && (
             <button
