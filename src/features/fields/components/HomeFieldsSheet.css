@@ -34,9 +34,21 @@
 .tp-fields-sheet-field {
   display: flex; align-items: center; width: 100%; min-height: 69px; gap: 12px;
   padding: 10px 12px; border: 1px solid #1e3a24; border-radius: 16px;
-  background: rgba(6, 19, 8, .85); color: #e5f5e8; text-align: left; cursor: pointer;
+  background: rgba(6, 19, 8, .85); color: #e5f5e8; text-align: left;
 }
 .tp-fields-sheet-field.is-selected { border-color: #22c55e; background: rgba(20, 65, 32, .5); }
+.tp-fields-sheet-field-select {
+  display: flex; align-items: center; flex: 1; min-width: 0; gap: 12px; padding: 0;
+  border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer;
+}
+.tp-fields-sheet-detail {
+  flex: 0 0 auto; min-height: 38px; padding: 0 13px;
+  border: 1px solid #348548; border-radius: 11px; background: #123a20;
+  color: #e5f5e8; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer;
+}
+.tp-fields-sheet-field-select:focus-visible,.tp-fields-sheet-detail:focus-visible {
+  outline: 2px solid #86efac; outline-offset: 3px;
+}
 .tp-fields-sheet-field-icon {
   display: grid; place-items: center; flex: 0 0 40px; height: 40px; border: 1px solid #356947;
   border-radius: 12px; background: #0a2916; color: #57dc82; box-shadow: inset 0 0 12px rgba(34, 197, 94, .12);

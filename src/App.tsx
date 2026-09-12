@@ -1209,6 +1209,7 @@ export default function App() {
       openAiAnalysisScreen={openAiAnalysisScreen}
       openCalendarScreen={openCalendarScreen}
       openSoilAnalysisForField={openSoilAnalysisForField}
+      openFieldDetail={openFieldDetail}
       setFieldControlFieldId={setFieldControlFieldId}
       setScreen={setScreen}
       setSideMenuOpen={setSideMenuOpen}

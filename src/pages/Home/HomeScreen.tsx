@@ -153,6 +153,7 @@ export default function HomeScreen(props: HomeScreenProps) {
     openAiAnalysisScreen,
     openCalendarScreen,
     openSoilAnalysisForField,
+    openFieldDetail,
     setFieldControlFieldId,
     setScreen,
     setSideMenuOpen,
@@ -900,6 +901,14 @@ export default function HomeScreen(props: HomeScreenProps) {
             setFieldControlFieldId?.(id);
             setFieldsSheetOpen(false);
             window.setTimeout(() => document.querySelector('.tp-home-field')?.scrollIntoView({ behavior: 'smooth' }), 80);
+          }}
+          onDetail={(id) => {
+            const field = (realFields ?? []).find((item: { id: string | number }) => String(item.id) === id);
+            if (!field) return;
+            setFieldsSheetOpen(false);
+            setHomeFieldId(id);
+            setFieldControlFieldId?.(id);
+            openFieldDetail(field);
           }}
           onAdd={() => {
             setFieldsSheetOpen(false);

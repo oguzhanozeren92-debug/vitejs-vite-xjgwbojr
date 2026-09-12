@@ -9,12 +9,13 @@ type HomeFieldsSheetProps = {
   fields: FieldOption[];
   selectedId: string;
   onSelect: (id: string) => void;
+  onDetail: (id: string) => void;
   onAdd: () => void;
   onClose: () => void;
 };
 
 export default function HomeFieldsSheet({
-  open, fields, selectedId, onSelect, onAdd, onClose,
+  open, fields, selectedId, onSelect, onDetail, onAdd, onClose,
 }: HomeFieldsSheetProps) {
   useEffect(() => {
     if (!open) return;
@@ -47,19 +48,30 @@ export default function HomeFieldsSheet({
             const id = String(field.id);
             const selected = id === selectedId;
             return (
-              <button
+              <div
                 key={id}
-                type="button"
                 className={`tp-fields-sheet-field${selected ? ' is-selected' : ''}`}
-                onClick={() => onSelect(id)}
               >
-                <span className="tp-fields-sheet-field-icon" aria-hidden="true">✦</span>
-                <span className="tp-fields-sheet-field-copy">
-                  <strong>{field.name || 'Adsız Tarla'}</strong>
-                  <small>{field.crop || 'Ürün belirtilmedi'}</small>
-                </span>
-                <span className="tp-fields-sheet-field-status">{selected ? 'Seçili' : 'Aç →'}</span>
-              </button>
+                <button
+                  type="button"
+                  className="tp-fields-sheet-field-select"
+                  onClick={() => onSelect(id)}
+                  aria-label={`${field.name || 'Adsız Tarla'} tarlasını seç`}
+                >
+                  <span className="tp-fields-sheet-field-icon" aria-hidden="true">✦</span>
+                  <span className="tp-fields-sheet-field-copy">
+                    <strong>{field.name || 'Adsız Tarla'}</strong>
+                    <small>{field.crop || 'Ürün belirtilmedi'}</small>
+                  </span>
+                  {selected && <span className="tp-fields-sheet-field-status">Seçili</span>}
+                </button>
+                <button
+                  type="button"
+                  className="tp-fields-sheet-detail"
+                  onClick={() => onDetail(id)}
+                  aria-label={`${field.name || 'Adsız Tarla'} tarlasının detayını aç`}
+                >Detay</button>
+              </div>
             );
           }) : <p className="tp-fields-sheet-empty">Henüz kayıtlı tarlan yok.</p>}
         </div>
