@@ -10,6 +10,10 @@ import {
 } from '../../satellite/hooks/useFieldNdviTimeSeries';
 
 import {
+  isRecentSatelliteObservation,
+} from '../../satellite/services/buildHomeSatelliteDecision';
+
+import {
   useFieldPhenology,
 } from './useFieldPhenology';
 
@@ -116,10 +120,15 @@ export function useHomePhenologyInsight(
       ?.trend ??
     null;
 
+  const latestObservationDate =
+    seriesState?.data?.points?.at(-1)?.date ?? null;
+  const observationFresh =
+    isRecentSatelliteObservation(latestObservationDate);
+
   const ndviTrend =
     useMemo(
       () => {
-        if (!rawTrend) {
+        if (!rawTrend || !observationFresh) {
           return null;
         }
 
@@ -152,6 +161,7 @@ export function useHomePhenologyInsight(
         rawTrend?.latestAverage,
         rawTrend?.changeFromPrevious,
         rawTrend?.changeFromFirst,
+        observationFresh,
       ],
     );
 
@@ -465,9 +475,9 @@ export function useHomePhenologyInsight(
   );
 
   const trendUsable =
-    rawTrend?.quality ===
+    ndviTrend?.quality ===
       'usable' &&
-    rawTrend?.direction !==
+    ndviTrend?.direction !==
       'unknown';
 
   return {
@@ -501,10 +511,9 @@ export function useHomePhenologyInsight(
       'idle',
 
     timeSeriesMessage:
-      seriesState?.message ??
-      seriesState?.data
-        ?.message ??
-      null,
+      latestObservationDate && !observationFresh
+        ? 'Son uydu görüntüsü eski; güncel bitki gelişimi yorumunda kullanılmadı.'
+        : seriesState?.message ?? seriesState?.data?.message ?? null,
 
     timeSeriesObservationCount:
       rawTrend?.observationCount ??

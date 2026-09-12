@@ -11,6 +11,10 @@ import {
 } from '../../satellite/services/ndviTimeSeries.service';
 
 import {
+  isRecentSatelliteObservation,
+} from '../../satellite/services/buildHomeSatelliteDecision';
+
+import {
   buildFieldPhenology,
 } from './buildFieldPhenology';
 
@@ -536,8 +540,12 @@ export async function getFieldPhenologySnapshot(
       ? ndviSettled.value
       : null;
 
+  const latestObservationDate = ndvi?.points?.at(-1)?.date ?? null;
+  const referenceDate = options?.currentDate ? new Date(options.currentDate) : new Date();
+  const observationFresh = isRecentSatelliteObservation(latestObservationDate, referenceDate);
+
   const ndviTrend =
-    ndvi?.trend
+    ndvi?.trend && observationFresh
       ? {
           direction:
             ndvi.trend
@@ -775,6 +783,8 @@ export async function getFieldPhenologySnapshot(
           ? errorMessage(
               ndviSettled.reason,
             )
+          : latestObservationDate && !observationFresh
+            ? 'Son uydu görüntüsü eski; güncel bitki gelişimi yorumunda kullanılmadı.'
           : ndvi?.message ??
             null,
     },

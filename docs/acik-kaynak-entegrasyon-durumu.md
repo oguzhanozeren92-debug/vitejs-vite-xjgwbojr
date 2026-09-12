@@ -5,7 +5,7 @@ Bu belge, planlanan açık kaynak projeler ile TarlaPusula reposunda çalışan 
 | Planlanan araç | Amaç | Bu repodaki durum |
 | --- | --- | --- |
 | [pyfao56](https://github.com/kthorp/pyfao56) | FAO-56 referans ET ve günlük su dengesi karşılaştırması | `tools/pyfao56-poc` içinde sentetik verili, bağımsız çalıştırılabilir pilot. Uygulama akışına bağlı değil. Ön yüzde mevcut `cropWaterUse.service.ts` ve `rootZoneWater.service.ts` kendi hesabını yapıyor. |
-| [sentinelhub-py](https://github.com/sentinel-hub/sentinelhub-py) + [eo-learn](https://github.com/sentinel-hub/eo-learn) | Uydu zaman serisi ve sapma analizi | Paketler repoda yok. Ön yüz `satellite-ndvi-timeseries` adlı Supabase Edge işlevini çağırıyor; işlevin kaynak kodu bu repoda bulunmadığı için uydu sağlayıcısı ve arka uç işleyişi buradan doğrulanamıyor. |
+| [sentinelhub-py](https://github.com/sentinel-hub/sentinelhub-py) + [eo-learn](https://github.com/sentinel-hub/eo-learn) | Uydu zaman serisi ve sapma analizi | Paketler repoda yok. Canlı `satellite-ndvi-timeseries` Edge işlevinin kaynağı Supabase'de incelendi: Copernicus Data Space Sentinel-2 L2A Statistical API'yi doğrudan kullanıyor. Şimdilik yeni Python kütüphanesine gerek yok. |
 | [PCSE](https://github.com/ajwdewit/pcse) | Bitki gelişimi/fenoloji araştırması | Paket repoda yok. `phenologyEngine.ts` kendi TypeScript fenoloji kurallarını uyguluyor. |
 | [AgStack](https://github.com/agstack) OpenAgri / Asset Registry / AutoGeoBound | Tarla kimliği, sınır ve olay mimarisi | Uygulama entegrasyonu yok; araştırma aşamasında. |
 | [AquaCrop-OSPy](https://github.com/aquacropos/aquacrop) | Su/verim senaryoları | Repo bağımlılığı ve çalışan senaryo akışı yok. |
@@ -15,7 +15,7 @@ Bu belge, planlanan açık kaynak projeler ile TarlaPusula reposunda çalışan 
 ## Sonraki doğrulanabilir adımlar
 
 1. `tools/pyfao56-poc/compare.py` ile aynı günlerin doğrulanmış meteorolojik girdilerini, uygulamanın o günkü ET₀ ve Kc değerlerini yan yana değerlendirmek. ASCE referans ET ile Open-Meteo FAO ET₀ metodolojisini çıktıda ayrı etiketlemek. Bu **yalnızca referans ET ve aynı Kc üzerinden hesaplanan ET karşılaştırmasıdır**, gerçek sulama kararı karşılaştırması değildir. Farkların kaynağı anlaşılmadan canlı sulama kararı üretmemek.
-2. `satellite-ndvi-timeseries` Edge işlevinin kaynak kodunu ve veri sağlayıcısını bulup gerçek zaman serisinin kapsamını doğrulamak. Ardından Sentinel Hub / eo-learn gerekip gerekmediğine karar vermek.
+2. `satellite-ndvi-timeseries` kaynağı doğrulandı: Sentinel-2 L2A B04/B08 bantlarından NDVI hesaplanıyor; SCL ile bulut/gölge/kar ve geçersiz pikseller çıkarılıyor; günlük parsel ortalaması yalnızca yeterli geçerli piksel varsa trende giriyor. En az 3 gözlem ve 12 günlük aralık olmadan yön üretilmiyor. İstemci ayrıca son gözlemi 30 günden eskiyse bu eğilimi güncel fenoloji yorumuna almıyor. Bu kapsam için Sentinel Hub / eo-learn eklenmeyecek; ihtiyaç ancak mevcut gözlem/karar kalitesiyle karşılaştırılarak değerlendirilecek.
 3. PCSE ve AquaCrop için veri gereksinimlerini ve çıktıları küçük karşılaştırmalarla doğrulamak. Saha verisi, gerekli servis ve işletme maliyeti belirlenmeden Vercel ön yüzüne bağımlılık eklememek.
 4. AgStack, AgML ve FarmVibes.AI'yi ayrı araştırma/analiz işleri olarak değerlendirmek; yalnızca doğrulanan çıktıları mevcut karar katmanına taşımak.
 
