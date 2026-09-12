@@ -580,6 +580,7 @@ export default function HomeScreen(props: HomeScreenProps) {
             <HomeNotificationsCard
               notifications={homeNotificationPreview}
               notificationCount={homeNotificationCount}
+              fieldName={homeField?.name?.trim() || undefined}
               onOpen={() => setScreen('notificationsHub')}
             />
           </section>

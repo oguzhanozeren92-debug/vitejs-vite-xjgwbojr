@@ -7,17 +7,20 @@ export type HomeNotificationPreviewItem = {
   title: string;
   detail: string;
   dotTone: string;
+  source?: string;
 };
 
 type Props = {
   notifications: HomeNotificationPreviewItem[];
   notificationCount: number;
+  fieldName?: string;
   onOpen: () => void;
 };
 
 export default function HomeNotificationsCard({
   notifications,
   notificationCount,
+  fieldName,
   onOpen,
 }: Props) {
   return (
@@ -56,7 +59,9 @@ export default function HomeNotificationsCard({
 
         <p className="tp-home-notifications-subtitle">
           {notificationCount > 0
-            ? 'Tarlanla ilgili güncel gelişmeler burada.'
+            ? fieldName
+              ? `${fieldName} için güncel gelişmeler burada.`
+              : 'Tarlanla ilgili güncel gelişmeler burada.'
             : 'Şu an önemli bir gelişme görünmüyor.'}
         </p>
 
@@ -78,6 +83,11 @@ export default function HomeNotificationsCard({
                   draggable={false}
                 />
                 <span className="tp-home-notification-row-copy">
+                  {fieldName && notification.source !== 'calendar' && (
+                    <span className="tp-home-notification-field-name" title={fieldName}>
+                      {fieldName}
+                    </span>
+                  )}
                   <strong>{notification.title}</strong>
                   <small>{notification.detail}</small>
                 </span>
