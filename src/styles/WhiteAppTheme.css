@@ -518,11 +518,11 @@ html body .tp-v1 .tp-menu-btn .tp-nav-v2 {
   filter: grayscale(1) brightness(.75) contrast(1.4) !important;
 }
 
-/* Bring back the original satellite header artwork as a visible monochrome backdrop.
+/* The original satellite photograph now spans the entire header without white edge fades.
    Keep it on its own layer so the classic compass and moving needle retain their colors. */
 html body .tp-v1 .tp-v1-header {
-  background: #e9edf1 !important;
-  border-bottom: 1px solid #cbd2d9 !important;
+  background: #333940 !important;
+  border-bottom: 1px solid #707982 !important;
 }
 html body .tp-v1 .tp-v1-header::before {
   content: '' !important;
@@ -531,16 +531,11 @@ html body .tp-v1 .tp-v1-header::before {
   z-index: 0 !important;
   pointer-events: none !important;
   background: url('https://xwyfidtktauxivsosmex.supabase.co/storage/v1/object/public/ui-icons/backgrounds/global-header-satellite-v2.webp') center 58% / cover no-repeat !important;
-  filter: grayscale(1) contrast(1.2) !important;
-  opacity: .46 !important;
+  filter: grayscale(1) contrast(1.12) brightness(.86) !important;
+  opacity: 1 !important;
 }
 html body .tp-v1 .tp-v1-header::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background: linear-gradient(90deg, rgba(233,237,241,.78) 0%, transparent 24%, transparent 76%, rgba(233,237,241,.78) 100%);
+  display: none !important;
 }
 
 /* Reuse the drawer's original artwork as a monochrome layer behind solid menu rows. */
