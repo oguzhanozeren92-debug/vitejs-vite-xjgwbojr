@@ -2,7 +2,8 @@ import MobileWheelPicker from '../components/MobileWheelPicker';
 import PcsePilotReadiness from '../features/field-detail/components/PcsePilotReadiness';
 import FieldGrowthObservations from '../features/field-detail/components/FieldGrowthObservations';
 import SeasonModelInputs from '../features/field-detail/components/SeasonModelInputs';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import './FieldDetailLayout.css';
 import { getEntitlementSnapshot } from '../entitlements/useEntitlementStore';
 import { onboardingStyles } from '../styles/onboardingStyles';
 
@@ -122,6 +123,7 @@ export default function FieldDetailScreen(props: FieldDetailScreenProps) {
     yieldYear,
   } = props;
 
+  const [activeDetailTab, setActiveDetailTab] = useState<'overview' | 'production' | 'history'>('overview');
   const [deleteFieldOpen, setDeleteFieldOpen] = useState(false);
   const [deleteFieldLoading, setDeleteFieldLoading] = useState(false);
   const [deleteFieldError, setDeleteFieldError] = useState('');
@@ -140,10 +142,14 @@ export default function FieldDetailScreen(props: FieldDetailScreenProps) {
     }
   };
 
+  useEffect(() => { setActiveDetailTab('overview'); }, [selectedField.id]);
+  useEffect(() => { if (activityFormOpen) setActiveDetailTab('history'); }, [activityFormOpen]);
+
   const detailInfo = statusInfo[selectedField.status];
 
     const scrollFieldDetailTo = (id: string) => {
       setFieldFabOpen(false);
+      setActiveDetailTab(id === 'field-info' ? 'overview' : 'production');
       window.setTimeout(() => {
         document.getElementById(id)?.scrollIntoView({
           behavior: 'smooth',
@@ -170,7 +176,7 @@ export default function FieldDetailScreen(props: FieldDetailScreenProps) {
               <strong>{selectedField.name}</strong>
             </div>
 
-            <button className="tp-field-detail-more">•••</button>
+            <button type="button" className="tp-field-detail-more" aria-label="Tarla menüsünü aç" onClick={() => setFieldFabOpen(true)}>•••</button>
           </header>
 
           <main className="tp-field-detail-content">
@@ -224,94 +230,37 @@ export default function FieldDetailScreen(props: FieldDetailScreenProps) {
               </div>
             </section>
 
-            <section className="tp-field-detail-section">
-              <div className="tp-field-detail-section-head">
-                <div>
-                  <span className="tp-field-detail-kicker">TARLA ÖZETİ</span>
-                  <h2>Bugünkü durum</h2>
-                </div>
-                <span className="tp-field-detail-fresh">Yeni</span>
-              </div>
-
-              <div className="tp-field-detail-status-grid">
-                <article>
-                  <div className="tp-detail-icon">🛰️</div>
-                  <div>
-                    <strong>Uydu analizi</strong>
-                    <p>
-                      {selectedField.demo
-                        ? 'Güney bölümünde gelişim farklılığı örneği gösteriliyor.'
-                        : 'Uydu verisi bağlandığında bitki gelişimi ve farklılıklar burada gösterilecek.'}
-                    </p>
-                  </div>
-                </article>
-
-                <article>
-                  <div className="tp-detail-icon">🌦️</div>
-                  <div>
-                    <strong>Hava ve risk</strong>
-                    <p>
-                      Tarla konumuna özel yağış, sıcaklık ve risk uyarıları bu alanda gösterilecek.
-                    </p>
-                  </div>
-                </article>
-
-                <article>
-                  <div className="tp-detail-icon">📷</div>
-                  <div>
-                    <strong>Saha kontrolü</strong>
-                    <p>
-                      Fotoğraflı saha kontrolleri ve geçmiş notlar burada toplanacak.
-                    </p>
-                  </div>
-                </article>
-
-                <button
-                  type="button"
-                  className="tp-detail-soil-shortcut"
-                  onClick={() => openSoilAnalysisForField(selectedField)}
-                >
-                  <div className="tp-detail-icon">🧪</div>
-                  <div>
-                    <strong>Toprak analizi sonucu ekle</strong>
-                    <p>Bu tarlaya ait PDF veya fotoğraf raporunu yükle ve AI ile yorumla.</p>
-                  </div>
-                  <span>→</span>
+            <div className="tp-field-detail-tabs" role="group" aria-label="Tarla detayı bölümleri">
+              {([['overview', 'Özet'], ['production', 'Üretim'], ['history', 'İşlemler']] as const).map(([key, label]) => (
+                <button key={key} type="button" aria-pressed={activeDetailTab === key}
+                  className={activeDetailTab === key ? 'active' : ''} onClick={() => setActiveDetailTab(key)}>
+                  {label}
                 </button>
-              </div>
-            </section>
+              ))}
+            </div>
 
-            <section className="tp-field-detail-section">
-              <div className="tp-field-detail-section-head">
-                <div>
-                  <span className="tp-field-detail-kicker">HARİTA</span>
-                  <h2>Tarla sınırı ve bölümler</h2>
-                </div>
-              </div>
-
-              <div className="tp-field-detail-map-card">
-                <div className="tp-field-detail-map-shape">
-                  <div />
-                </div>
-
-                <div className="tp-field-detail-map-copy">
-                  <strong>Tarla haritası hazırlanıyor</strong>
-                  <p>
-                    Parsel sınırı veya üreticinin çizdiği alan burada gösterilecek.
-                    Aynı tarlada farklı ürünler varsa bölümleri ayrıca işaretleyebileceğiz.
-                  </p>
-                </div>
-
-                <button
-                  onClick={() =>
-                    alert('Harita çizim ve parsel sınırı ekranını sonraki aşamada bağlayacağız.')
-                  }
-                >
-                  🗺️ Haritayı Aç
+            {activeDetailTab === 'overview' && (
+              <section className="tp-field-detail-overview" aria-label="Tarla kayıtları özeti">
+                <h2>Bu tarlada neler var?</h2>
+                <p>Gerçek kayıtlarına buradan ulaşabilirsin.</p>
+                <button type="button" onClick={() => setActiveDetailTab('production')}>
+                  <span><strong>Ürün ve bölümler</strong><small>{historyLoading || sectionsLoading ? 'Kayıtlar yükleniyor…' : `${(selectedField.cropCycle ?? 'annual') === 'perennial' ? perennialYields.length : annualSeasons.length} sezon/verim · ${fieldSections.length} bölüm`}</small></span>
+                  <span aria-hidden="true">›</span>
                 </button>
-              </div>
-            </section>
+                <button type="button" onClick={() => setActiveDetailTab('history')}>
+                  <span><strong>Yapılan işlemler</strong><small>{activitiesLoading ? 'Kayıtlar yükleniyor…' : `${activities.length} işlem kayıtlı`}</small></span>
+                  <span aria-hidden="true">›</span>
+                </button>
+                {!selectedField.demo && (
+                  <button type="button" onClick={() => openSoilAnalysisForField(selectedField)}>
+                    <span><strong>Toprak analizi</strong><small>Bu tarlanın raporlarını gör veya ekle</small></span>
+                    <span aria-hidden="true">›</span>
+                  </button>
+                )}
+              </section>
+            )}
 
+            {activeDetailTab === 'production' && (
             <section id="field-production" className="tp-field-detail-section">
               <div className="tp-field-detail-section-head">
                 <div>
@@ -535,7 +484,9 @@ export default function FieldDetailScreen(props: FieldDetailScreenProps) {
                   </button>
                 </div>
 
-                {!selectedField.demo && (selectedField.cropCycle ?? 'annual') === 'annual' && (
+                {!selectedField.demo && (<details className="tp-field-detail-deep">
+                  <summary>Gelişim takibi ve sezon verileri <span aria-hidden="true">⌄</span></summary>
+                {(selectedField.cropCycle ?? 'annual') === 'annual' && (
                   <PcsePilotReadiness
                     field={selectedField}
                     seasons={annualSeasons}
@@ -551,13 +502,12 @@ export default function FieldDetailScreen(props: FieldDetailScreenProps) {
                   />
                 )}
 
-                {!selectedField.demo && (selectedField.cropCycle ?? 'annual') === 'annual' && (
+                {(selectedField.cropCycle ?? 'annual') === 'annual' && (
                   <FieldGrowthObservations fieldId={String(selectedField.id)} seasons={annualSeasons} />
                 )}
 
-                {!selectedField.demo && (
-                  <SeasonModelInputs field={selectedField} seasons={annualSeasons} seasonsLoading={historyLoading} />
-                )}
+                <SeasonModelInputs field={selectedField} seasons={annualSeasons} seasonsLoading={historyLoading} />
+                </details>)}
 
                 {!selectedField.demo && (
                   <div className="tp-production-history-block">
@@ -1037,6 +987,9 @@ export default function FieldDetailScreen(props: FieldDetailScreenProps) {
               </div>
             </section>
 
+            )}
+
+            {activeDetailTab === 'history' && (
             <section className="tp-field-detail-section">
               <div className="tp-field-detail-section-head">
                 <div>
@@ -1588,45 +1541,7 @@ export default function FieldDetailScreen(props: FieldDetailScreenProps) {
               )}
             </section>
 
-            <section className="tp-field-detail-section">
-              <div className="tp-field-detail-section-head">
-                <div>
-                  <span className="tp-field-detail-kicker">HIZLI İŞLEMLER</span>
-                  <h2>Tarlada ne yapmak istiyorsun?</h2>
-                </div>
-              </div>
-
-              <div className="tp-field-quick-actions">
-                <button onClick={() => openActivityForm('Saha Kontrolü')}>
-                  <span>📷</span>
-                  <strong>Kontrol Yap</strong>
-                  <small>Saha notu ve fotoğraf ekle</small>
-                </button>
-
-                <button onClick={() => openActivityForm('Gübreleme')}>
-                  <span>🧪</span>
-                  <strong>Gübre Kaydı</strong>
-                  <small>Uygulama ve miktar kaydet</small>
-                </button>
-                <button onClick={() => openActivityForm('İlaçlama')}>
-                  <span>🧴</span>
-                  <strong>İlaçlama</strong>
-                  <small>Doz ve toplam kullanımı kaydet</small>
-                </button>
-
-                <button onClick={() => openActivityForm('Sulama')}>
-                  <span>💧</span>
-                  <strong>Sulama</strong>
-                  <small>Sulama işlemi ekle</small>
-                </button>
-
-                <button onClick={() => openReminderModal(selectedField)}>
-                  <span>🗓️</span>
-                  <strong>Takvime Ekle</strong>
-                  <small>Hatırlatma oluştur</small>
-                </button>
-              </div>
-            </section>
+            )}
           </main>
 
           {fieldFabOpen && (
@@ -1745,8 +1660,8 @@ export default function FieldDetailScreen(props: FieldDetailScreenProps) {
               Ana Sayfa
             </button>
 
-            <button className="active">
-              <span>🌾</span>
+            <button type="button" className={activeDetailTab === 'overview' ? 'active' : ''} onClick={() => setActiveDetailTab('overview')}>
+              <span>▢</span>
               Tarla Detayı
             </button>
 
@@ -1758,14 +1673,14 @@ export default function FieldDetailScreen(props: FieldDetailScreenProps) {
               AI Analiz
             </button>
 
-            <button>
-              <span>▣</span>
-              Takvim
+            <button type="button" className={activeDetailTab === 'production' ? 'active' : ''} onClick={() => setActiveDetailTab('production')}>
+              <span>▦</span>
+              Üretim
             </button>
 
-            <button>
-              <span>•••</span>
-              Daha Fazla
+            <button type="button" className={activeDetailTab === 'history' ? 'active' : ''} onClick={() => setActiveDetailTab('history')}>
+              <span>☷</span>
+              İşlemler
             </button>
           </nav>
         </div>
