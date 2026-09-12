@@ -938,6 +938,55 @@ const CSS = String.raw`
   }
 }
 
+/* Mobilde harita dikey tam ekran açılır; cihaz yönünü değiştirmez. */
+@media(max-width:760px){
+  .tp-map-first-shell.tp-map-portrait-active,
+  .tp-map-first-shell.tp-map-portrait-active .tp-home-field{
+    overflow:visible!important;
+    isolation:auto!important;
+    z-index:2147483000!important;
+  }
+
+  .tp-map-first-shell .tp-map-stage.tp-map-portrait-fullscreen{
+    position:fixed!important;
+    inset:0!important;
+    z-index:2147483001!important;
+    width:100vw!important;
+    height:100vh!important;
+    height:100dvh!important;
+    min-height:100vh!important;
+    min-height:100dvh!important;
+    margin:0!important;
+    border:0!important;
+    border-radius:0!important;
+    background:#020804!important;
+  }
+
+  .tp-map-first-shell .tp-map-stage.tp-map-portrait-fullscreen>.tp-real-home-map,
+  .tp-map-first-shell .tp-map-stage.tp-map-portrait-fullscreen .tp-real-home-map-canvas{
+    height:100%!important;
+    min-height:100%!important;
+  }
+
+  .tp-map-portrait-close{
+    position:absolute;
+    z-index:100;
+    top:max(12px, env(safe-area-inset-top));
+    left:50%;
+    transform:translateX(-50%);
+    width:44px;
+    height:44px;
+    display:grid;
+    place-items:center;
+    border:1px solid rgba(128,161,136,.32);
+    border-radius:12px;
+    background:rgba(2,10,5,.92);
+    color:#e5f5e8;
+    font:600 27px/1 system-ui,sans-serif;
+    box-shadow:0 6px 20px rgba(0,0,0,.35);
+  }
+}
+
 `
 
 function LayerIcon() {
@@ -957,6 +1006,7 @@ export default function HomeMapSectionMapFirst(
   const [fieldToolbar, setFieldToolbar] = useState<HTMLElement | null>(null);
   const [layerMenuOpen, setLayerMenuOpen] = useState(false);
   const [subLayerMenuOpen, setSubLayerMenuOpen] = useState(false);
+  const [portraitExpanded, setPortraitExpanded] = useState(false);
 
   // Haritayı mümkün olduğunca açık tutmak için lejant varsayılan kapalı.
   const [ndviLegendOpen, setNdviLegendOpen] = useState(false);
@@ -1007,6 +1057,74 @@ export default function HomeMapSectionMapFirst(
       activeLayer === 'soil' || activeLayer === 'climate',
     );
   }, [activeLayer]);
+
+  useEffect(() => {
+    if (!mapStage) return;
+
+    let touchStart: { id: number; x: number; y: number; cancelled: boolean } | null = null;
+    const isMobile = () => window.matchMedia('(max-width:760px)').matches;
+    const onPointerDown = (event: PointerEvent) => {
+      if (touchStart) {
+        touchStart.cancelled = true;
+        return;
+      }
+      if (!isMobile() || !(event.target instanceof HTMLCanvasElement)) return;
+      touchStart = { id: event.pointerId, x: event.clientX, y: event.clientY, cancelled: false };
+    };
+    const onPointerUp = (event: PointerEvent) => {
+      if (!touchStart || touchStart.id !== event.pointerId) return;
+      const start = touchStart;
+      touchStart = null;
+      if (
+        start.cancelled ||
+        !(event.target instanceof HTMLCanvasElement) ||
+        Math.hypot(event.clientX - start.x, event.clientY - start.y) > 10
+      ) return;
+      setPortraitExpanded(true);
+    };
+    const onPointerCancel = () => { touchStart = null; };
+
+    mapStage.addEventListener('pointerdown', onPointerDown);
+    mapStage.addEventListener('pointerup', onPointerUp);
+    mapStage.addEventListener('pointercancel', onPointerCancel);
+    return () => {
+      mapStage.removeEventListener('pointerdown', onPointerDown);
+      mapStage.removeEventListener('pointerup', onPointerUp);
+      mapStage.removeEventListener('pointercancel', onPointerCancel);
+    };
+  }, [mapStage]);
+
+  useEffect(() => {
+    if (!portraitExpanded || !mapStage) return;
+
+    const root = rootRef.current;
+    const parent = root?.querySelector('.tp-home-field');
+    const oldOverflow = document.body.style.overflow;
+    const oldRootOverflow = document.documentElement.style.overflow;
+    root?.classList.add('tp-map-portrait-active');
+    parent?.classList.add('tp-map-portrait-parent');
+    mapStage.classList.add('tp-map-portrait-fullscreen');
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    const resizeMap = () => window.dispatchEvent(new Event('resize'));
+    const frame = window.requestAnimationFrame(resizeMap);
+    const onEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setPortraitExpanded(false);
+    };
+    document.addEventListener('keydown', onEscape);
+
+    return () => {
+      document.removeEventListener('keydown', onEscape);
+      window.cancelAnimationFrame(frame);
+      root?.classList.remove('tp-map-portrait-active');
+      parent?.classList.remove('tp-map-portrait-parent');
+      mapStage.classList.remove('tp-map-portrait-fullscreen');
+      document.body.style.overflow = oldOverflow;
+      document.documentElement.style.overflow = oldRootOverflow;
+      window.requestAnimationFrame(resizeMap);
+    };
+  }, [portraitExpanded, mapStage]);
 
   const selectLayer = (layer: HomeLayer) => {
     setLayerMenuOpen(false);
@@ -1370,14 +1488,42 @@ export default function HomeMapSectionMapFirst(
         )
       : null;
 
+  const portraitClose = portraitExpanded && mapStage
+    ? createPortal(
+        <button
+          type="button"
+          className="tp-map-portrait-close"
+          aria-label="Tam ekran haritayı kapat"
+          onClick={() => setPortraitExpanded(false)}
+        >
+          ×
+        </button>,
+        mapStage,
+      )
+    : null;
+
   return (
-    <div ref={rootRef} className="tp-map-first-shell">
+    <div
+      ref={rootRef}
+      className="tp-map-first-shell"
+      onClickCapture={(event) => {
+        if (
+          window.matchMedia('(max-width:760px)').matches &&
+          (event.target as Element).closest('.tp-map-fullscreen-btn')
+        ) {
+          event.preventDefault();
+          event.stopPropagation();
+          setPortraitExpanded((current) => !current);
+        }
+      }}
+    >
       <style>{CSS}</style>
 
       <HomeMapSection {...props} />
 
       {operationToolbarButton}
       {mapOverlay}
+      {portraitClose}
     </div>
   );
 }
