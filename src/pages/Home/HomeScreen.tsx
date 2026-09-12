@@ -313,6 +313,7 @@ export default function HomeScreen(props: HomeScreenProps) {
   const {
     todayDecisions: todayDecisionCards,
     notifications: homeSystemNotifications,
+    pusulaDecision,
   } = useHomeDecisionEngine({
     fieldKey,
     activeHomeLayer,
@@ -693,6 +694,8 @@ export default function HomeScreen(props: HomeScreenProps) {
               result={homePusulaResult}
               synthesis={fieldSynthesis}
               error={homePusulaError}
+              decision={pusulaDecision}
+              onOpenDecision={openHomeInsightTarget}
               onOpenLayer={(layer) => {
                 openMapLayer(layer as HomeLayer);
 

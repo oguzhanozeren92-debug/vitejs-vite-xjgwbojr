@@ -25,6 +25,7 @@ export type HomeDecisionEvent = {
   label: string;
   title: string;
   detail: string;
+  evidence?: string[];
   today?: { tone: string; visual: 'irrigation' | 'spraying'; iconKey: HomeTodayIconKey; iconClass: 'leaf' | 'water' };
   notification?: { iconKey: 'leaf' | 'rain' | 'document'; iconTone: 'green' | 'cyan' | 'gold'; dotTone: 'info' | 'warning' | 'danger' };
 };

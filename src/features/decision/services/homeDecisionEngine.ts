@@ -164,6 +164,7 @@ function irrigationEvent(
   const waterLabel = compactText(decision.display?.waterLabel, 76);
   const netWaterMm = finiteNumber(decision.recommendation?.netWaterMm);
   const daysToThreshold = finiteNumber(decision.waterBalance?.daysToStressThreshold);
+  const evidence = (decision.reasons ?? []).map((reason) => String(reason).trim()).filter(Boolean).slice(0, 3);
 
   if (code === 'irrigate_now') {
     return {
@@ -172,8 +173,8 @@ function irrigationEvent(
       source: 'irrigation',
       priority: 112,
       severity: 'danger',
-      target: 'weather',
-      channels: ['today', 'notification'],
+      target: 'irrigation_detail',
+      channels: ['today', 'notification', 'pusula'],
       label: 'SULAMA',
       title: headline || 'Sulama Gerekli',
       detail:
@@ -182,6 +183,7 @@ function irrigationEvent(
         action ||
         summary ||
         'Kök bölgesi su açığı stres eşiğine ulaştı.',
+      evidence,
       today: {
         tone: 'red',
         visual: 'irrigation',
@@ -203,8 +205,8 @@ function irrigationEvent(
       source: 'irrigation',
       priority: 98,
       severity: 'warning',
-      target: 'weather',
-      channels: ['today', 'notification'],
+      target: 'irrigation_detail',
+      channels: ['today', 'notification', 'pusula'],
       label: 'SULAMA',
       title: headline || 'Sulama Zamanı Yaklaşıyor',
       detail:
@@ -214,6 +216,7 @@ function irrigationEvent(
         action ||
         summary ||
         'Kök bölgesi su açığı stres eşiğine yaklaşıyor.',
+      evidence,
       today: {
         tone: 'amber',
         visual: 'irrigation',
@@ -337,6 +340,7 @@ function irrigationEvent(
               : 'Su Stresi Riski Yükseliyor'
           ),
         detail,
+        evidence,
         today: {
           tone: riskIsHigh ? 'red' : 'amber',
           visual: 'irrigation',

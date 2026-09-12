@@ -38,10 +38,15 @@ export function buildHomeSatelliteDecision(
     priority: 78,
     severity: 'warning',
     target: 'map_vegetation',
-    channels: ['today', 'notification'],
+    channels: ['today', 'notification', 'pusula'],
     label: 'UYDU TAKİBİ',
     title: 'NDVI Eğilimini Kontrol Et',
     detail: 'Bitki örtüsü sinyali azalıyor; haritadaki alanları sahada karşılaştır.',
+    evidence: [
+      `Son ${trend.spanDays} günde ${trend.observationCount} uydu gözlemi karşılaştırıldı.`,
+      `Son gözlem: ${new Intl.DateTimeFormat('tr-TR', { day: 'numeric', month: 'short' }).format(new Date(trend.latestDate!))}.`,
+      'Ürün aktif gelişim döneminde.',
+    ],
     today: { tone: 'amber', visual: 'spraying', iconKey: 'leaf-green', iconClass: 'leaf' },
     notification: { iconKey: 'leaf', iconTone: 'green', dotTone: 'warning' },
   };

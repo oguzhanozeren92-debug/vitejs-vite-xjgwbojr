@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { PUSULA_BODY_SRC } from '../../home/homeAssets';
+import type { HomeDecisionEvent, HomeDecisionTarget } from '../../decision/types/homeDecision';
 
 type Props = {
   fieldName: string;
@@ -10,6 +11,8 @@ type Props = {
   result?: any;
   synthesis?: any;
   error?: string | null;
+  decision?: HomeDecisionEvent | null;
+  onOpenDecision?: (target: HomeDecisionTarget) => void;
   onOpenLayer?: (layer: string) => void;
   onShowOnMap: () => void;
 };
@@ -333,6 +336,20 @@ const CSS = String.raw`
   color: rgba(216, 230, 219, .78);
   font-size: 10px;
   line-height: 1.45;
+}
+
+.tp-home-map-why-action-link {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid rgba(105, 190, 125, .26);
+  border-radius: 10px;
+  background: rgba(18, 61, 33, .35);
+  color: #c7e9cf;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 
@@ -969,6 +986,8 @@ export default function HomeMapPusulaStrip({
   result,
   synthesis,
   error,
+  decision,
+  onOpenDecision,
   onOpenLayer,
   onShowOnMap,
 }: Props) {
@@ -977,29 +996,34 @@ export default function HomeMapPusulaStrip({
   const importantArea =
     resolvedSpatialImportantArea(result);
 
-  const signal = useMemo(
-    () => resolvePusulaSignal(result, importantArea),
-    [result, importantArea],
+  const signal = useMemo<PusulaSignal | null>(
+    () => decision
+      ? { tone: decision.severity === 'danger' ? 'negative' as const : 'attention' as const, label: decision.severity === 'danger' ? 'Dikkat' : 'Kontrol' }
+      : resolvePusulaSignal(result, importantArea),
+    [decision, result, importantArea],
   );
 
   const reasons = useMemo(
     () =>
-      Array.isArray(analysis?.reasons)
+      decision
+        ? (decision.evidence ?? []).map(cleanText).filter(Boolean).slice(0, 3)
+        : Array.isArray(analysis?.reasons)
         ? analysis.reasons
             .map((item: unknown) => cleanText(item))
             .filter(Boolean)
             .slice(0, 3)
         : [],
-    [analysis?.reasons],
+    [decision, analysis?.reasons],
   );
 
 
   const evidenceLayers = useMemo(
-    () => buildEvidenceLayers(result, synthesis, layerLabel),
-    [result, synthesis, layerLabel],
+    () => decision ? [] : buildEvidenceLayers(result, synthesis, layerLabel),
+    [decision, result, synthesis, layerLabel],
   );
 
   const compactText = useMemo(() => {
+    if (decision) return `${decision.title}: ${completeSentence(decision.detail)}`;
     if (loading) return `${layerLabel} verisi yorumlanıyor…`;
     if (error) return 'Pusula bu katmanı şu an yorumlayamadı.';
 
@@ -1026,6 +1050,7 @@ export default function HomeMapPusulaStrip({
       `${fieldName} için harita verileri değerlendiriliyor.`
     );
   }, [
+    decision,
     loading,
     error,
     signal?.text,
@@ -1038,7 +1063,7 @@ export default function HomeMapPusulaStrip({
     layerLabel,
   ]);
 
-  const action = trimCompact(analysis?.action, 150);
+  const action = decision ? '' : trimCompact(analysis?.action, 150);
   const canExplain = reasons.length > 0 || Boolean(action) || evidenceLayers.length > 0;
 
   /*
@@ -1085,8 +1110,8 @@ export default function HomeMapPusulaStrip({
       <section
         className={[
           'tp-home-map-pusula-strip',
-          loading ? 'is-loading' : '',
-          error ? 'has-error' : '',
+          loading && !decision ? 'is-loading' : '',
+          error && !decision ? 'has-error' : '',
         ]
           .filter(Boolean)
           .join(' ')}
@@ -1099,7 +1124,7 @@ export default function HomeMapPusulaStrip({
         <div className="tp-home-map-pusula-copy">
           <div className="tp-home-map-pusula-kicker">
             PUSULA
-            <span>{layerLabel}</span>
+            <span>{decision ? `${fieldName} · ${decision.label}` : layerLabel}</span>
             {signal ? (
               <em
                 className={`tp-home-map-pusula-signal ${signal.tone}`}
@@ -1125,10 +1150,10 @@ export default function HomeMapPusulaStrip({
           <button
             type="button"
             className="tp-home-map-pusula-show"
-            disabled={!canShowOnMap}
-            onClick={onShowOnMap}
+            disabled={decision ? !onOpenDecision : !canShowOnMap}
+            onClick={() => decision && onOpenDecision ? onOpenDecision(decision.target) : onShowOnMap()}
           >
-            Haritada göster
+            {decision ? 'Detayı aç' : 'Haritada göster'}
           </button>
         </div>
       </section>
@@ -1222,6 +1247,15 @@ export default function HomeMapPusulaStrip({
 
               {action ? (
                 <p className="tp-home-map-why-action">{action}</p>
+              ) : null}
+              {decision && onOpenDecision ? (
+                <button
+                  type="button"
+                  className="tp-home-map-why-action-link"
+                  onClick={() => { setWhyOpen(false); onOpenDecision(decision.target); }}
+                >
+                  İlgili veriyi aç →
+                </button>
               ) : null}
             </div>
           </section>

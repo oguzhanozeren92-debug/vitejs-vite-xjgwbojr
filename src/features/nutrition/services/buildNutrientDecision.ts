@@ -49,11 +49,16 @@ export function buildNutrientDecision(
   return {
     id: `nutrition:${fieldId}:${analysis.id}:report-review`,
     group: 'nutrition', source: 'nutrition', priority: analysis.status === 'alert' ? 76 : 62,
-    severity: 'warning', target: 'soil', channels: ['today', 'notification'],
+    severity: 'warning', target: 'soil', channels: ['today', 'notification', 'pusula'],
     label: 'TOPRAK ANALİZİ', title: 'Analiz Raporunu İncele',
     detail: recentFertilization
       ? 'Rapordaki uyarıyı son gübreleme kaydınla birlikte değerlendir.'
       : 'Raporda incelenmesi gereken bulgular var; uygulamadan önce kontrol et.',
+    evidence: [
+      'Bu tarlaya ait laboratuvar raporu mevcut.',
+      `Rapor durumu: ${analysis.status === 'alert' ? 'uyarı' : 'kontrol'}.`,
+      ...(recentFertilization ? ['Son gübreleme kaydı da mevcut.'] : []),
+    ],
     today: { tone: 'amber', visual: 'spraying', iconKey: 'document', iconClass: 'leaf' },
     notification: { iconKey: 'document', iconTone: 'gold', dotTone: 'warning' },
   };
