@@ -562,3 +562,22 @@ html body .tp-premium-drawer .tp-premium-drawer-atmosphere::before {
 html body .tp-premium-drawer .tp-premium-drawer-atmosphere::after {
   display: none !important;
 }
+
+/* A charcoal canvas lets the artwork read as an image instead of a washed-out tint. */
+html body .tp-premium-drawer {
+  background: #30363d !important;
+  border-color: #59616b !important;
+}
+html body .tp-premium-drawer .tp-premium-drawer-atmosphere::before {
+  opacity: .7 !important;
+  filter: grayscale(1) contrast(1.25) brightness(.78) !important;
+}
+html body .tp-premium-drawer .tp-premium-drawer-brand-name,
+html body .tp-premium-drawer .tp-premium-drawer-brand-name em,
+html body .tp-premium-drawer .tp-premium-drawer-welcome strong {
+  color: #fff !important;
+}
+html body .tp-premium-drawer .tp-premium-drawer-welcome :is(small,p),
+html body .tp-premium-drawer .tp-premium-drawer-foot-art span {
+  color: #e5e8ec !important;
+}
