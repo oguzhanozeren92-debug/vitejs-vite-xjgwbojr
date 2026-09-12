@@ -55,6 +55,23 @@ export function useHomePusula({
   const [loadingDots, setLoadingDots] = useState('.');
   const synthesisSeenRef = useRef(new Set<string>());
   const requestRef = useRef(0);
+  const scope = `${fieldKey}:${layer}:${soilProperty}:${soilDepth}:${climateLayer}:${climateDepth}`;
+  const [resultScope, setResultScope] = useState('');
+  const [synthesisScope, setSynthesisScope] = useState('');
+  const visibleResult = resultScope === scope ? result : null;
+  const visibleSynthesis = synthesisScope === scope ? fieldSynthesis : null;
+
+  useEffect(() => {
+    ++requestRef.current;
+    synthesisSeenRef.current.clear();
+    setResult(null);
+    setResultScope('');
+    setFieldSynthesis(null);
+    setSynthesisScope('');
+    setError(null);
+    setLoading(false);
+    setArrivalVisible(false);
+  }, [scope]);
 
   const getLayerLabel = (requestedLayer: HomeLayer) => {
     if (requestedLayer === 'soil') {
@@ -255,6 +272,7 @@ export function useHomePusula({
           };
 
       setFieldSynthesis(alignedSynthesis);
+      setSynthesisScope(scope);
 
       if (
         Number(alignedSynthesis?.layerCount ?? 0) >= 2 &&
@@ -310,6 +328,7 @@ export function useHomePusula({
         interpretedLayer: requestedLayer,
         interpretedLayerLabel: getLayerLabel(requestedLayer),
       });
+      setResultScope(scope);
 
       void runFieldSynthesis({
         memoryKey:
@@ -353,14 +372,14 @@ export function useHomePusula({
     return {
       id: `home:${fieldKey}:${layer}:${dateKey}`,
       gozlem: String(
-        result?.analysis?.importantArea
-          ? `${titleCaseEachWordTr(result.analysis.importantArea.area)} bölümünde: ${result.analysis.importantArea.summary}`
-          : result?.analysis?.summary ||
+        visibleResult?.analysis?.importantArea
+          ? `${titleCaseEachWordTr(visibleResult.analysis.importantArea.area)} bölümünde: ${visibleResult.analysis.importantArea.summary}`
+          : visibleResult?.analysis?.summary ||
               satellite?.summary ||
               `${field?.name ?? 'Tarlan'} için güncel tarla verilerini kontrol ettim.`,
       ),
       yonlendirme: String(
-        result?.analysis?.action ||
+        visibleResult?.analysis?.action ||
           satellite?.recommendations?.[0] ||
           'Uydu, radar, toprak, iklim ve tür gözlemlerini birlikte takip etmeye devam etmeni öneririm.',
       ),
@@ -378,7 +397,7 @@ export function useHomePusula({
     satellite?.summary,
     satellite?.recommendations,
     satellite?.status,
-    result,
+    visibleResult,
   ]);
 
   const activeLayerGuide = getHomeLayerFarmerGuide(
@@ -389,12 +408,12 @@ export function useHomePusula({
 
   const layerLabel = getLayerLabel(layer);
   const headline =
-    result?.analysis?.headline ||
+    visibleResult?.analysis?.headline ||
     `${layerLabel} haritası için Pusula yorumu hazırlanıyor.`;
 
   const summary = (() => {
     const raw =
-      result?.analysis?.summary ||
+      visibleResult?.analysis?.summary ||
       `${activeLayerGuide.title} katmanı açıldığında Pusula tarlana ait veriyi okuyup önemli gördüğü alanı burada açıklayacak.`;
 
     const farmerFriendlyRaw = String(raw)
@@ -433,10 +452,10 @@ export function useHomePusula({
 
   return {
     loading,
-    result,
+    result: visibleResult,
     error,
-    fieldSynthesis,
-    arrivalVisible,
+    fieldSynthesis: visibleSynthesis,
+    arrivalVisible: arrivalVisible && synthesisScope === scope,
     loadingDots,
     setSpatialSummary,
     run,
