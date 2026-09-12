@@ -1,4 +1,5 @@
 import MobileWheelPicker from '../components/MobileWheelPicker';
+import PcsePilotReadiness from '../features/field-detail/components/PcsePilotReadiness';
 import { onboardingStyles } from '../styles/onboardingStyles';
 
 type FieldDetailScreenProps = Record<string, any>;
@@ -510,6 +511,22 @@ export default function FieldDetailScreen(props: FieldDetailScreenProps) {
                       : '🕘 Yeni Sezon Ekle'}
                   </button>
                 </div>
+
+                {!selectedField.demo && (selectedField.cropCycle ?? 'annual') === 'annual' && (
+                  <PcsePilotReadiness
+                    field={selectedField}
+                    seasons={annualSeasons}
+                    loading={historyLoading}
+                    onAddSeason={() => {
+                      resetAnnualForm();
+                      setAnnualFormOpen(true);
+                    }}
+                    onEditCropType={() => {
+                      setProductionProfileMessage('');
+                      setProductionProfileOpen(true);
+                    }}
+                  />
+                )}
 
                 {!selectedField.demo && (
                   <div className="tp-production-history-block">
