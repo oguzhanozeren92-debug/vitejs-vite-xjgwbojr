@@ -581,3 +581,23 @@ html body .tp-premium-drawer .tp-premium-drawer-welcome :is(small,p),
 html body .tp-premium-drawer .tp-premium-drawer-foot-art span {
   color: #e5e8ec !important;
 }
+
+/* Map labels and the five-day forecast need a stronger light-theme hierarchy. */
+html body .tp-v1 .tp-mf-ndvi .tp-mf-ndvi-handle :is(b,i) {
+  color: #fff !important;
+  opacity: 1 !important;
+  text-shadow: 0 1px 2px #0008 !important;
+}
+html body .tp-v1 .tp-home-forecast {
+  background: #e9edf1 !important;
+  border: 1px solid #b8c3ce !important;
+  box-shadow: 0 7px 22px #25313c20 !important;
+  padding: 16px !important;
+}
+html body .tp-v1 .tp-home-forecast-heading strong {
+  color: #1f2933 !important;
+  font-size: 17px !important;
+}
+html body .tp-v1 .tp-home-forecast-heading > span { font-size: 12px !important; font-weight: 750 !important; }
+html body .tp-v1 .tp-home-forecast-day strong { font-size: 21px !important; }
+html body .tp-v1 .tp-home-forecast-day :is(span,small) { font-size: 11px !important; color: #4f5c69 !important; }

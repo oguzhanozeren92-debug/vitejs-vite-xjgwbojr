@@ -33,7 +33,7 @@ export default function HomeFieldDataStatus({
 
   useEffect(() => {
     if (!mapCorner) return;
-    const syncStage = () => setMapStage(document.querySelector<HTMLElement>('.tp-map-first-shell .tp-map-stage'));
+    const syncStage = () => setMapStage(document.querySelector<HTMLElement>('.tp-map-first-shell .tp-map-stage .tp-real-home-map'));
     syncStage();
     const observer = new MutationObserver(syncStage);
     observer.observe(document.body, { childList: true, subtree: true });

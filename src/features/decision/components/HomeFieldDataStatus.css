@@ -87,9 +87,9 @@
 }
 
 /* Keep the data breakdown behind a single accessible control on the map. */
-.tp-map-stage > .tp-home-map-info {
+.tp-real-home-map > .tp-home-map-info {
   position: absolute !important;
-  z-index: 40 !important;
+  z-index: 1000 !important;
   right: 12px !important;
   bottom: 12px !important;
   width: 42px !important;
@@ -106,7 +106,7 @@
   font: 800 22px Georgia, serif !important;
   cursor: pointer;
 }
-.tp-map-stage > .tp-home-map-info:focus-visible { outline: 3px solid #25313c; outline-offset: 3px; }
+.tp-real-home-map > .tp-home-map-info:focus-visible { outline: 3px solid #25313c; outline-offset: 3px; }
 .tp-home-data-dialog {
   position: fixed;
   inset: auto 0 0;
