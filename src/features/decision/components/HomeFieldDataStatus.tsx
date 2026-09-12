@@ -20,10 +20,10 @@ export default function HomeFieldDataStatus({
   return (
     <details className="tp-home-data-status">
       <summary>
-        <span className="tp-home-data-status-mark" aria-hidden="true">⌁</span>
         <span className="tp-home-data-status-heading">
-          <strong>Tarla verileri</strong>
-          <small>{fieldName ? `${fieldName} · ${readyCount}/${items.length} kaynak hazır` : 'Önce bir tarla ekle'}</small>
+          <small>Tarla verileri</small>
+          <strong>{fieldName ? `${readyCount}/${items.length} kaynak hazır` : 'Tarla ekle'}</strong>
+          <small>{fieldName ? `${fieldName} · Ayrıntıları gör` : 'Veri durumunu görmek için'}</small>
         </span>
         <span className="tp-home-data-status-chevron" aria-hidden="true">⌄</span>
       </summary>

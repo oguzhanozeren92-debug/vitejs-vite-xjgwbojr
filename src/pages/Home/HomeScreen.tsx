@@ -738,10 +738,6 @@ export default function HomeScreen(props: HomeScreenProps) {
                 }
               }}
             />
-            <HomeFieldDataStatus
-              fieldName={homeField?.demo || String(homeField?.id ?? '').startsWith('demo') ? null : homeField?.name}
-              items={fieldDataStatuses}
-            />
           </div>
 
           <section className="tp-today">
@@ -758,11 +754,10 @@ export default function HomeScreen(props: HomeScreenProps) {
                 {weather?.locationLabel || 'Aktif tarla'}
               </small>
             </div>
-            <div className="tp-mini">
-              <small>Sonraki adım</small>
-              <strong>Takvimi kontrol et</strong>
-              <small>Görev ve destek tarihlerini kaçırma.</small>
-            </div>
+            <HomeFieldDataStatus
+              fieldName={homeField?.demo || String(homeField?.id ?? '').startsWith('demo') ? null : homeField?.name}
+              items={fieldDataStatuses}
+            />
           </section>
 
           {!realFields?.length && (
