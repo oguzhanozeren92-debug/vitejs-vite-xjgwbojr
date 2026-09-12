@@ -15,6 +15,7 @@ import { useHomeIrrigationDecision } from '../../features/irrigation/hooks/useHo
 import { useHomePhenologyInsight } from '../../features/phenology/hooks/useHomePhenologyInsight';
 import { useHomeNutrientContext } from '../../features/nutrition/hooks/useHomeNutrientContext';
 import IrrigationDecisionDetailModal from '../../features/irrigation/components/IrrigationDecisionDetailModal';
+import FieldOperationModal from '../../features/field-operations/components/FieldOperationModal';
 import { useHomeDecisionEngine } from '../../features/decision/hooks/useHomeDecisionEngine';
 import HomeFieldDataStatus from '../../features/decision/components/HomeFieldDataStatus';
 import { buildHomeFieldDataStatuses, hasUsableFieldWeatherForecast } from '../../features/decision/services/homeFieldDataStatus.service';
@@ -166,6 +167,7 @@ export default function HomeScreen(props: HomeScreenProps) {
     reason?: string;
   } | null>(null);
   const [irrigationDetailOpen, setIrrigationDetailOpen] = useState(false);
+  const [irrigationRecordOpen, setIrrigationRecordOpen] = useState(false);
   const [fieldsSheetOpen, setFieldsSheetOpen] = useState(false);
   const [activeHomeLayer, setActiveHomeLayer] =
     useState<HomeLayer>('vegetation');
@@ -867,6 +869,19 @@ export default function HomeScreen(props: HomeScreenProps) {
             setIrrigationDetailOpen(false);
             setScreen?.('weatherHub');
           }}
+          onAddIrrigationRecord={() => {
+            setIrrigationDetailOpen(false);
+            setIrrigationRecordOpen(true);
+          }}
+        />
+
+        <FieldOperationModal
+          open={irrigationRecordOpen && Boolean(fieldKey) && !homeField?.demo}
+          fieldId={fieldKey || null}
+          fieldName={String(homeField?.name ?? 'Tarlan')}
+          initialType="Sulama"
+          onClose={() => setIrrigationRecordOpen(false)}
+          onSaved={() => homeIrrigation.refresh()}
         />
 
         <HomeFieldsSheet

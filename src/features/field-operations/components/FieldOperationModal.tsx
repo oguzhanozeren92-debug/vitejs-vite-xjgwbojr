@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 
 import { createFieldOperation } from '../services/fieldOperation.service';
@@ -12,6 +12,7 @@ type Props = {
   open: boolean;
   fieldId: string | null;
   fieldName: string;
+  initialType?: FieldOperationType;
   onClose: () => void;
   onSaved?: (operation: FieldOperation) => void;
 };
@@ -127,6 +128,7 @@ export default function FieldOperationModal({
   open,
   fieldId,
   fieldName,
+  initialType = 'Sürme',
   onClose,
   onSaved,
 }: Props) {
@@ -150,7 +152,7 @@ export default function FieldOperationModal({
 
   useEffect(() => {
     if (!open) return;
-    setType('Sürme');
+    setType(initialType);
     setDate(localDate());
     setProductName('');
     setQuantity('');
@@ -164,7 +166,7 @@ export default function FieldOperationModal({
     setError(null);
     setSuccess(null);
     setSaving(false);
-  }, [open, fieldId]);
+  }, [open, fieldId, initialType]);
 
   useEffect(() => {
     if (!open || typeof document === 'undefined') return;

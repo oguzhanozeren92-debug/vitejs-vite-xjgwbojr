@@ -259,7 +259,7 @@ const IRRIGATION_DECISION_DETAIL_MODAL_CSS = String.raw`
 
 .tp-irrigation-detail-actions{
   display:grid;
-  grid-template-columns:1fr 1.5fr;
+  grid-template-columns:1fr 1fr;
   gap:9px;
   margin-top:15px;
 }
@@ -283,6 +283,12 @@ const IRRIGATION_DECISION_DETAIL_MODAL_CSS = String.raw`
   background:linear-gradient(180deg,rgba(6,71,76,.92),rgba(3,41,44,.96));
   color:#ddfbfd;
   box-shadow:0 0 20px rgba(6,182,212,.08);
+}
+.tp-irrigation-detail-record{
+  grid-column:1/-1;
+  border:1px solid rgba(34,197,94,.32);
+  background:rgba(14,85,45,.35);
+  color:#d7fbe1;
 }
 
 @media (max-width:560px){
@@ -310,9 +316,11 @@ type Props = {
   fallbackFieldName?: string;
   onClose: () => void;
   onOpenWeather: () => void;
+  onAddIrrigationRecord?: () => void;
 };
 
 function formatMm(value: unknown) {
+  if (value === null || value === undefined || value === '') return 'Veri yok';
   const number = Number(value);
   return Number.isFinite(number) ? `${number.toFixed(1)} mm` : 'Veri yok';
 }
@@ -345,6 +353,7 @@ export default function IrrigationDecisionDetailModal({
   fallbackFieldName,
   onClose,
   onOpenWeather,
+  onAddIrrigationRecord,
 }: Props) {
   useEffect(() => {
     if (!open) return;
@@ -486,6 +495,13 @@ export default function IrrigationDecisionDetailModal({
           Bu değerlendirme gerçek toprak nemi ölçümü değildir. Susuz tarlada sulama miktarı önermez; yağış, ET₀, ürün katsayısı ve kök bölgesi verileriyle erken uyarı üretir.
         </p>
 
+        {onAddIrrigationRecord && decision.irrigationStatus !== 'rainfed' &&
+          !decision.waterBalance?.lastIrrigationDate ? (
+          <p className="tp-irrigation-detail-note">
+            Bu tarla için kayıtlı sulama yok. Sulama yaptıysan tarihini ve verdiğin su miktarını kaydet.
+          </p>
+        ) : null}
+
         <div className="tp-irrigation-detail-actions">
           <button
             type="button"
@@ -502,6 +518,16 @@ export default function IrrigationDecisionDetailModal({
           >
             Hava detaylarını aç
           </button>
+
+          {onAddIrrigationRecord && decision.irrigationStatus !== 'rainfed' ? (
+            <button
+              type="button"
+              className="tp-irrigation-detail-record"
+              onClick={onAddIrrigationRecord}
+            >
+              Sulama kaydı ekle
+            </button>
+          ) : null}
         </div>
         </section>
       </div>
