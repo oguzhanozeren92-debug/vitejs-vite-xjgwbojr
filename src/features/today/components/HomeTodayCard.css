@@ -54,6 +54,14 @@ dialog.tp-home-today-dialog::backdrop { background: rgba(0, 0, 0, .72); backdrop
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
+.tp-home-today-water-summary { display: grid; gap: 12px; }
+.tp-home-today-dialog .tp-home-today-water-summary p { margin: 0; }
+.tp-home-today-water-summary p strong { color: #76dfe3; }
+.tp-home-today-water-summary dl { margin: 0; display: grid; gap: 9px; }
+.tp-home-today-water-summary dl div { padding: 10px 12px; border: 1px solid rgba(59, 210, 215, .18); border-radius: 12px; background: rgba(14, 45, 43, .32); }
+.tp-home-today-water-summary dt { color: #76dfe3; font-size: 12px; font-weight: 800; }
+.tp-home-today-water-summary dd { margin: 4px 0 0; color: #d6e2d9; font-size: 14px; line-height: 1.45; }
+.tp-home-today-water-summary small { color: #9bb4a6; font-size: 11px; line-height: 1.4; }
 .tp-home-today-dialog-link {
   display: flex;
   align-items: center;

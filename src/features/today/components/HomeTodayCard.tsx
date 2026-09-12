@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { HOME_REFERENCE_ASSETS } from '../../home/homeAssets';
+import { buildRainfedTodaySummary } from '../../irrigation/services/rainfedTodaySummary';
+import type { IrrigationDecisionResult } from '../../irrigation/types/irrigationDecision';
 import './HomeTodayCard.css';
 
 export type HomeTodayDecision = {
@@ -18,11 +20,15 @@ export type HomeTodayDecision = {
 type Props = {
   decisions: HomeTodayDecision[];
   fieldName?: string;
+  irrigationDecision?: IrrigationDecisionResult | null;
   onOpenDecision: (target: any) => void;
 };
 
-export default function HomeTodayCard({ decisions, fieldName, onOpenDecision }: Props) {
+export default function HomeTodayCard({ decisions, fieldName, irrigationDecision, onOpenDecision }: Props) {
   const [selectedDecision, setSelectedDecision] = useState<HomeTodayDecision | null>(null);
+  const rainfedSummary = selectedDecision?.id.startsWith('irrigation:') && irrigationDecision
+    ? buildRainfedTodaySummary(irrigationDecision)
+    : null;
   const dialogRef = useRef<HTMLDialogElement>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
 
@@ -114,7 +120,21 @@ export default function HomeTodayCard({ decisions, fieldName, onOpenDecision }: 
             </div>
             {fieldName && <p className="tp-home-today-dialog-field">Tarla: <strong>{fieldName}</strong></p>}
             <h2 id="tp-home-today-dialog-title">{selectedDecision.title}</h2>
-            <p id="tp-home-today-dialog-detail">{selectedDecision.detail}</p>
+            {rainfedSummary ? (
+              <div id="tp-home-today-dialog-detail" className="tp-home-today-water-summary">
+                <p><strong>Genel durum:</strong> {rainfedSummary.generalStatus}</p>
+                <dl>
+                  {rainfedSummary.rows.map(({ label, text }) => (
+                    <div key={label}>
+                      <dt>{label}</dt>
+                      <dd>{text}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <p><strong>Özet:</strong> {rainfedSummary.conclusion}</p>
+                <small>Bu yağış ve tahmini su ihtiyacı farkıdır; ölçülmüş toprak nemi ya da sulama miktarı değildir.</small>
+              </div>
+            ) : <p id="tp-home-today-dialog-detail">{selectedDecision.detail}</p>}
             <button
               type="button"
               className="tp-home-today-dialog-link"
