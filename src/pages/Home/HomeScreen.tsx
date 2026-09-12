@@ -16,6 +16,8 @@ import { useHomePhenologyInsight } from '../../features/phenology/hooks/useHomeP
 import { useHomeNutrientContext } from '../../features/nutrition/hooks/useHomeNutrientContext';
 import IrrigationDecisionDetailModal from '../../features/irrigation/components/IrrigationDecisionDetailModal';
 import { useHomeDecisionEngine } from '../../features/decision/hooks/useHomeDecisionEngine';
+import HomeFieldDataStatus from '../../features/decision/components/HomeFieldDataStatus';
+import { buildHomeFieldDataStatuses } from '../../features/decision/services/homeFieldDataStatus.service';
 import { useHomeProfile } from '../../features/home/hooks/useHomeProfile';
 import { useEnsureHomeSatellite } from '../../features/home-map/hooks/useEnsureHomeSatellite';
 import { useHomeSatelliteDate } from '../../features/home-map/hooks/useHomeSatelliteDate';
@@ -349,6 +351,26 @@ export default function HomeScreen(props: HomeScreenProps) {
 
   const homeNotificationPreview = homeSystemNotifications.slice(0, 3);
   const homeNotificationCount = homeSystemNotifications.length;
+  const fieldDataStatuses = buildHomeFieldDataStatuses({
+    weather: { status: weather?.status, available: hasUsableTodayWeather },
+    phenology: {
+      status: homePhenology.phenologyContextStatus,
+      usable: decisionPhenology?.dataStatus === 'usable' && decisionPhenology.stage !== 'unknown',
+      stageLabel: decisionPhenology?.stageLabel,
+    },
+    satellite: {
+      status: homePhenology.timeSeriesStatus,
+      quality: homePhenology.ndviTrend?.quality,
+      observationCount: homePhenology.timeSeriesObservationCount,
+      latestDate: homePhenology.timeSeriesLatestDate,
+    },
+    soil: {
+      status: homeNutrient.status,
+      reportDate: homeNutrient.latestAnalysis?.field_id === fieldKey
+        ? homeNutrient.latestAnalysis.created_at : null,
+    },
+    irrigation: { status: homeIrrigation.status, decisionCode: homeIrrigation.decision?.decision },
+  });
 
   /*
    * Pusula logosu normal analiz / karar / bildirim geldiğinde artık
@@ -715,6 +737,10 @@ export default function HomeScreen(props: HomeScreenProps) {
                   }, 40);
                 }
               }}
+            />
+            <HomeFieldDataStatus
+              fieldName={homeField?.demo || String(homeField?.id ?? '').startsWith('demo') ? null : homeField?.name}
+              items={fieldDataStatuses}
             />
           </div>
 

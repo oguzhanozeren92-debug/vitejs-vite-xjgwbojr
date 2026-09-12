@@ -10,6 +10,13 @@ export type HomeSatelliteTrendSignal = {
   latestDate: string | null;
 };
 
+export function isRecentSatelliteObservation(latestDate: string | null | undefined, now: Date = new Date()) {
+  const latestMs = latestDate ? Date.parse(latestDate) : NaN;
+  return Number.isFinite(latestMs) &&
+    latestMs <= now.getTime() + 86_400_000 &&
+    now.getTime() - latestMs <= 30 * 86_400_000;
+}
+
 /** NDVI tek başına hastalık veya besin eksikliği teşhisi değildir. */
 export function buildHomeSatelliteDecision(
   fieldId: string,
@@ -17,13 +24,11 @@ export function buildHomeSatelliteDecision(
   activeGrowth: boolean,
   now: Date = new Date(),
 ): HomeDecisionEvent | null {
-  const latestMs = trend?.latestDate ? Date.parse(trend.latestDate) : NaN;
   if (
     !fieldId || trend?.fieldId !== fieldId || trend.status !== 'ready' ||
     trend.quality !== 'usable' || trend.direction !== 'falling' ||
     trend.observationCount < 3 || trend.spanDays == null || trend.spanDays < 12 ||
-    !activeGrowth || !Number.isFinite(latestMs) ||
-    latestMs > now.getTime() + 86_400_000 || now.getTime() - latestMs > 30 * 86_400_000
+    !activeGrowth || !isRecentSatelliteObservation(trend.latestDate, now)
   ) return null;
 
   return {
