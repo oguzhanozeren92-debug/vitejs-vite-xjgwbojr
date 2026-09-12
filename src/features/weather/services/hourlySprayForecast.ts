@@ -28,6 +28,10 @@ export type SprayWindow = {
   maxRainChance: number;
 };
 
+export function sprayWindowStartsSoon(window: Pick<SprayWindow, 'from' | 'to'> | null | undefined, now: number): boolean {
+  return Boolean(window && window.from > now && window.from - now <= 2 * 3600000 && window.to > now);
+}
+
 export type SprayHourPlan = {
   windows: SprayWindow[];
   message: string;

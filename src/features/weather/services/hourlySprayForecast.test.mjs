@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildHourlySprayPlan, formatForecastHour } from './hourlySprayForecast.ts';
+import { buildHourlySprayPlan, formatForecastHour, sprayWindowStartsSoon } from './hourlySprayForecast.ts';
 
 const at = (hour) => Date.UTC(2026, 8, 12, hour - 3);
 const forecast = (overrides = () => ({})) => ({
@@ -36,4 +36,13 @@ test('gündüz saatleri geçtiyse ilaçlama saati önermez', () => {
   const plan = buildHourlySprayPlan(forecast(), at(19));
   assert.equal(plan.windows.length, 0);
   assert.match(plan.message, /gündüz aralığı kalmadı/);
+});
+
+test('yalnızca önümüzdeki iki saat içinde başlayacak gerçek pencere bildirilir', () => {
+  const window = { from: at(9), to: at(11) };
+  assert.equal(sprayWindowStartsSoon(window, at(6)), false);
+  assert.equal(sprayWindowStartsSoon(window, at(7)), true);
+  assert.equal(sprayWindowStartsSoon(window, at(8)), true);
+  assert.equal(sprayWindowStartsSoon(window, at(9)), false);
+  assert.equal(sprayWindowStartsSoon(null, at(8)), false);
 });

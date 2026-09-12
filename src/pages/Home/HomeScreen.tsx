@@ -406,6 +406,13 @@ export default function HomeScreen(props: HomeScreenProps) {
     irrigationQuick,
     sprayingQuick,
     hourlySprayWindow: Boolean(nextHourlyWindow),
+    hourlySprayNextWindow: nextHourlyWindow && selectedHourlyWeather?.status === 'ready' && selectedHourlyWeather.data
+      ? {
+          from: nextHourlyWindow.from,
+          to: nextHourlyWindow.to,
+          label: `${formatForecastHour(nextHourlyWindow.from, selectedHourlyWeather.data.timezone)}–${formatForecastHour(nextHourlyWindow.to, selectedHourlyWeather.data.timezone)}`,
+        }
+      : null,
     hourlySprayForecastReady: selectedHourlyWeather?.status === 'ready',
     hourlySprayRisk: selectedHourlyWeather?.status === 'ready' && hourlyPlan.nextRiskAt != null && hourlyPlan.nextRisk
       ? { at: hourlyPlan.nextRiskAt, detail: hourlyPlan.nextRisk }

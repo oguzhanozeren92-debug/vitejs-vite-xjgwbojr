@@ -81,6 +81,7 @@ export type HomeDecisionEngineInput = {
   irrigationQuick?: HomeQuickDecision | null;
   sprayingQuick?: HomeQuickDecision | null;
   hourlySprayWindow?: boolean;
+  hourlySprayNextWindow?: { from: number; to: number; label: string } | null;
   hourlySprayForecastReady?: boolean;
   hourlySprayRisk?: { at: number; detail: string } | null;
   resolvedHomeSatelliteDate?: string;

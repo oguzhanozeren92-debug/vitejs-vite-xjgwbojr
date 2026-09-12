@@ -8,6 +8,7 @@ import type {
 } from '../types/homeDecision';
 import { buildNutrientDecision } from '../../nutrition/services/buildNutrientDecision';
 import { buildHomeSatelliteDecision } from '../../satellite/services/buildHomeSatelliteDecision';
+import { sprayWindowStartsSoon } from '../../weather/services/hourlySprayForecast';
 
 const HOUR_MS = 60 * 60 * 1000;
 
@@ -562,7 +563,24 @@ export function buildHomeDecisionEvents(
   }
 
   const hourlyRisk = input.hourlySprayRisk;
-  if (hourlyRisk && !phenology.postHarvest && hourlyRisk.at >= nowMs &&
+  const upcomingSprayWindow = input.hourlySprayNextWindow;
+  if (sprayWindowStartsSoon(upcomingSprayWindow, nowMs) && !phenology.postHarvest && !sprayingRecordedVeryRecently) {
+    pushEvent(items, {
+      id: `weather:${fieldKey}:spray-window:${upcomingSprayWindow!.from}`,
+      group: 'spraying-window',
+      source: 'weather',
+      priority: 83,
+      severity: 'info',
+      target: 'spray_weather',
+      channels: ['notification'],
+      label: 'İLAÇLAMA HAVASI',
+      title: 'İlaçlama için hava aralığı yaklaşıyor',
+      detail: `${upcomingSprayWindow!.label} aralığı hava açısından değerlendirilebilir. İşlem öncesi tarlayı ve ürün etiketini kontrol et.`,
+      notification: { iconKey: 'leaf', iconTone: 'green', dotTone: 'info' },
+    });
+  }
+  if (hourlyRisk && (!upcomingSprayWindow || hourlyRisk.at >= upcomingSprayWindow.to) &&
+      !phenology.postHarvest && hourlyRisk.at >= nowMs &&
       hourlyRisk.at - nowMs <= 3 * HOUR_MS) {
     pushEvent(items, {
       id: `weather:${fieldKey}:spray-hourly-risk:${hourlyRisk.at}`,
