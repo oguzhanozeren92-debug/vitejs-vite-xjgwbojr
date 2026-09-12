@@ -6,6 +6,7 @@ import type {
   HomeFieldOperationSignal,
   HomeQuickDecision,
 } from '../types/homeDecision';
+import { buildNutrientDecision } from '../../nutrition/services/buildNutrientDecision';
 
 const HOUR_MS = 60 * 60 * 1000;
 
@@ -420,6 +421,14 @@ export function buildHomeDecisionEvents(
     input.recentFieldOperations,
     'Sulama',
   );
+  const latestFertilization = latestOperation(input.recentFieldOperations, 'Gübreleme');
+  const nutrientEvent = buildNutrientDecision(
+    String(input.homeFieldId ?? ''),
+    input.homeFieldCrop,
+    input.nutrient,
+    latestFertilization != null,
+  );
+  if (nutrientEvent) pushEvent(items, nutrientEvent);
   const latestSprayingOperation = latestOperation(
     input.recentFieldOperations,
     'İlaçlama',

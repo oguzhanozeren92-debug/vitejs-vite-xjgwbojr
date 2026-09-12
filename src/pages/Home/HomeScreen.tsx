@@ -13,6 +13,7 @@ import { useHomeWeatherSignals } from '../../features/weather/hooks/useHomeWeath
 import { useNextCalendarItem } from '../../features/calendar/hooks/useNextCalendarItem';
 import { useHomeIrrigationDecision } from '../../features/irrigation/hooks/useHomeIrrigationDecision';
 import { useHomePhenologyInsight } from '../../features/phenology/hooks/useHomePhenologyInsight';
+import { useHomeNutrientContext } from '../../features/nutrition/hooks/useHomeNutrientContext';
 import IrrigationDecisionDetailModal from '../../features/irrigation/components/IrrigationDecisionDetailModal';
 import { useHomeDecisionEngine } from '../../features/decision/hooks/useHomeDecisionEngine';
 import { useHomeProfile } from '../../features/home/hooks/useHomeProfile';
@@ -146,6 +147,7 @@ export default function HomeScreen(props: HomeScreenProps) {
     openAddField,
     openAiAnalysisScreen,
     openCalendarScreen,
+    openSoilAnalysisForField,
     setFieldControlFieldId,
     setScreen,
     setSideMenuOpen,
@@ -192,6 +194,7 @@ export default function HomeScreen(props: HomeScreenProps) {
   });
 
   const homeIrrigation = useHomeIrrigationDecision(homeField);
+  const homeNutrient = useHomeNutrientContext(homeField?.id);
   const homePhenology = useHomePhenologyInsight(homeField);
   const decisionPhenology =
     homePhenology.phenologyContextStatus === 'ready' &&
@@ -323,6 +326,7 @@ export default function HomeScreen(props: HomeScreenProps) {
     irrigationDecision: homeIrrigation.decision,
     irrigationLoading: homeIrrigation.loading,
     irrigationError: homeIrrigation.error,
+    nutrient: homeNutrient,
     phenology: decisionPhenology,
     phenologyTimeSeriesStatus: homePhenology.timeSeriesStatus,
     irrigationQuick,
@@ -343,13 +347,22 @@ export default function HomeScreen(props: HomeScreenProps) {
   const pusulaGuideAway = Boolean(pusulaFieldQuestion || ndviPhotoFollowUp);
 
   const openHomeInsightTarget = (
-    target: 'weather' | 'calendar' | 'ai' | 'home' | 'irrigation_detail',
+    target: 'weather' | 'calendar' | 'ai' | 'home' | 'irrigation_detail' | 'soil',
   ) => {
     if (target === 'irrigation_detail') {
       if (homeIrrigation.decision) {
         setIrrigationDetailOpen(true);
       } else {
         setScreen?.('weatherHub');
+      }
+      return;
+    }
+
+    if (target === 'soil') {
+      if (typeof openSoilAnalysisForField === 'function') {
+        openSoilAnalysisForField(homeField);
+      } else {
+        setScreen?.('soilAnalysisHub');
       }
       return;
     }

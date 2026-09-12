@@ -526,6 +526,10 @@ export default function SoilAnalysisPage({
 
       setLatestAnalysis(record);
 
+      window.dispatchEvent(new CustomEvent('tp:field-context-updated', {
+        detail: { fieldId: String(selectedField.id), changedFields: ['soil_analysis'], source: 'soil-analysis' },
+      }));
+
       setHistory((current) => [
         record,
         ...current.filter(

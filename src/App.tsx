@@ -1207,6 +1207,7 @@ export default function App() {
       openAddField={openAddField}
       openAiAnalysisScreen={openAiAnalysisScreen}
       openCalendarScreen={openCalendarScreen}
+      openSoilAnalysisForField={openSoilAnalysisForField}
       setFieldControlFieldId={setFieldControlFieldId}
       setScreen={setScreen}
       setSideMenuOpen={setSideMenuOpen}
@@ -1215,4 +1216,3 @@ export default function App() {
     false,
   );
 }
-

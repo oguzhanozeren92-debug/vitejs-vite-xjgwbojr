@@ -1,117 +1,84 @@
-import { useEffect, useMemo, useState } from 'react';
+import type { IrrigationDecisionResult } from '../../irrigation/types/irrigationDecision';
+import type { PhenologyResult } from '../../phenology/types/phenology';
+import type { FieldOperation } from '../../field-operations/types/fieldOperation';
+import type { HomeNutrientSignal } from '../../nutrition/services/buildNutrientDecision';
 
-import { listRecentFieldOperations } from '../services/fieldOperation.service';
-import type { FieldOperation } from '../types/fieldOperation';
+export type HomeDecisionTarget = 'home' | 'weather' | 'calendar' | 'ai' | 'irrigation_detail' | 'soil';
+export type HomeDecisionSource =
+  | 'field' | 'weather' | 'calendar' | 'satellite' | 'pusula'
+  | 'irrigation' | 'phenology' | 'operation' | 'nutrition';
+export type HomeTodayIconKey = 'water' | 'rain' | 'document' | 'leaf-green' | 'leaf-gold';
+export type HomePhenologySignal = Pick<PhenologyResult, 'stage' | 'stageLabel' | 'dataStatus' | 'warnings'>;
+export type HomeIrrigationDecisionSignal = IrrigationDecisionResult;
+export type HomeFieldOperationSignal = FieldOperation;
+export type HomeQuickDecision = { title?: string; detail?: string; tone?: string };
 
-type State = {
+export type HomeDecisionEvent = {
+  id: string;
+  group: string;
+  source: HomeDecisionSource;
+  priority: number;
+  severity: 'info' | 'warning' | 'danger';
+  target: HomeDecisionTarget;
+  channels: Array<'today' | 'notification' | 'pusula'>;
+  label: string;
+  title: string;
+  detail: string;
+  today?: { tone: string; visual: 'irrigation' | 'spraying'; iconKey: HomeTodayIconKey; iconClass: 'leaf' | 'water' };
+  notification?: { iconKey: 'leaf' | 'rain' | 'document'; iconTone: 'green' | 'cyan' | 'gold'; dotTone: 'info' | 'warning' | 'danger' };
+};
+
+export type HomeTodayDecision = {
+  id: string;
+  group: string;
+  priority: number;
+  label: string;
+  title: string;
+  detail: string;
+  tone: string;
+  visual: 'irrigation' | 'spraying';
+  iconSrc: string;
+  iconClass: 'leaf' | 'water';
+  target: HomeDecisionTarget;
+};
+
+export type HomeSystemNotification = {
+  id: string;
+  priority: number;
+  severity: 'info' | 'warning' | 'danger';
+  source: HomeDecisionSource;
+  title: string;
+  detail: string;
+  iconKey: 'leaf' | 'rain' | 'document';
+  iconTone: 'green' | 'cyan' | 'gold';
+  dotTone: 'info' | 'warning' | 'danger';
+  target: HomeDecisionTarget;
+};
+
+export type HomeDecisionEngineInput = {
   fieldKey: string;
-  loading: boolean;
-  operations: FieldOperation[];
-  error: string | null;
+  now?: Date;
+  activeHomeLayer?: string;
+  weatherStatus?: string | null;
+  hasUsableTodayWeather?: boolean;
+  quickTemperatureMin?: number | null;
+  quickTemperature?: number | null;
+  quickWindKmh?: number | null;
+  quickRainChance?: number | null;
+  quickRainMm?: number | null;
+  nextCalendarItem?: any | null;
+  fieldSynthesis?: any;
+  homePusulaResult?: any;
+  irrigationDecision?: HomeIrrigationDecisionSignal | null;
+  irrigationLoading?: boolean;
+  irrigationError?: string | null;
+  nutrient?: HomeNutrientSignal | null;
+  phenology?: HomePhenologySignal | null;
+  phenologyTimeSeriesStatus?: 'idle' | 'loading' | 'ready' | 'error';
+  irrigationQuick?: HomeQuickDecision | null;
+  sprayingQuick?: HomeQuickDecision | null;
+  resolvedHomeSatelliteDate?: string;
+  homeFieldId?: string | number | null;
+  homeFieldCrop?: string | null;
+  recentFieldOperations?: HomeFieldOperationSignal[];
 };
-
-const EMPTY_STATE: State = {
-  fieldKey: '',
-  loading: false,
-  operations: [],
-  error: null,
-};
-
-export function useRecentFieldOperations(
-  fieldId: string | number | null | undefined,
-  lookbackDays = 30,
-) {
-  const fieldKey = fieldId == null ? '' : String(fieldId).trim();
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [state, setState] = useState<State>(EMPTY_STATE);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    if (!fieldKey) {
-      setState(EMPTY_STATE);
-      return () => {
-        cancelled = true;
-      };
-    }
-
-    setState((current) => ({
-      fieldKey,
-      loading: true,
-      operations:
-        current.fieldKey === fieldKey ? current.operations : [],
-      error: null,
-    }));
-
-    void listRecentFieldOperations(fieldKey, lookbackDays, 40)
-      .then((operations) => {
-        if (cancelled) return;
-        setState({
-          fieldKey,
-          loading: false,
-          operations,
-          error: null,
-        });
-      })
-      .catch((error: unknown) => {
-        if (cancelled) return;
-        setState({
-          fieldKey,
-          loading: false,
-          operations: [],
-          error:
-            error instanceof Error
-              ? error.message
-              : 'Tarla işlemleri alınamadı.',
-        });
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [fieldKey, lookbackDays, refreshKey]);
-
-  useEffect(() => {
-    if (!fieldKey || typeof window === 'undefined') return;
-
-    const refreshForField = (event: Event) => {
-      const detail = (event as CustomEvent)?.detail ?? {};
-      if (String(detail?.fieldId ?? '') !== fieldKey) return;
-      setRefreshKey((value) => value + 1);
-    };
-
-    window.addEventListener(
-      'tp:field-operation-saved',
-      refreshForField as EventListener,
-    );
-
-    return () => {
-      window.removeEventListener(
-        'tp:field-operation-saved',
-        refreshForField as EventListener,
-      );
-    };
-  }, [fieldKey]);
-
-  const belongsToField = state.fieldKey === fieldKey;
-  const operations = belongsToField ? state.operations : [];
-
-  const signature = useMemo(
-    () =>
-      operations
-        .map(
-          (item) =>
-            `${item.id}:${item.type}:${item.date}:${item.quantity ?? ''}:${item.unit ?? ''}`,
-        )
-        .join('|'),
-    [operations],
-  );
-
-  return {
-    operations,
-    loading: belongsToField ? state.loading : Boolean(fieldKey),
-    error: belongsToField ? state.error : null,
-    signature,
-    refresh: () => setRefreshKey((value) => value + 1),
-  };
-}
