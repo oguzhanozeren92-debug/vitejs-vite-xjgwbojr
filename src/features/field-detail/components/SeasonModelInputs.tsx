@@ -60,7 +60,9 @@ export default function SeasonModelInputs({ field, seasons, seasonsLoading }: Pr
 
   if (!annualCrop) return null;
 
-  return <section className="tp-season-model-inputs" aria-label="Sezonluk model girdi kontrolü">
+  return <section className="tp-season-model-inputs" aria-label="Sezonluk model girdi kontrolü"><details>
+    <summary>Sezon verilerini kontrol et <span aria-hidden="true">⌄</span></summary>
+    <div className="tp-season-model-inputs-body">
     <small>SEZON VERİLERİ · MODEL HAZIRLIĞI</small>
     <h3>Bu sezonun verileri neler?</h3>
     <p>Bu kontrol bir bitki gelişimi ya da verim tahmini üretmez.</p>
@@ -87,5 +89,6 @@ export default function SeasonModelInputs({ field, seasons, seasonsLoading }: Pr
       </div>}
       {message && <p role="alert">{message}</p>}
     </>}
-  </section>;
+    </div>
+  </details></section>;
 }
