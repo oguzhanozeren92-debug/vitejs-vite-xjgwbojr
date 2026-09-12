@@ -829,21 +829,8 @@ export default function HomeScreen(props: HomeScreenProps) {
             onOpenNotifications={() => setScreen('notificationsHub')}
           />
 
-          <section className="tp-today">
-            <div className="tp-mini">
-              <Ui3DIcon name="weather" className="tp-ui3d-weather-today" />
-              <small>Bugün</small>
-              <strong>
-                {todayWeather?.tempMax != null
-                  ? `${Math.round(todayWeather.tempMax)}°C`
-                  : 'Hava'}
-              </strong>
-              <small>
-                <Ui3DIcon name="location" className="tp-ui3d-location-today" />
-                {weather?.locationLabel || 'Aktif tarla'}
-              </small>
-            </div>
-            <HomeFieldDataStatus
+          <HomeFieldDataStatus
+              mapCorner
               fieldName={homeField?.demo || String(homeField?.id ?? '').startsWith('demo') ? null : homeField?.name}
               items={fieldDataStatuses}
               onOpen={openHomeInsightTarget}
@@ -854,8 +841,7 @@ export default function HomeScreen(props: HomeScreenProps) {
                   void loadFieldWeather(homeField);
                 }
               }}
-            />
-          </section>
+          />
 
           <HomeFiveDayForecast weather={weather} onOpen={() => setScreen?.('weatherHub')} />
 

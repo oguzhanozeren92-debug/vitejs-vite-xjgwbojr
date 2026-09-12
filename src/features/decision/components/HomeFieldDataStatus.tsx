@@ -1,4 +1,5 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import './HomeFieldDataStatus.css';
 
 type DataStatus = 'ready' | 'loading' | 'missing' | 'error';
@@ -17,35 +18,55 @@ export default function HomeFieldDataStatus({
   items,
   onOpen,
   onReveal,
+  mapCorner = false,
 }: {
   fieldName?: string | null;
   items: HomeFieldDataStatusItem[];
   onOpen: (target: FieldDataTarget) => void;
   onReveal?: () => void;
+  mapCorner?: boolean;
 }) {
   const readyCount = items.filter((item) => item.status === 'ready').length;
   const dialogRef = useRef<HTMLDialogElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const [mapStage, setMapStage] = useState<HTMLElement | null>(null);
 
-  return (
-    <>
-      <button
-        ref={triggerRef}
-        type="button"
-        className="tp-home-data-status"
-        aria-haspopup="dialog"
-        onClick={() => {
-          dialogRef.current?.showModal();
-          onReveal?.();
-        }}
-      >
+  useEffect(() => {
+    if (!mapCorner) return;
+    const syncStage = () => setMapStage(document.querySelector<HTMLElement>('.tp-map-first-shell .tp-map-stage'));
+    syncStage();
+    const observer = new MutationObserver(syncStage);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [mapCorner]);
+
+  const trigger = (
+    <button
+      ref={triggerRef}
+      type="button"
+      className={mapCorner ? 'tp-home-data-status tp-home-map-info' : 'tp-home-data-status'}
+      aria-label={fieldName ? `${fieldName} tarla verileri` : 'Tarla verileri'}
+      title="Tarla verileri"
+      aria-haspopup="dialog"
+      onClick={() => {
+        dialogRef.current?.showModal();
+        onReveal?.();
+      }}
+    >
+      {mapCorner ? <span aria-hidden="true">i</span> : <>
         <span className="tp-home-data-status-heading">
           <small>Tarla verileri</small>
           <strong>{fieldName ? `${readyCount}/${items.length} kaynak hazır` : 'Tarla ekle'}</strong>
           <small>{fieldName ? `${fieldName} · Ayrıntıları gör` : 'Veri durumunu görmek için'}</small>
         </span>
         <span className="tp-home-data-status-chevron" aria-hidden="true">↗</span>
-      </button>
+      </>}
+    </button>
+  );
+
+  return (
+    <>
+      {mapCorner ? (mapStage ? createPortal(trigger, mapStage) : null) : trigger}
       <dialog
         ref={dialogRef}
         className="tp-home-data-dialog"
