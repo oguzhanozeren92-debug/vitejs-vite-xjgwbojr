@@ -62,13 +62,21 @@
   grid-template-columns: 7px minmax(0, 1fr);
   align-items: center;
   gap: 3px 10px;
+  width: 100%;
   padding: 12px 0;
+  border: 0;
   border-bottom: 1px solid rgba(71, 135, 82, .14);
+  background: transparent;
+  color: inherit;
+  text-align: left;
   font-size: 11px;
+  cursor: pointer;
 }
+.tp-home-data-status-row:focus-visible { outline: 2px solid #65da89; outline-offset: -2px; }
 .tp-home-data-status-row:last-child { border-bottom: 0; }
 .tp-home-data-status-row strong { font-size: 13px; }
-.tp-home-data-status-row > span:last-child { grid-column: 2; min-width: 0; color: #9bac9d; line-height: 1.35; }
+.tp-home-data-status-detail { grid-column: 2; min-width: 0; color: #9bac9d; line-height: 1.35; }
+.tp-home-data-status-action { grid-column: 2; margin-top: 3px; color: #75d796; font-weight: 600; }
 .tp-home-data-status-dot { flex: 0 0 7px; height: 7px; border-radius: 50%; background: #677769; }
 .tp-home-data-status-dot.is-ready { background: #4ad179; box-shadow: 0 0 8px rgba(74, 209, 121, .45); }
 .tp-home-data-status-dot.is-loading { background: #77b5ca; }

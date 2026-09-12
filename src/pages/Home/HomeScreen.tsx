@@ -757,6 +757,7 @@ export default function HomeScreen(props: HomeScreenProps) {
             <HomeFieldDataStatus
               fieldName={homeField?.demo || String(homeField?.id ?? '').startsWith('demo') ? null : homeField?.name}
               items={fieldDataStatuses}
+              onOpen={openHomeInsightTarget}
             />
           </section>
 

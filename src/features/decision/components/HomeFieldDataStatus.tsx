@@ -2,19 +2,24 @@ import { useRef } from 'react';
 import './HomeFieldDataStatus.css';
 
 type DataStatus = 'ready' | 'loading' | 'missing' | 'error';
+export type FieldDataTarget = 'weather' | 'calendar' | 'map_vegetation' | 'soil' | 'irrigation_detail';
 
 export type HomeFieldDataStatusItem = {
   label: string;
   status: DataStatus;
   detail: string;
+  target: FieldDataTarget;
+  actionLabel: string;
 };
 
 export default function HomeFieldDataStatus({
   fieldName,
   items,
+  onOpen,
 }: {
   fieldName?: string | null;
   items: HomeFieldDataStatusItem[];
+  onOpen: (target: FieldDataTarget) => void;
 }) {
   const readyCount = items.filter((item) => item.status === 'ready').length;
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -55,11 +60,20 @@ export default function HomeFieldDataStatus({
         </div>
         <div className="tp-home-data-status-list">
           {fieldName ? items.map((item) => (
-            <div className="tp-home-data-status-row" key={item.label}>
+            <button
+              type="button"
+              className="tp-home-data-status-row"
+              key={item.label}
+              onClick={() => {
+                dialogRef.current?.close();
+                onOpen(item.target);
+              }}
+            >
               <span className={`tp-home-data-status-dot is-${item.status}`} aria-hidden="true" />
               <strong>{item.label}</strong>
-              <span>{item.detail}</span>
-            </div>
+              <span className="tp-home-data-status-detail">{item.detail}</span>
+              <span className="tp-home-data-status-action">{item.actionLabel} →</span>
+            </button>
           )) : <p>Bu tarla için veri durumu, tarla eklendikten sonra gösterilir.</p>}
         </div>
       </dialog>
