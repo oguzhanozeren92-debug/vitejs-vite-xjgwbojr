@@ -542,3 +542,23 @@ html body .tp-v1 .tp-v1-header::after {
   pointer-events: none;
   background: linear-gradient(90deg, rgba(233,237,241,.78) 0%, transparent 24%, transparent 76%, rgba(233,237,241,.78) 100%);
 }
+
+/* Reuse the drawer's original artwork as a monochrome layer behind solid menu rows. */
+html body .tp-premium-drawer .tp-premium-drawer-atmosphere {
+  display: block !important;
+}
+html body .tp-premium-drawer .tp-premium-drawer-atmosphere::before {
+  content: '';
+  inset: 0 !important;
+  background:
+    url('https://fkrqvwarxzmdrexsxtzw.supabase.co/storage/v1/object/public/ui-icons/backgrounds/d70787c4-3c37-4582-a2c2-f7d7e06b1cad%20(1).png') center / cover no-repeat,
+    url('https://fkrqvwarxzmdrexsxtzw.supabase.co/storage/v1/object/public/ui-icons/backgrounds/pusuladan-sana-bg-4.webp') center / cover no-repeat !important;
+  opacity: .3 !important;
+  filter: grayscale(1) contrast(1.1) !important;
+  transform: none !important;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+}
+html body .tp-premium-drawer .tp-premium-drawer-atmosphere::after {
+  display: none !important;
+}
