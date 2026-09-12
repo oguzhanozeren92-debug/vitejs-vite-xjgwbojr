@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import './HomeScreen.css';
+import './ClassicPusula.css';
 import { onboardingStyles } from '../../styles/onboardingStyles';
 import { useGamificationStore } from '../../gamification/useGamificationStore';
 import AppDrawer from '../../components/AppDrawer';
@@ -21,7 +22,6 @@ import PusulaFieldQuestion from '../../features/pusula/components/PusulaFieldQue
 import { usePusulaFieldCompletion } from '../../features/pusula/hooks/usePusulaFieldCompletion';
 import NdviObservationFollowUpPrompt from '../../features/field-observations/components/NdviObservationFollowUpPrompt';
 import { useNdviObservationFollowUp } from '../../features/field-observations/hooks/useNdviObservationFollowUp';
-import { PUSULA_BODY_SRC } from '../../features/home/homeAssets';
 import HomeMapSection from '../../features/home-map/components/HomeMapSectionMapFirst';
 import {
   type HomeClimateDepth,
@@ -520,9 +520,15 @@ export default function HomeScreen(props: HomeScreenProps) {
               title="Pusula"
             >
               <img
-                src={PUSULA_BODY_SRC}
-                crossOrigin="anonymous"
+                src="https://xwyfidtktauxivsosmex.supabase.co/storage/v1/object/public/pusula/compass-body.webp"
                 alt="Pusula"
+                draggable={false}
+              />
+              <img
+                className="tp-brand-pusula-needle"
+                src="https://xwyfidtktauxivsosmex.supabase.co/storage/v1/object/public/pusula/compass-needle-centered.webp"
+                alt=""
+                aria-hidden="true"
                 draggable={false}
               />
             </button>
