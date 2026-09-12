@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { fetchNasaPowerData } from '../../../services/nasaPowerService';
 import {
@@ -12,6 +12,7 @@ import type {
   WeatherForecastDay,
   WeatherProviderResult,
 } from '../../../types';
+import { fetchHourlySprayForecast, type HourlySprayState } from '../services/hourlySprayForecast';
 
 export type NasaPowerCardState = {
   status: 'idle' | 'loading' | 'ready' | 'error';
@@ -232,6 +233,9 @@ type UseAppWeatherDataOptions = {
 
 export function useAppWeatherData({ realFields, favoriteFieldId }: UseAppWeatherDataOptions) {
   const [fieldWeather, setFieldWeather] = useState<Record<string, FieldWeatherState>>({});
+  const [fieldHourlyWeather, setFieldHourlyWeather] = useState<Record<string, HourlySprayState>>({});
+  const hourlyInFlight = useRef(new Set<string>());
+  const hourlyFetchedAt = useRef(new Map<string, number>());
   const [weatherHubFieldId, setWeatherHubFieldId] = useState('');
   const [nasaPowerState, setNasaPowerState] = useState<NasaPowerCardState>({ status: 'idle' });
   const [era5ClimateState, setEra5ClimateState] = useState<Era5ClimateState>({ status: 'idle' });
@@ -368,6 +372,36 @@ export function useAppWeatherData({ realFields, favoriteFieldId }: UseAppWeather
     }
   };
 
+  const loadFieldHourlyWeather = useCallback(async (field: Field, force = false) => {
+    const key = String(field.id);
+    if (hourlyInFlight.current.has(key)) return;
+    if (!force && Date.now() - (hourlyFetchedAt.current.get(key) ?? 0) < 30 * 60 * 1000) return;
+    hourlyInFlight.current.add(key);
+    setFieldHourlyWeather((current) => ({
+      ...current,
+      [key]: { status: 'loading', data: current[key]?.data },
+    }));
+    try {
+      const location = await geocodeFieldLocation(field);
+      if (!location) throw new Error('Tarla konumu bulunamadı.');
+      const data = await fetchHourlySprayForecast(location.latitude, location.longitude);
+      hourlyFetchedAt.current.set(key, Date.now());
+      setFieldHourlyWeather((current) => ({ ...current, [key]: { status: 'ready', data } }));
+    } catch (error) {
+      setFieldHourlyWeather((current) => ({
+        ...current,
+        [key]: {
+          status: 'error',
+          message: error instanceof Error ? error.message : 'Saatlik tahmin alınamadı.',
+        },
+      }));
+      // Başarısız isteği hemen tekrar tekrar deneme; yeniden dene düğmesi zorlayabilir.
+      hourlyFetchedAt.current.set(key, Date.now());
+    } finally {
+      hourlyInFlight.current.delete(key);
+    }
+  }, []);
+
   const climateTargetField = useMemo(
     () =>
       realFields.find((field) => String(field.id) === String(weatherHubFieldId)) ??
@@ -495,6 +529,8 @@ export function useAppWeatherData({ realFields, favoriteFieldId }: UseAppWeather
 
   return {
     fieldWeather,
+    fieldHourlyWeather,
+    loadFieldHourlyWeather,
     weatherHubFieldId,
     setWeatherHubFieldId,
     loadHomeWeather,

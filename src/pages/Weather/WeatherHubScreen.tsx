@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import type { Field, FieldWeatherState, Screen } from '../../types';
 import SprayWeatherGuide from '../../features/weather/components/SprayWeatherGuide';
+import type { HourlySprayState } from '../../features/weather/services/hourlySprayForecast';
 
 type Setter<T> = (value: T) => void;
 
@@ -19,6 +20,8 @@ type WeatherHubScreenProps = {
 
   realFields?: Field[];
   fieldWeather?: Record<string, FieldWeatherState>;
+  fieldHourlyWeather?: Record<string, HourlySprayState>;
+  loadFieldHourlyWeather?: (field: Field, force?: boolean) => void | Promise<void>;
   weatherHubFieldId?: string;
   nasaPowerState?: {
     status: 'idle' | 'loading' | 'ready' | 'error';
@@ -640,6 +643,8 @@ export default function WeatherHubScreen(props: WeatherHubScreenProps) {
     cmsText = (_block, fallback) => fallback,
     realFields = [],
     fieldWeather = {},
+    fieldHourlyWeather = {},
+    loadFieldHourlyWeather = () => undefined,
     weatherHubFieldId = '',
     nasaPowerState = { status: 'idle' },
     era5ClimateState = { status: 'idle' },
@@ -665,6 +670,14 @@ export default function WeatherHubScreen(props: WeatherHubScreenProps) {
     fallbackField;
 
   const weatherKey = weatherField ? String(weatherField.id) : '';
+  useEffect(() => {
+    if (!weatherField) return;
+    const update = () => { if (document.visibilityState === 'visible') void loadFieldHourlyWeather(weatherField); };
+    update();
+    const timer = window.setInterval(update, 30 * 60 * 1000);
+    document.addEventListener('visibilitychange', update);
+    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', update); };
+  }, [weatherKey, weatherField, loadFieldHourlyWeather]);
   const weatherState =
     (weatherKey ? fieldWeather?.[weatherKey] : null) ??
     ({
@@ -1561,6 +1574,8 @@ export default function WeatherHubScreen(props: WeatherHubScreenProps) {
         <SprayWeatherGuide
           fieldName={weatherField?.name || 'Seçili tarla'}
           forecast={consensus.length ? consensus : providers[0]?.forecast ?? []}
+          hourly={fieldHourlyWeather[weatherKey]}
+          onRefreshHourly={weatherField ? () => void loadFieldHourlyWeather(weatherField, true) : undefined}
         />
 
         <section className="tp-wxr-alert">

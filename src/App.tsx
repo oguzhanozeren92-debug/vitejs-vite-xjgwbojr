@@ -257,6 +257,8 @@ export default function App() {
 
   const {
     fieldWeather,
+    fieldHourlyWeather,
+    loadFieldHourlyWeather,
     weatherHubFieldId,
     setWeatherHubFieldId,
     loadHomeWeather,
@@ -1093,6 +1095,8 @@ export default function App() {
         cmsText={cmsText}
         realFields={realFields}
         fieldWeather={fieldWeather}
+        fieldHourlyWeather={fieldHourlyWeather}
+        loadFieldHourlyWeather={loadFieldHourlyWeather}
         weatherHubFieldId={weatherHubFieldId}
         nasaPowerState={nasaPowerState}
         era5ClimateState={era5ClimateState}
@@ -1206,6 +1210,8 @@ export default function App() {
       satelliteByField={satelliteByField}
       loadFieldSatellite={loadFieldSatellite}
       fieldWeather={fieldWeather}
+      fieldHourlyWeather={fieldHourlyWeather}
+      loadFieldHourlyWeather={loadFieldHourlyWeather}
       loadFieldWeather={loadFieldWeather}
       setWeatherHubFieldId={setWeatherHubFieldId}
       openAddField={openAddField}

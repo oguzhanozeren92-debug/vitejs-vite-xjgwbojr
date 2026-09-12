@@ -4,7 +4,7 @@ import type { FieldOperation } from '../../field-operations/types/fieldOperation
 import type { HomeNutrientSignal } from '../../nutrition/services/buildNutrientDecision';
 import type { HomeSatelliteTrendSignal } from '../../satellite/services/buildHomeSatelliteDecision';
 
-export type HomeDecisionTarget = 'home' | 'weather' | 'calendar' | 'ai' | 'irrigation_detail' | 'soil' | 'map_vegetation';
+export type HomeDecisionTarget = 'home' | 'weather' | 'spray_weather' | 'calendar' | 'ai' | 'irrigation_detail' | 'soil' | 'map_vegetation';
 export type HomeDecisionSource =
   | 'field' | 'weather' | 'calendar' | 'satellite' | 'pusula'
   | 'irrigation' | 'phenology' | 'operation' | 'nutrition';
@@ -80,6 +80,9 @@ export type HomeDecisionEngineInput = {
   phenologyTimeSeriesStatus?: 'idle' | 'loading' | 'ready' | 'error';
   irrigationQuick?: HomeQuickDecision | null;
   sprayingQuick?: HomeQuickDecision | null;
+  hourlySprayWindow?: boolean;
+  hourlySprayForecastReady?: boolean;
+  hourlySprayRisk?: { at: number; detail: string } | null;
   resolvedHomeSatelliteDate?: string;
   homeFieldId?: string | number | null;
   homeFieldCrop?: string | null;

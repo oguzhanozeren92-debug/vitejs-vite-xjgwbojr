@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import type { WeatherForecastDay } from '../../../types';
 import { screenSprayWeather } from '../services/sprayWeatherScreening';
+import { buildHourlySprayPlan, formatForecastHour, type HourlySprayState } from '../services/hourlySprayForecast';
 import './SprayWeatherGuide.css';
 
 type Props = {
   fieldName: string;
   forecast: WeatherForecastDay[];
+  hourly?: HourlySprayState;
+  onRefreshHourly?: () => void;
 };
 
 function dayLabel(date: string, index: number): string {
@@ -17,12 +20,14 @@ function dayLabel(date: string, index: number): string {
     : new Intl.DateTimeFormat('tr-TR', { weekday: 'short', day: 'numeric', month: 'short' }).format(parsed);
 }
 
-export default function SprayWeatherGuide({ fieldName, forecast }: Props) {
+export default function SprayWeatherGuide({ fieldName, forecast, hourly, onRefreshHourly }: Props) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const days = forecast.slice(0, 5);
   const index = Math.max(0, days.findIndex((day) => day.date === selectedDate));
   const selected = days[index];
   const assessment = selected ? screenSprayWeather(selected) : null;
+  const hourlyData = hourly?.status === 'ready' ? hourly.data : null;
+  const hourlyPlan = buildHourlySprayPlan(hourlyData);
 
   return (
     <section className="tp-spray-guide" id="tp-spray-guide" aria-labelledby="tp-spray-guide-title">
@@ -33,7 +38,33 @@ export default function SprayWeatherGuide({ fieldName, forecast }: Props) {
         </div>
         <span aria-hidden="true">↗</span>
       </div>
-      <p>Beş günlük tahminde bir gün seç; yağış ve rüzgârı birlikte görelim.</p>
+      <p>Önce bugünün saatlerine bak; aşağıda diğer günleri de karşılaştırabilirsin.</p>
+
+      <div className="tp-spray-hourly" aria-live="polite">
+        <div className="tp-spray-hourly-heading">
+          <strong>Bugün hangi saatler?</strong>
+          {onRefreshHourly && <button type="button" onClick={onRefreshHourly} disabled={hourly?.status === 'loading'}>↻ Yenile</button>}
+        </div>
+        {hourly?.status === 'loading' ? <p>Saatlik tahmin güncelleniyor…</p>
+          : hourly?.status === 'error' ? <p>{hourly.message || 'Saatlik tahmin alınamadı.'}</p>
+          : hourlyData ? (
+            <>
+              <p>{hourlyPlan.message}</p>
+              {hourlyPlan.windows.length > 0 && (
+                <div className="tp-spray-hourly-windows">
+                  {hourlyPlan.windows.map((window) => (
+                    <div key={window.from} className="tp-spray-hourly-window">
+                      <strong>{formatForecastHour(window.from, hourlyData.timezone)}–{formatForecastHour(window.to, hourlyData.timezone)}</strong>
+                      <small>Rüzgâr en çok {Math.round(window.maxWindKmh)} km/sa · yağış olasılığı en çok %{Math.round(window.maxRainChance)}</small>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {hourlyPlan.nextRisk && <p className="tp-spray-hourly-risk">Dikkat: {hourlyPlan.nextRisk}.</p>}
+              <small>Open-Meteo saatlik tahmini · {formatForecastHour(hourlyData.updatedAt, hourlyData.timezone)} güncellendi</small>
+            </>
+          ) : <p>Saatlik tahmin yüklenince olası aralıklar burada görünecek.</p>}
+      </div>
 
       {selected ? (
         <>
@@ -60,7 +91,7 @@ export default function SprayWeatherGuide({ fieldName, forecast }: Props) {
             <ul>{assessment?.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
           </div>
           <p className="tp-spray-guide-note">
-            Bu, günlük hava ön kontrolüdür; ilaçlama onayı değildir. İşleme başlamadan önce tarladaki
+            Saatlik aralıklar da yalnızca hava ön kontrolüdür; ilaçlama onayı değildir. İşleme başlamadan önce tarladaki
             rüzgârı, sıcaklığı, yaklaşan yağışı ve kullanacağın ürünün etiketini kontrol et.
           </p>
         </>

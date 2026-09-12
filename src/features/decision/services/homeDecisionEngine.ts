@@ -535,14 +535,14 @@ export function buildHomeDecisionEvents(
     });
   }
 
-  if (windKmh != null && windKmh >= 20 && !phenology.postHarvest) {
+  if (windKmh != null && windKmh >= 20 && !phenology.postHarvest && !input.hourlySprayWindow) {
     pushEvent(items, {
       id: `weather:${fieldKey}:wind:${dayKey}`,
       group: 'spraying',
       source: 'weather',
       priority: 96,
       severity: 'danger',
-      target: 'weather',
+      target: 'spray_weather',
       channels: ['today', 'notification'],
       label: 'İLAÇLAMA',
       title: 'İlaçlamayı Ertele',
@@ -558,6 +558,30 @@ export function buildHomeDecisionEvents(
         iconTone: 'gold',
         dotTone: 'danger',
       },
+    });
+  }
+
+  const hourlyRisk = input.hourlySprayRisk;
+  if (hourlyRisk && !phenology.postHarvest && hourlyRisk.at >= nowMs &&
+      hourlyRisk.at - nowMs <= 3 * HOUR_MS) {
+    pushEvent(items, {
+      id: `weather:${fieldKey}:spray-hourly-risk:${hourlyRisk.at}`,
+      group: 'spraying',
+      source: 'weather',
+      priority: 95,
+      severity: 'warning',
+      target: 'spray_weather',
+      channels: input.hourlySprayWindow ? ['notification'] : ['today', 'notification'],
+      label: 'İLAÇLAMA',
+      title: 'Hava Değişiyor',
+      detail: `${hourlyRisk.detail}; ilaçlama planını yeniden kontrol et.`,
+      today: {
+        tone: 'amber',
+        visual: 'spraying',
+        iconKey: 'leaf-gold',
+        iconClass: 'leaf',
+      },
+      notification: { iconKey: 'leaf', iconTone: 'gold', dotTone: 'warning' },
     });
   }
 
@@ -833,7 +857,7 @@ export function buildHomeDecisionEvents(
     }
 
     if (
-      input.hasUsableTodayWeather &&
+      (input.hasUsableTodayWeather || input.hourlySprayForecastReady) &&
       !sprayingRecordedVeryRecently
     ) {
       const spraying = quickCopy(
@@ -845,9 +869,9 @@ export function buildHomeDecisionEvents(
         id: `weather:${fieldKey}:spraying-baseline:${dayKey}`,
         group: 'spraying',
         source: 'weather',
-        priority: spraying.title === 'Yağış ve Rüzgâr Sakin' ? 77 : 52,
+        priority: spraying.title.startsWith('İlaçlama havası:') ? 82 : spraying.title === 'Yağış ve Rüzgâr Sakin' ? 77 : 52,
         severity: 'info',
-        target: 'weather',
+        target: 'spray_weather',
         channels: ['today'],
         label: 'İLAÇLAMA',
         title: spraying.title,

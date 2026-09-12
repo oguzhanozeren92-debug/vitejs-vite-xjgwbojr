@@ -10,6 +10,7 @@ import HomeQuickSheets from '../../features/home/components/HomeQuickSheets';
 import { useHomeFieldSelection } from '../../features/fields/hooks/useHomeFieldSelection';
 import HomeFieldsSheet from '../../features/fields/components/HomeFieldsSheet';
 import { useHomeWeatherSignals } from '../../features/weather/hooks/useHomeWeatherSignals';
+import { buildHourlySprayPlan, formatForecastHour } from '../../features/weather/services/hourlySprayForecast';
 import HomeFiveDayForecast from '../../features/weather/components/HomeFiveDayForecast';
 import { useNextCalendarItem } from '../../features/calendar/hooks/useNextCalendarItem';
 import { useHomeIrrigationDecision } from '../../features/irrigation/hooks/useHomeIrrigationDecision';
@@ -148,6 +149,8 @@ export default function HomeScreen(props: HomeScreenProps) {
     satelliteByField,
     loadFieldSatellite,
     fieldWeather,
+    fieldHourlyWeather,
+    loadFieldHourlyWeather,
     loadFieldWeather,
     setWeatherHubFieldId,
     openAddField,
@@ -216,6 +219,12 @@ export default function HomeScreen(props: HomeScreenProps) {
   const sat = satState?.data;
   const weather = fieldWeather?.__home__;
   const selectedFieldWeather = fieldKey ? fieldWeather?.[fieldKey] : null;
+  const selectedHourlyWeather = fieldKey ? fieldHourlyWeather?.[fieldKey] : null;
+  const [hourlyClock, setHourlyClock] = useState(() => Date.now());
+  const hourlyPlan = buildHourlySprayPlan(
+    selectedHourlyWeather?.status === 'ready' ? selectedHourlyWeather.data : null,
+    hourlyClock,
+  );
   const requestedFieldForecasts = useRef(new Set<string>());
 
   useEffect(() => {
@@ -224,6 +233,19 @@ export default function HomeScreen(props: HomeScreenProps) {
     requestedFieldForecasts.current.add(fieldKey);
     void loadFieldWeather(homeField);
   }, [fieldKey, homeField, selectedFieldWeather, loadFieldWeather]);
+
+  useEffect(() => {
+    if (!homeField || homeField.demo || !fieldKey || typeof loadFieldHourlyWeather !== 'function') return;
+    const update = () => {
+      if (document.visibilityState !== 'visible') return;
+      setHourlyClock(Date.now());
+      void loadFieldHourlyWeather(homeField);
+    };
+    update();
+    const timer = window.setInterval(update, 30 * 60 * 1000);
+    document.addEventListener('visibilitychange', update);
+    return () => { window.clearInterval(timer); document.removeEventListener('visibilitychange', update); };
+  }, [fieldKey, homeField, loadFieldHourlyWeather]);
 
   useEnsureHomeSatellite({
     field: homeField,
@@ -253,11 +275,26 @@ export default function HomeScreen(props: HomeScreenProps) {
     temperatureMin: quickTemperatureMin,
     hasUsableTodayWeather,
     irrigationQuick,
-    sprayingQuick,
+    sprayingQuick: dailySprayingQuick,
   } = useHomeWeatherSignals({
     weather: homeField?.demo ? weather : selectedFieldWeather,
     field: homeField,
   });
+
+  const nextHourlyWindow = hourlyPlan.windows[0];
+  const sprayingQuick = homeField && !homeField.demo && selectedHourlyWeather?.status === 'ready'
+    ? nextHourlyWindow && selectedHourlyWeather.data
+      ? {
+          tone: 'neutral',
+          title: `İlaçlama havası: ${formatForecastHour(nextHourlyWindow.from, selectedHourlyWeather.data.timezone)}–${formatForecastHour(nextHourlyWindow.to, selectedHourlyWeather.data.timezone)}`,
+          detail: `Bu saatlerde yağış ve rüzgâr sakin görünüyor. ${hourlyPlan.nextRisk ? `Sonrasında ${hourlyPlan.nextRisk}. ` : ''}İşlem öncesi tarlayı ve ürün etiketini kontrol et.`,
+        }
+      : { tone: 'neutral', title: 'İlaçlama için sakin aralık yok', detail: hourlyPlan.nextRisk || hourlyPlan.message }
+    : homeField && !homeField.demo && selectedHourlyWeather?.status === 'error'
+      ? { tone: 'neutral', title: 'Saatlik hava alınamadı', detail: 'İlaçlama saatini tahmin olmadan seçme; hava ekranından yeniden dene.' }
+      : homeField && !homeField.demo && selectedHourlyWeather?.status === 'loading'
+        ? { tone: 'neutral', title: 'Saatlik hava hazırlanıyor', detail: 'İlaçlama saati için tarla tahmini bekleniyor.' }
+      : dailySprayingQuick;
 
   const homePusula = useHomePusula({
     field: homeField,
@@ -368,6 +405,11 @@ export default function HomeScreen(props: HomeScreenProps) {
     phenologyTimeSeriesStatus: homePhenology.timeSeriesStatus,
     irrigationQuick,
     sprayingQuick,
+    hourlySprayWindow: Boolean(nextHourlyWindow),
+    hourlySprayForecastReady: selectedHourlyWeather?.status === 'ready',
+    hourlySprayRisk: selectedHourlyWeather?.status === 'ready' && hourlyPlan.nextRiskAt != null && hourlyPlan.nextRisk
+      ? { at: hourlyPlan.nextRiskAt, detail: hourlyPlan.nextRisk }
+      : null,
     resolvedHomeSatelliteDate,
     homeFieldId: homeField?.id,
     homeFieldCrop: homeField?.crop,
@@ -404,7 +446,7 @@ export default function HomeScreen(props: HomeScreenProps) {
   const pusulaGuideAway = Boolean(pusulaFieldQuestion || ndviPhotoFollowUp);
 
   const openHomeInsightTarget = (
-    target: 'weather' | 'calendar' | 'ai' | 'home' | 'irrigation_detail' | 'soil' | 'map_vegetation',
+    target: 'weather' | 'spray_weather' | 'calendar' | 'ai' | 'home' | 'irrigation_detail' | 'soil' | 'map_vegetation',
   ) => {
     if (target === 'map_vegetation') {
       openMapLayer('vegetation');
@@ -453,6 +495,13 @@ export default function HomeScreen(props: HomeScreenProps) {
     if (target === 'weather') {
       if (fieldKey && typeof setWeatherHubFieldId === 'function') setWeatherHubFieldId(fieldKey);
       setScreen?.('weatherHub');
+      return;
+    }
+
+    if (target === 'spray_weather') {
+      if (fieldKey && typeof setWeatherHubFieldId === 'function') setWeatherHubFieldId(fieldKey);
+      setScreen?.('weatherHub');
+      window.setTimeout(() => document.getElementById('tp-spray-guide')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 180);
       return;
     }
 

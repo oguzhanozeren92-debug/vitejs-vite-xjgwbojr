@@ -23,3 +23,13 @@
 .tp-spray-guide-result ul { margin: 9px 0 0; padding-left: 20px; }
 .tp-spray-guide-result li { color: #303942; font-size: 13px; line-height: 1.5; }
 .tp-spray-guide .tp-spray-guide-note { margin-top: 12px; font-size: 12px; }
+.tp-spray-hourly { margin-top: 16px; padding: 15px; border: 1px solid #cbd2d9; border-radius: 18px; background: #fff; }
+.tp-spray-hourly-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.tp-spray-hourly-heading strong { font-size: 16px; }
+.tp-spray-hourly-heading button { min-height: 36px; padding: 6px 10px; border: 1px solid #cbd2d9; border-radius: 10px; background: #eef1f4; color: #20252b; font-size: 12px; font-weight: 700; }
+.tp-spray-hourly-heading button:disabled { opacity: .6; }
+.tp-spray-hourly-windows { display: grid; gap: 8px; margin-top: 12px; }
+.tp-spray-hourly-window { display: flex; flex-direction: column; gap: 4px; padding: 11px 13px; border: 1px solid #cbd2d9; border-radius: 13px; background: #f7f8fa; }
+.tp-spray-hourly-window strong { font-size: 18px; }
+.tp-spray-hourly-window small, .tp-spray-hourly > small { color: #4b5563; font-size: 11px; line-height: 1.4; }
+.tp-spray-hourly .tp-spray-hourly-risk { color: #20252b; font-weight: 700; }
