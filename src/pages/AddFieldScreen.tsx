@@ -1,9 +1,10 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import FieldMap from '../components/FieldMap';
 import MobileWheelPicker from '../components/MobileWheelPicker';
 import { TURKEY_CROP_PICKER_OPTIONS } from '../data/crops';
 import { onboardingStyles } from '../styles/onboardingStyles';
 import type { CropCycle, LocationOption, Screen } from '../types';
+import './AddFieldMobile.css';
 
 const PUSULA_BODY_SRC =
   'https://xwyfidtktauxivsosmex.supabase.co/storage/v1/object/public/pusula/compass-body.webp';
@@ -75,14 +76,29 @@ export default function AddFieldScreen(props: AddFieldScreenProps) {
   } = props;
 
   const [step,setStep] = useState(0);
+  const [pendingLocation, setPendingLocation] = useState<'district' | 'village' | null>(null);
+  const [districtOpenToken, setDistrictOpenToken] = useState(0);
+  const [villageOpenToken, setVillageOpenToken] = useState(0);
+  const fieldNameRef = useRef<HTMLInputElement>(null);
   const steps = ['Konum','Parsel','Ürün','Tarla Profili'];
+
+  useEffect(() => {
+    if (step !== 0 || locationOptionsLoading) return;
+    if (pendingLocation === 'district' && selectedProvinceId && districtOptions.length) {
+      setDistrictOpenToken((token) => token + 1);
+      setPendingLocation(null);
+    } else if (pendingLocation === 'village' && selectedDistrictId && villageOptions.length) {
+      setVillageOpenToken((token) => token + 1);
+      setPendingLocation(null);
+    }
+  }, [step, pendingLocation, locationOptionsLoading, selectedProvinceId, selectedDistrictId, districtOptions.length, villageOptions.length]);
 
   const canNext = useMemo(() => {
     if(step===0) return Boolean(selectedProvinceId && selectedDistrictId && fieldVillage);
     if(step===1) return Boolean(parcelGeometry || (fieldAda.trim() && fieldParcel.trim()));
-    if(step===2) return Boolean(fieldCrop);
+    if(step===2) return Boolean(fieldCrop && fieldName.trim());
     return true;
-  },[step,selectedProvinceId,selectedDistrictId,fieldVillage,parcelGeometry,fieldAda,fieldParcel,fieldCrop]);
+  },[step,selectedProvinceId,selectedDistrictId,fieldVillage,parcelGeometry,fieldAda,fieldParcel,fieldCrop,fieldName]);
 
   const next = async () => {
     if(step===1 && !parcelGeometry && fieldAda.trim() && fieldParcel.trim()) {
@@ -230,7 +246,7 @@ export default function AddFieldScreen(props: AddFieldScreenProps) {
                 <MobileWheelPicker
                   title="İl seç"
                   value={selectedProvinceId ? String(selectedProvinceId):''}
-                  onChange={handleProvinceSelection}
+                  onChange={(value) => { handleProvinceSelection(value); setPendingLocation('district'); }}
                   searchable
                   options={provinceOptions.map(x=>({
                     value:String(x.id),
@@ -244,7 +260,9 @@ export default function AddFieldScreen(props: AddFieldScreenProps) {
                 <MobileWheelPicker
                   title="İlçe seç"
                   value={selectedDistrictId ? String(selectedDistrictId):''}
-                  onChange={handleDistrictSelection}
+                  onChange={(value) => { handleDistrictSelection(value); setPendingLocation('village'); }}
+                  disabled={!selectedProvinceId || districtOptions.length === 0}
+                  autoOpenToken={districtOpenToken}
                   searchable
                   options={districtOptions.map(x=>({
                     value:String(x.id),
@@ -262,7 +280,9 @@ export default function AddFieldScreen(props: AddFieldScreenProps) {
       item => item.name === fieldVillage
     )?.id ?? ''
   )}
-  onChange={handleVillageSelection}
+  onChange={(value) => { handleVillageSelection(value); setPendingLocation(null); setStep(1); }}
+  disabled={!selectedDistrictId || villageOptions.length === 0}
+  autoOpenToken={villageOpenToken}
   searchable
   options={villageOptions.map(x=>({
     value:String(x.id),
@@ -363,7 +383,11 @@ export default function AddFieldScreen(props: AddFieldScreenProps) {
                 <MobileWheelPicker
                   title="Ürün seç"
                   value={fieldCrop}
-                  onChange={handleFieldCropSelection}
+                  onChange={(value) => {
+                    handleFieldCropSelection(value);
+                    if (fieldName.trim()) setStep(3);
+                    else window.setTimeout(() => fieldNameRef.current?.focus(), 50);
+                  }}
                   searchable
                   options={TURKEY_CROP_PICKER_OPTIONS}
                 />
@@ -372,6 +396,7 @@ export default function AddFieldScreen(props: AddFieldScreenProps) {
               <label className="full">
                 Tarla adı
                 <input
+                  ref={fieldNameRef}
                   value={fieldName}
                   onChange={e=>setFieldName(e.target.value)}
                   placeholder="Örn: Şeno Tarlası"
@@ -457,7 +482,7 @@ export default function AddFieldScreen(props: AddFieldScreenProps) {
             Geri
           </button>
 
-          {step<3 ? (
+          {step===0 ? null : step<3 ? (
             <button
               className="next"
               type="button"
