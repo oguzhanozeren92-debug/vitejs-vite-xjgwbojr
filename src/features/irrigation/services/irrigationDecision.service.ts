@@ -978,7 +978,7 @@ export async function calculateIrrigationDecision(
 
     if (kc === null) {
       unknownRiskMissing.push(
-        'ürün evresi / Kc',
+        'bitkinin türü ve gelişim durumu',
       );
     }
 

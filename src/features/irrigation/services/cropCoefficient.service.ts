@@ -221,7 +221,7 @@ function resolveStage(
           0,
 
         explanation:
-          'Dinlenme / başlangıç dönemi Kc_initial ile temsil edildi.',
+          'Dinlenme veya başlangıç dönemi için düşük su ihtiyacı esas alındı.',
       };
 
     case 'bud_swell':
@@ -238,7 +238,7 @@ function resolveStage(
           0.30,
 
         explanation:
-          'Erken gelişim dönemi Kc_initial → Kc_mid geçişinin erken kısmı olarak temsil edildi.',
+          'Erken gelişimde su ihtiyacının yavaş yavaş arttığı kabul edildi.',
       };
 
     case 'flowering':
@@ -253,7 +253,7 @@ function resolveStage(
           0.55,
 
         explanation:
-          'Çiçeklenme dönemi Kc_initial → Kc_mid geçişinin orta kısmı olarak temsil edildi.',
+          'Çiçeklenmede su ihtiyacının arttığı kabul edildi.',
       };
 
     case 'fruit_set':
@@ -269,7 +269,7 @@ function resolveStage(
           0.80,
 
         explanation:
-          'Meyve tutumu / üreme dönemi Kc_mid düzeyine yaklaşan gelişim dönemi olarak temsil edildi.',
+          'Meyve tutumunda su ihtiyacının en yüksek döneme yaklaştığı kabul edildi.',
       };
 
     case 'vegetative':
@@ -286,7 +286,7 @@ function resolveStage(
           1,
 
         explanation:
-          'Aktif gelişim dönemi Kc_mid ile temsil edildi.',
+          'Aktif gelişimde yüksek su ihtiyacı esas alındı.',
       };
 
     case 'maturation':
@@ -301,7 +301,7 @@ function resolveStage(
           0.50,
 
         explanation:
-          'Olgunlaşma dönemi Kc_mid → Kc_end geçişinin orta noktası olarak temsil edildi.',
+          'Olgunlaşmada su ihtiyacının azalmaya başladığı kabul edildi.',
       };
 
     case 'harvest_window':
@@ -316,7 +316,7 @@ function resolveStage(
           0.85,
 
         explanation:
-          'Hasat penceresi geç sezon kabul edilerek Kc_end değerine yakın temsil edildi.',
+          'Hasat döneminde sezon sonundaki su ihtiyacına yakın bir değer kullanıldı.',
       };
 
     case 'leaf_fall':
@@ -332,7 +332,7 @@ function resolveStage(
           1,
 
         explanation:
-          'Hasat sonrası / yaprak dökümü Kc_end ile temsil edildi.',
+          'Hasat sonrası veya yaprak dökümünde sezon sonundaki su ihtiyacı esas alındı.',
       };
 
     default:
@@ -471,11 +471,11 @@ export function resolveCropCoefficient(
         [],
 
       warnings: [
-        'Üzüm için Sofralık veya Şaraplık bilgisi gerekli. FAO-56 bu iki kullanım tipi için farklı Kc_mid değeri verir.',
+        'Üzümün sofralık mı şaraplık mı olduğunu belirt. Su ihtiyacı hesabı bu iki üzümde farklı yapılır.',
       ],
 
       caution:
-        'Üzüm tipi bilinmeden Kc uydurulmadı; ETc hesabı yapılmamalı.',
+        'Üzüm tipi bilinmediği için bitkinin su tüketimi hesaplanamadı.',
 
       source:
         null,
@@ -534,12 +534,12 @@ export function resolveCropCoefficient(
 
       warnings: [
         cropName
-          ? `${cropName} için doğrulanmış Kc profili henüz tanımlı değil.`
+          ? `${cropName} için doğrulanmış su ihtiyacı bilgisi henüz tanımlı değil.`
           : 'Ürün adı bulunamadı.',
       ],
 
       caution:
-        'Kc değeri uydurulmadı; ETc hesabı yapılmamalı.',
+        'Bitkinin su tüketimi için yeterli bilgi yok; tahmini miktar hesaplanmadı.',
 
       source:
         null,
@@ -600,7 +600,7 @@ export function resolveCropCoefficient(
       ],
 
       warnings: [
-        `Fenoloji evresi “${String(input.stage)}” Kc eğrisine bağlanamadı.`,
+        `“${String(input.stage)}” gelişim dönemi için su ihtiyacı hesaplanamadı.`,
       ],
 
       caution:
@@ -699,7 +699,7 @@ export function resolveCropCoefficient(
         ],
 
         warnings: [
-          'Tarla ürün vermeyen / genç bahçe olarak kayıtlı. Olgun bahçe Kc değeri doğrudan uygulanmadı.',
+          'Tarla genç veya henüz ürün vermeyen bahçe olarak kayıtlı. Yetişkin ağaçların su ihtiyacı doğrudan kullanılmadı.',
           canopyCoverPercent === null
             ? 'Taç örtüsü yüzdesi eksik.'
             : '',
@@ -709,7 +709,7 @@ export function resolveCropCoefficient(
         ].filter(Boolean),
 
         caution:
-          'Genç/seyrek bahçede taç örtüsü ve yükseklik olmadan ürün su katsayısı uydurulmaz.',
+          'Genç veya seyrek bahçede ağaç örtüsü ve boyu bilinmeden su ihtiyacı hesaplanamaz.',
 
         source: {
           label:
@@ -823,18 +823,18 @@ export function resolveCropCoefficient(
 
         `Ortalama kanopi yüksekliği: ${round3(canopyHeightM)} m.`,
 
-        `Yoğunluk katsayısı (Kd): ${round3(densityCoefficient)}.`,
+        `Ağaçların kapladığı alana göre hesap oranı: ${round3(densityCoefficient)}.`,
 
-        `Olgun bahçe evre Kc referansı ${round3(matureStageKc)} → genç bahçe planlama Kc ${adjustedKc}.`,
+        `Yetişkin bahçe için hesap oranı ${round3(matureStageKc)}; genç bahçe için kullanılan oran ${adjustedKc}.`,
       ],
 
       warnings: [
         'Genç bahçe düzeltmesi Allen & Pereira yoğunluk yaklaşımının düşük güvenli v1 planlama uyarlamasıdır.',
-        'Aktif sıra arası yer örtüsü, günlük toprak buharlaşması ve yerel mikroiklim düzeltmeleri henüz ayrı dual-Kc hesabıyla modellenmiyor.',
+        'Sıra arası bitki örtüsü, topraktan günlük buharlaşma ve tarlanın yerel hava koşulları ayrıca hesaba katılmıyor.',
       ],
 
       caution:
-        'Bu genç bahçe Kc değeri erken uyarı ve su talebi tahmini içindir; tek başına sulama miktarı değildir.',
+        'Genç bahçe için hesaplanan bu değer erken uyarı ve tahmini su ihtiyacı içindir; tek başına sulama miktarı değildir.',
 
       source: {
         label:
@@ -861,12 +861,12 @@ export function resolveCropCoefficient(
     resolution
       .explanation,
 
-    `FAO-56 Kc başlangıç/mid/end: ${profile.kcInitial} / ${profile.kcMid} / ${profile.kcEnd}.`,
+    `Bitkinin başlangıç, gelişme ve sezon sonu su ihtiyacı oranları: ${profile.kcInitial} / ${profile.kcMid} / ${profile.kcEnd}.`,
   ];
 
   const warnings:
     string[] = [
-    'Bu Kc standart FAO-56 baz çizgisidir; yer örtüsü, canopy oranı, rüzgâr ve minimum bağıl nem düzeltmeleri henüz uygulanmadı.',
+    'Su ihtiyacı için temel ürün bilgisi kullanıldı; yer örtüsü, ağaç örtüsü, rüzgâr ve hava nemi düzeltmeleri henüz uygulanmadı.',
   ];
 
   return {
@@ -911,7 +911,7 @@ export function resolveCropCoefficient(
     warnings,
 
     caution:
-      'Kc × ET₀ ile hesaplanan ETc, stressiz standart koşullardaki ürün evapotranspirasyonu tahminidir. Bu değer tek başına sulama miktarı değildir.',
+      'Bitkinin tahmini su tüketimi, normal koşullardaki gelişimine ve havaya göre hesaplanır. Bu değer tek başına sulama miktarı değildir.',
 
     source: {
       label:

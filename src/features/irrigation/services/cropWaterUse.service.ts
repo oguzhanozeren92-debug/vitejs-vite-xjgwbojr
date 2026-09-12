@@ -563,7 +563,7 @@ export async function calculateCropWaterUse(
     null
   ) {
     evidence.push(
-      `Ürün su katsayısı (Kc): ${coefficient.kc}.`,
+      `Bitkinin su ihtiyacı hesabında kullanılan oran: ${coefficient.kc.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}.`,
     );
   }
 
@@ -725,7 +725,7 @@ export async function calculateCropWaterUse(
         'Bitkinin Tahmini Su Tüketimi',
 
       pastLabel:
-        `Son 7 gün (bugünkü Kc ile): ${formatMm(
+        `Son 7 gün (bitkinin bugünkü durumuna göre): ${formatMm(
           past7Days
             .estimatedCropWaterUseMm,
         )}`,
@@ -744,7 +744,7 @@ export async function calculateCropWaterUse(
     warnings,
 
     caution:
-      'Bitkinin Tahmini Su Tüketimi = FAO-56 referans evapotranspirasyon (ET₀) × ürün/fenoloji katsayısı (Kc). Bu değer toprak su açığı veya doğrudan verilmesi gereken sulama suyu değildir.',
+      'Bitkinin tahmini su tüketimi, havanın kurutucu etkisine ve bitkinin gelişimine göre hesaplanır. Bu değer toprak su açığı veya doğrudan verilmesi gereken sulama suyu değildir.',
 
     generatedAt,
   };

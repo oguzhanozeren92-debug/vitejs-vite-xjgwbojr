@@ -433,11 +433,11 @@ export default function IrrigationDecisionDetailModal({
 
         {decision.currentKc != null && Number.isFinite(decision.currentKc) ? (
           <p className="tp-irrigation-detail-note">
-            Bugün hesaplanan ürün katsayısı (Kc): {decision.currentKc.toFixed(2)}. Geçmiş günlerin Kc ölçümü değildir.
+            Bitkinin su ihtiyacı hesabında bugün kullanılan oran: {decision.currentKc.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. Bu, tarlada ölçülen su miktarı değildir.
           </p>
         ) : (
           <p className="tp-irrigation-detail-note">
-            Bugünkü Kc henüz hesaplanamadı. Tarlanın ürün, gelişim ve taç bilgilerini kontrol et.
+            Bitkinin su ihtiyacı henüz hesaplanamadı. Tarlanın ürün, gelişim ve ağaç örtüsü bilgilerini kontrol et.
           </p>
         )}
 
@@ -448,7 +448,7 @@ export default function IrrigationDecisionDetailModal({
             <strong>{formatMm(stress?.past7DayPrecipitationMm)}</strong>
             <em>
               {stress?.past7DayCropWaterUseMm != null
-                ? `Bugünkü Kc ile tahmini tüketim ${formatMm(stress.past7DayCropWaterUseMm)}`
+                ? `Bitkinin bugünkü durumuna göre tahmini tüketim ${formatMm(stress.past7DayCropWaterUseMm)}`
                 : 'Ürün bazlı tüketim için veri eksik'}
             </em>
           </article>
@@ -502,11 +502,11 @@ export default function IrrigationDecisionDetailModal({
         ) : null}
 
         <p className="tp-irrigation-detail-note">
-          Bu değerlendirme gerçek toprak nemi ölçümü değildir. Susuz tarlada sulama miktarı önermez; yağış, ET₀, ürün katsayısı ve kök bölgesi verileriyle erken uyarı üretir.
+          Bu değerlendirme gerçek toprak nemi ölçümü değildir. Susuz tarlada sulama miktarı önermez; yağış, hava koşulları, bitkinin gelişimi ve toprak bilgileriyle erken uyarı üretir.
         </p>
 
         <p className="tp-irrigation-detail-note">
-          Son 7 günün bitki tüketiminde bugünkü Kc sabit kabul edilir; geçmiş günlere ait ölçülmüş Kc değildir.
+          Son 7 günün tahmini tüketimi bitkinin bugünkü gelişimine göre hesaplandı; geçmiş günlerdeki gelişimi ayrı ayrı ölçülmedi.
         </p>
 
         {onAddIrrigationRecord && decision.irrigationStatus !== 'rainfed' &&
