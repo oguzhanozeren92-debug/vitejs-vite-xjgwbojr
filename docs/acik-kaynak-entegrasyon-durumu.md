@@ -14,9 +14,11 @@ Bu belge, planlanan açık kaynak projeler ile TarlaPusula reposunda çalışan 
 
 ## Sonraki doğrulanabilir adımlar
 
-1. pyfao56 pilotunu gerçek saha önerisinden ayrı tutarak aynı günlere ait doğrulanmış hava, toprak, ürün evresi ve sulama girdileriyle mevcut hesapla yan yana ölçmek. ASCE referans ET ile Open-Meteo FAO ET₀ metodolojisini çıktıda ayrı etiketlemek. Farkların kaynağı anlaşılmadan canlı sulama kararı üretmemek.
+1. `tools/pyfao56-poc/compare.py` ile aynı günlerin doğrulanmış meteorolojik girdilerini, uygulamanın o günkü ET₀ ve Kc değerlerini yan yana değerlendirmek. ASCE referans ET ile Open-Meteo FAO ET₀ metodolojisini çıktıda ayrı etiketlemek. Bu **yalnızca referans ET ve aynı Kc üzerinden hesaplanan ET karşılaştırmasıdır**, gerçek sulama kararı karşılaştırması değildir. Farkların kaynağı anlaşılmadan canlı sulama kararı üretmemek.
 2. `satellite-ndvi-timeseries` Edge işlevinin kaynak kodunu ve veri sağlayıcısını bulup gerçek zaman serisinin kapsamını doğrulamak. Ardından Sentinel Hub / eo-learn gerekip gerekmediğine karar vermek.
 3. PCSE ve AquaCrop için veri gereksinimlerini ve çıktıları küçük karşılaştırmalarla doğrulamak. Saha verisi, gerekli servis ve işletme maliyeti belirlenmeden Vercel ön yüzüne bağımlılık eklememek.
 4. AgStack, AgML ve FarmVibes.AI'yi ayrı araştırma/analiz işleri olarak değerlendirmek; yalnızca doğrulanan çıktıları mevcut karar katmanına taşımak.
 
 Görünür uygulama değişikliği ancak pilot doğrulandıktan ve gerçekten bir ürün akışına bağlandıktan sonra Vercel'de görülecek. Bu belge ve pyfao56 örneği uygulamanın mevcut ekranlarını değiştirmez.
+
+2026-09-12 veri erişilebilirliği kontrolü: `fields` tablosunda 11 kayıt, bunların 4'ünde koordinat ve 4'ünde sulama durumu mevcut. `activities` tablosundaki tek kayıt sulama değil; doğrulanmış sulama miktarı/tarihi yok. `weather_cache` içindeki 3 kayıt 2026-08-27 tarihli; bu önbellekler pyfao56'nın bütün günlük meteorolojik girdileriyle güncel bir eşleşme sağlamıyor. Gerçek saha karşılaştırması şu aşamada yapılamıyor. Kullanıcı verileri ve erişim anahtarları bu repoya eklenmedi.
