@@ -23,8 +23,8 @@ def number(value, name, minimum=None, maximum=None):
 
 
 def compare(payload):
-    if payload.get("data_type") not in ("observed", "forecast", "synthetic"):
-        raise ValueError("data_type: observed, forecast veya synthetic olmalı")
+    if payload.get("data_type") not in ("observed", "historical_model", "forecast", "synthetic"):
+        raise ValueError("data_type: observed, historical_model, forecast veya synthetic olmalı")
     if not isinstance(payload.get("source"), str) or not payload["source"].strip():
         raise ValueError("source: hava ve uygulama verilerinin kaynağı gerekli")
     site = payload.get("station") or {}
@@ -65,7 +65,8 @@ def compare(payload):
         wind = number(row.get("wind_m_s"), f"{prefix}.wind_m_s", 0, 60)
         rain = number(row.get("rain_mm"), f"{prefix}.rain_mm", 0, 1000)
         app_eto = number(row.get("app_et0_mm"), f"{prefix}.app_et0_mm", 0, 40)
-        kc = number(row.get("app_kc"), f"{prefix}.app_kc", 0, 3)
+        kc = (number(row["app_kc"], f"{prefix}.app_kc", 0, 3)
+              if row.get("app_kc") is not None else None)
         key = f"{day.year}-{day.timetuple().tm_yday:03d}"
         weather.wdata.loc[key] = [srad, tmax, tmin, math.nan, math.nan,
                                    rhmax, rhmin, wind, rain, math.nan,
@@ -78,14 +79,16 @@ def compare(payload):
             "app_fao_et0_mm": round(app_eto, 3),
             "pyfao56_asce_short_et_mm": round(py_et, 3),
             "reference_difference_mm": round(py_et - app_eto, 3),
-            "app_kc": round(kc, 3),
-            "app_kc_x_fao_et0_mm": round(kc * app_eto, 3),
-            "app_kc_x_asce_et_mm": round(kc * py_et, 3),
+            "app_kc": round(kc, 3) if kc is not None else None,
+            "app_kc_x_fao_et0_mm": round(kc * app_eto, 3) if kc is not None else None,
+            "app_kc_x_asce_et_mm": round(kc * py_et, 3) if kc is not None else None,
         })
     return {
         "data_type": payload["data_type"],
         "source": payload["source"],
-        "scope": "reference ET and ET0 × same app Kc only",
+        "scope": ("reference ET and ET0 × same app Kc"
+                  if all(row["app_kc"] is not None for row in results)
+                  else "reference ET only; app Kc missing on some days"),
         "irrigation_amount_comparable": False,
         "reason": "Toprak başlangıç nemi, kök profili, gerçek sulama kayıtları ve model kalibrasyonu eşleştirilmedi.",
         "days": results,

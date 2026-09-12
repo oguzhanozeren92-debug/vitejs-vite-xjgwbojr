@@ -22,3 +22,5 @@ Bu belge, planlanan açık kaynak projeler ile TarlaPusula reposunda çalışan 
 Görünür uygulama değişikliği ancak pilot doğrulandıktan ve gerçekten bir ürün akışına bağlandıktan sonra Vercel'de görülecek. Bu belge ve pyfao56 örneği uygulamanın mevcut ekranlarını değiştirmez.
 
 2026-09-12 veri erişilebilirliği kontrolü: `fields` tablosunda 11 kayıt, bunların 4'ünde koordinat ve 4'ünde sulama durumu mevcut. `activities` tablosundaki tek kayıt sulama değil; doğrulanmış sulama miktarı/tarihi yok. `weather_cache` içindeki 3 kayıt 2026-08-27 tarihli; bu önbellekler pyfao56'nın bütün günlük meteorolojik girdileriyle güncel bir eşleşme sağlamıyor. Gerçek saha karşılaştırması şu aşamada yapılamıyor. Kullanıcı verileri ve erişim anahtarları bu repoya eklenmedi.
+
+`tools/pyfao56-poc/prepare_open_meteo.py` ile **önceden kaydedilmiş yerel** Open-Meteo günlük/saatlik yanıtı dönüştürme tamamlandı. Genel örnek şehir koordinatındaki geçmiş model yanıtının üç günlük referans ET kıyaslaması çalıştı; bu örnek tarla verisi veya yerinde ölçüm değildir. Kc olmadığı için ürün ET kıyaslaması yapılmadı. Özel tarla konumunu bir dış servise otomatik gönderen bir işlev eklenmedi.
