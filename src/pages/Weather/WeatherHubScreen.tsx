@@ -1179,6 +1179,13 @@ export default function WeatherHubScreen(props: WeatherHubScreenProps) {
         lastFetchAt > 0 && now - lastFetchAt < WEATHER_AUTO_REFRESH_MS;
       const alreadyTriedThisRuntime = WEATHER_FETCHED_THIS_RUNTIME.has(weatherKey);
 
+      // Ana ekran seçili tarlanın tahminini yeni aldıysa tekrar API çağırma.
+      if (hasWeatherData && !alreadyTriedThisRuntime) {
+        WEATHER_FETCHED_THIS_RUNTIME.add(weatherKey);
+        markWeatherFetchTimestamp(weatherKey);
+        return;
+      }
+
       // Veri zaten bellekteyse ve 8 saat dolmadıysa hiçbir ağ çağrısı yapma.
       if (hasWeatherData && isFresh) return;
 

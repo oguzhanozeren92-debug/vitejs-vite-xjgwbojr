@@ -1207,6 +1207,7 @@ export default function App() {
       loadFieldSatellite={loadFieldSatellite}
       fieldWeather={fieldWeather}
       loadFieldWeather={loadFieldWeather}
+      setWeatherHubFieldId={setWeatherHubFieldId}
       openAddField={openAddField}
       openAiAnalysisScreen={openAiAnalysisScreen}
       openCalendarScreen={openCalendarScreen}

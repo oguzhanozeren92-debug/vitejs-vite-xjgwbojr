@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CalendarDays, CloudSun, House, MapPinned, Sparkles } from 'lucide-react';
 import './HomeScreen.css';
 import './ClassicPusula.css';
@@ -149,6 +149,7 @@ export default function HomeScreen(props: HomeScreenProps) {
     loadFieldSatellite,
     fieldWeather,
     loadFieldWeather,
+    setWeatherHubFieldId,
     openAddField,
     openAiAnalysisScreen,
     openCalendarScreen,
@@ -214,6 +215,15 @@ export default function HomeScreen(props: HomeScreenProps) {
   const satState = satelliteByField?.[fieldKey];
   const sat = satState?.data;
   const weather = fieldWeather?.__home__;
+  const selectedFieldWeather = fieldKey ? fieldWeather?.[fieldKey] : null;
+  const requestedFieldForecasts = useRef(new Set<string>());
+
+  useEffect(() => {
+    if (!homeField || homeField.demo || !fieldKey || typeof loadFieldWeather !== 'function') return;
+    if (selectedFieldWeather || requestedFieldForecasts.current.has(fieldKey)) return;
+    requestedFieldForecasts.current.add(fieldKey);
+    void loadFieldWeather(homeField);
+  }, [fieldKey, homeField, selectedFieldWeather, loadFieldWeather]);
 
   useEnsureHomeSatellite({
     field: homeField,
@@ -233,6 +243,9 @@ export default function HomeScreen(props: HomeScreenProps) {
     headerTemperatureLabel: headerWeatherTemperatureLabel,
     headerCondition: headerWeatherCondition,
     headerLocation: headerWeatherLocation,
+  } = useHomeWeatherSignals({ weather, field: homeField });
+
+  const {
     rainChance: quickRainChance,
     rainMm: quickRainMm,
     windKmh: quickWindKmh,
@@ -241,7 +254,10 @@ export default function HomeScreen(props: HomeScreenProps) {
     hasUsableTodayWeather,
     irrigationQuick,
     sprayingQuick,
-  } = useHomeWeatherSignals({ weather, field: homeField });
+  } = useHomeWeatherSignals({
+    weather: homeField?.demo ? weather : selectedFieldWeather,
+    field: homeField,
+  });
 
   const homePusula = useHomePusula({
     field: homeField,
@@ -323,7 +339,7 @@ export default function HomeScreen(props: HomeScreenProps) {
   } = useHomeDecisionEngine({
     fieldKey,
     activeHomeLayer,
-    weatherStatus: weather?.status,
+    weatherStatus: homeField?.demo ? weather?.status : selectedFieldWeather?.status,
     hasUsableTodayWeather,
     quickTemperatureMin,
     quickTemperature,
@@ -358,7 +374,6 @@ export default function HomeScreen(props: HomeScreenProps) {
   });
 
   const homeNotificationCount = homeSystemNotifications.length;
-  const selectedFieldWeather = fieldKey ? fieldWeather?.[fieldKey] : null;
   const hasRecentFieldForecast = hasUsableFieldWeatherForecast(selectedFieldWeather);
   const fieldDataStatuses = buildHomeFieldDataStatuses({
     weather: { status: selectedFieldWeather?.status, available: Boolean(hasRecentFieldForecast) },
@@ -436,6 +451,7 @@ export default function HomeScreen(props: HomeScreenProps) {
     }
 
     if (target === 'weather') {
+      if (fieldKey && typeof setWeatherHubFieldId === 'function') setWeatherHubFieldId(fieldKey);
       setScreen?.('weatherHub');
       return;
     }

@@ -178,8 +178,8 @@ export function useHomeWeatherSignals({
     } else {
       sprayingQuick = {
         tone: 'amber',
-        title: 'Saatini Kontrol Et',
-        detail: 'Günlük tahmin uygun saati göstermez',
+        title: 'Yağış ve Rüzgâr Sakin',
+        detail: 'İlaçlamadan önce sıcaklığı, tarla koşullarını ve ürün etiketini kontrol et',
       };
     }
 

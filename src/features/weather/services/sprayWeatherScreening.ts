@@ -40,7 +40,7 @@ export function screenSprayWeather(day: WeatherForecastDay): SprayDayScreening {
 
   return {
     status: 'check',
-    title: 'Saatini kontrol et',
+    title: 'Yağış ve rüzgâr sakin',
     reasons: [
       `Günlük yağış ${rain.toLocaleString('tr-TR', { maximumFractionDigits: 1 })} mm; en yüksek yağış olasılığı %${Math.round(rainChance)}.`,
       `Gün içindeki en yüksek rüzgâr ${Math.round(wind)} km/sa.`,

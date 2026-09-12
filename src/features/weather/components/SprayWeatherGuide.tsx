@@ -60,8 +60,8 @@ export default function SprayWeatherGuide({ fieldName, forecast }: Props) {
             <ul>{assessment?.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
           </div>
           <p className="tp-spray-guide-note">
-            Günlük tahmin uygun bir uygulama saati göstermez. İşleme başlamadan önce tarladaki rüzgârı,
-            yaklaşan yağışı ve kullanacağın ürünün etiketindeki koşulları kontrol et.
+            Bu, günlük hava ön kontrolüdür; ilaçlama onayı değildir. İşleme başlamadan önce tarladaki
+            rüzgârı, sıcaklığı, yaklaşan yağışı ve kullanacağın ürünün etiketini kontrol et.
           </p>
         </>
       ) : (

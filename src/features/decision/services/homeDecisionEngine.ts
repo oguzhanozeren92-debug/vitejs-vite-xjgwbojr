@@ -845,7 +845,7 @@ export function buildHomeDecisionEvents(
         id: `weather:${fieldKey}:spraying-baseline:${dayKey}`,
         group: 'spraying',
         source: 'weather',
-        priority: 52,
+        priority: spraying.title === 'Yağış ve Rüzgâr Sakin' ? 77 : 52,
         severity: 'info',
         target: 'weather',
         channels: ['today'],
