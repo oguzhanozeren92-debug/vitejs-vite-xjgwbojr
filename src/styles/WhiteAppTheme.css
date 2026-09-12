@@ -596,3 +596,27 @@ html body .tp-v1 .tp-home-forecast-heading strong {
 html body .tp-v1 .tp-home-forecast-heading > span { font-size: 12px !important; font-weight: 750 !important; }
 html body .tp-v1 .tp-home-forecast-day strong { font-size: 21px !important; }
 html body .tp-v1 .tp-home-forecast-day :is(span,small) { font-size: 11px !important; color: #4f5c69 !important; }
+
+/* One continuous satellite photograph behind both the compass and home content. */
+html body .tp-v1 {
+  position: relative;
+  isolation: isolate;
+  background: #e9edf1 !important;
+}
+html body .tp-v1::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: url('https://xwyfidtktauxivsosmex.supabase.co/storage/v1/object/public/ui-icons/backgrounds/global-header-satellite-v2.webp') center top / cover no-repeat;
+  filter: grayscale(1) contrast(1.12) brightness(.86);
+  opacity: .72;
+}
+html body .tp-v1 .tp-v1-header {
+  background: transparent !important;
+}
+html body .tp-v1 .tp-v1-header::before,
+html body .tp-v1 .tp-v1-header::after {
+  display: none !important;
+}
