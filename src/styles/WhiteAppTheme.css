@@ -471,3 +471,14 @@ html body .tp-premium-drawer .tp-premium-drawer-logout {
 html body .tp-premium-drawer .tp-premium-drawer-foot-art { background: transparent !important; }
 html body .tp-premium-drawer .tp-premium-drawer-foot-art span { color: #536170 !important; }
 html body:has(.tp-premium-drawer) #tp-dev-plan-switch { visibility: hidden !important; }
+
+/* Monochrome compass body only. The separately layered rotating needle keeps
+   its original image, position and animation. */
+html body .tp-v1 .tp-brand-pusula-anchor img:not(.tp-brand-pusula-needle),
+html body .tp-premium-drawer .tp-premium-drawer-brand-mark,
+html body .tp-global-pusula-anchor img:not(.tp-global-pusula-needle),
+html body .tp-pdg-compass .tp-pdg-body,
+html body .pusula-guide .pusula-guide__body,
+html body .tp-pusula-synthesis-anchor img {
+  filter: grayscale(1) brightness(.78) contrast(1.3) !important;
+}
