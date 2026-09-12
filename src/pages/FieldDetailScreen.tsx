@@ -1618,7 +1618,7 @@ export default function FieldDetailScreen(props: FieldDetailScreenProps) {
           )}
 
           <div className={`tp-field-fab-wrap ${fieldFabOpen ? 'open' : ''}`}>
-            <div className="tp-field-fab-menu" aria-hidden={!fieldFabOpen}>
+            {fieldFabOpen && <div className="tp-field-fab-menu" id="field-action-menu">
               <button
                 type="button"
                 onClick={() => {
@@ -1666,13 +1666,14 @@ export default function FieldDetailScreen(props: FieldDetailScreenProps) {
                 <span className="gray">⚙</span>
                 <strong>Tarla Bilgileri</strong>
               </button>
-            </div>
+            </div>}
 
             <button
               type="button"
               className="tp-field-fab"
               aria-label={fieldFabOpen ? 'Menüyü kapat' : 'Tarla işlemlerini aç'}
               aria-expanded={fieldFabOpen}
+              aria-controls="field-action-menu"
               onClick={() => setFieldFabOpen((value) => !value)}
             >
               {fieldFabOpen ? '×' : '+'}
