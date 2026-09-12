@@ -16,6 +16,7 @@ export default function FieldGrowthObservations({ fieldId, seasons }: Props) {
   const [notes, setNotes] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const observedDays = new Set(items.filter((item) => item.seasonId === seasonId).map((item) => item.observedOn)).size;
 
   useEffect(() => {
     let active = true;
@@ -79,6 +80,7 @@ export default function FieldGrowthObservations({ fieldId, seasons }: Props) {
       <label>Not (isteğe bağlı)<textarea value={notes} maxLength={500} onChange={(event) => setNotes(event.target.value)} placeholder="Tarlada ne gördün?" /></label>
       <button type="submit" disabled={busy}>{busy ? 'Kaydediliyor…' : 'Gözlemi kaydet'}</button>
     </form>}
+    {seasons.length > 0 && <p>Seçilen sezonda {observedDays} ayrı güne ait gözlem var. Gelişim modeliyle kıyas için en az 2 ayrı gün gerekli; bu kayıtlar tek başına model tahmini oluşturmaz.</p>}
     {error && <p role="alert">{error}</p>}
     {items.length > 0 && <div className="tp-growth-observations-list">
       {items.map((item) => <article key={item.id}>
