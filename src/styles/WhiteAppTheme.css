@@ -1,0 +1,292 @@
+/* One mobile-first, neutral surface system for every TarlaPusula screen.
+   Map imagery, crop-health layers and the original compass artwork keep their own colors. */
+:root {
+  color-scheme: light;
+  --tp-bg: #ffffff;
+  --tp-bg-soft: #f7f8fa;
+  --tp-bg-deep: #ffffff;
+  --tp-surface-0: #ffffff;
+  --tp-surface-1: #ffffff;
+  --tp-surface-2: #f7f8fa;
+  --tp-surface-3: #f1f3f5;
+  --tp-surface-4: #e8ebee;
+  --tp-text: #20252b;
+  --tp-text-strong: #171b20;
+  --tp-text-soft: #4b5563;
+  --tp-muted: #697586;
+  --tp-muted-2: #87919c;
+  --tp-primary: #303942;
+  --tp-primary-strong: #20252b;
+  --tp-primary-soft: #5b6570;
+  --tp-primary-dark: #e9ecef;
+  --tp-border: #e5e8eb;
+  --tp-line: #e5e8eb;
+  --tp-line-soft: #eff1f3;
+  --tp-line-active: #697586;
+  --tp-line-cyan: #dce2e6;
+  --soil-bg-main: #ffffff;
+  --soil-bg-deep: #ffffff;
+  --soil-bg-card: #ffffff;
+  --soil-bg-active: #f1f3f5;
+  --soil-border-card: #e5e8eb;
+  --soil-border-input: #d9dee3;
+  --soil-sage: #303942;
+  --soil-heading: #20252b;
+  --soil-secondary: #56616e;
+  --soil-muted: #697586;
+}
+
+html, body, #root, body .app {
+  color-scheme: light !important;
+  background: #fff !important;
+  color: #20252b !important;
+}
+@media (min-width: 481px) {
+  #root { border-inline: 1px solid #e5e8eb !important; box-shadow: 0 8px 40px #26323812 !important; }
+}
+
+/* Every route starts with the same white canvas and readable type. */
+body :is(.tp-v1, .tp-field-detail-page, .tp-calendar-page, .tp-ai-page,
+  .tp-wxr-page, .tp-wxv2-page, .soil-page, .tp-peststore-page,
+  .tp-market-ref-page, .tp-support-page, .tp-agri-news-page,
+  .tp-nutrition-page, .tp-producer-market-page, .tp-pest-guide-page,
+  .tp-desktop-shell, .tp-placeholder-page, .tp-chat-shell,
+  .tp-onboarding-page, .pt-page, .tp-era5-page, .tp-unified-map-page,
+  .tp-authv2, .tp-theme-page) {
+  background: #fff !important;
+  color: #20252b !important;
+  color-scheme: light !important;
+}
+
+/* Shared cards and section surfaces. Keep actual map canvases and imagery intact. */
+body :is(.tp-v1, .tp-field-detail-page, .tp-calendar-page, .tp-ai-page,
+  .tp-wxr-page, .tp-wxv2-page, .soil-page, .tp-placeholder-page,
+  .tp-onboarding-page, .pt-page, .tp-chat-shell,
+  .tp-peststore-page, .tp-market-ref-page, .tp-support-page,
+  .tp-agri-news-page, .tp-nutrition-page, .tp-producer-market-page,
+  .tp-pest-guide-page) :is([class$='-card'], [class$='-panel'],
+  [class$='-tile'], [class$='-surface'], .tp-card, .tp-panel, .tp-surface,
+  .tp-theme-surface):not(.maplibregl-map):not(.tp-map-stage) {
+  background: #fff !important;
+  border-color: #e5e8eb !important;
+  color: #20252b !important;
+  box-shadow: none !important;
+}
+body :is(.tp-v1, .tp-field-detail-page, .tp-calendar-page, .tp-ai-page,
+  .tp-wxr-page, .soil-page, .tp-placeholder-page, .tp-onboarding-page,
+  .pt-page, .tp-chat-shell) :is(h1,h2,h3,h4,h5,strong,label) {
+  color: #20252b !important;
+  text-shadow: none !important;
+}
+body :is(.tp-v1, .tp-field-detail-page, .tp-calendar-page, .tp-ai-page,
+  .tp-wxr-page, .soil-page, .tp-placeholder-page, .tp-onboarding-page,
+  .pt-page, .tp-chat-shell) :is(p,small) {
+  color: #56616e !important;
+  text-shadow: none !important;
+}
+
+/* Navigation, classic compass, home dashboard. */
+body .tp-v1 .tp-v1-header, body .tp-global-page-header,
+body .tp-field-detail-page .tp-field-detail-header,
+body .tp-calendar-page header, body .soil-page .soil-topbar,
+body .tp-ai-page .tp-ai-page-header, body .topbar {
+  background: #fff !important;
+  border-color: #e5e8eb !important;
+  color: #20252b !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+body .tp-v1 .tp-brand-pusula-anchor,
+body .tp-v1 .tp-brand-pusula-anchor img,
+body .tp-premium-drawer-brand-mark,
+body .tp-global-pusula-anchor { visibility: visible !important; }
+body .tp-v1 .tp-brand-pusula-anchor::before { background: none !important; }
+body .tp-v1 .tp-brand-pusula-anchor img { filter: none !important; }
+body .tp-v1 .tp-menu-btn, body .tp-v1 .tp-score,
+body .tp-v1 .tp-header-weather, body .tp-global-page-back,
+body .tp-global-page-menu, body .tp-global-weather-glass,
+body .tp-global-points-glass {
+  background: #f7f8fa !important;
+  border: 1px solid #e5e8eb !important;
+  color: #20252b !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+body .tp-v1 .tp-home-today-reference,
+body .tp-v1 .tp-home-notifications-reference,
+body .tp-v1 .tp-home-field,
+body .tp-v1 .tp-synthesis-bubble,
+body .tp-v1 .tp-field-head {
+  background: #fff !important;
+  border: 1px solid #e5e8eb !important;
+  color: #20252b !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+body .tp-v1 :is(.tp-home-today-bg,.tp-home-notifications-bg,
+  .tp-home-today-shade,.tp-home-notifications-shade),
+body .tp-v1 .tp-home-field::before,
+body .tp-v1 .tp-field-head::before { display: none !important; }
+body .tp-v1 :is(.tp-home-today-title h2,.tp-home-notifications-title strong,
+  .tp-home-today-action-copy strong,.tp-map-heading-copy h2,
+  .tp-header-weather-copy strong,.tp-brand strong) { color: #20252b !important; }
+body .tp-v1 :is(.tp-home-today-subtitle,.tp-home-notifications-subtitle,
+  .tp-map-heading-copy p,.tp-header-weather-copy small,.tp-header-weather-copy em) {
+  color: #697586 !important;
+}
+body .tp-v1 :is(.tp-home-today-action,.tp-field-select-box,
+  .tp-map-fullscreen-btn,.tp-add-field-3d,.tp-map-shortcut,
+  .tp-home-general-metric,.tp-ndvi-legend-card,.tp-map-data-badge,
+  .tp-real-home-legend) {
+  background: #fff !important;
+  color: #20252b !important;
+  border-color: #e5e8eb !important;
+  box-shadow: none !important;
+}
+body .tp-v1 .tp-bottom,
+body .tp-field-detail-page .tp-field-detail-bottom,
+body .bottomNav {
+  background: #fff !important;
+  border-top: 1px solid #e5e8eb !important;
+  color: #56616e !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+body .tp-v1 .tp-bottom::before { background: #e5e8eb !important; box-shadow: none !important; }
+body .tp-v1 .tp-bottom button,
+body .tp-field-detail-page .tp-field-detail-bottom button,
+body .bottomNav button { color: #697586 !important; text-shadow: none !important; }
+body .tp-v1 .tp-bottom button.active,
+body .tp-field-detail-page .tp-field-detail-bottom button.active,
+body .bottomNav button.active { color: #20252b !important; }
+body .tp-v1 .tp-bottom :is(.tp-bottom-icon-shell,.tp-bottom-ai-shell,.tp-nav-v2),
+body .tp-field-detail-page .tp-field-detail-main-action {
+  background: #f7f8fa !important;
+  color: #20252b !important;
+  border-color: #e5e8eb !important;
+  box-shadow: none !important;
+}
+
+/* Preserve the left drawer and compass artwork, remove the green atmosphere. */
+html body .tp-premium-drawer {
+  background: #fff !important;
+  border-color: #e5e8eb !important;
+  color: #20252b !important;
+  box-shadow: 12px 0 36px #20252b1a !important;
+}
+html body .tp-premium-drawer :is(.tp-premium-drawer-atmosphere),
+html body .tp-premium-drawer::before,
+html body .tp-premium-drawer::after { display: none !important; }
+html body .tp-premium-drawer :is(.tp-premium-drawer-brand-name,
+  .tp-premium-drawer-brand-name em,.tp-premium-drawer-welcome strong,
+  .tp-premium-drawer-x) { color: #20252b !important; text-shadow: none !important; }
+html body .tp-premium-drawer :is(.tp-premium-drawer-welcome small,
+  .tp-premium-drawer-welcome p) { color: #697586 !important; }
+html body .tp-premium-drawer :is(button,.tp-premium-points) {
+  background: #f7f8fa !important;
+  border-color: #e5e8eb !important;
+  color: #20252b !important;
+  text-shadow: none !important;
+  box-shadow: none !important;
+}
+html body .tp-premium-drawer-backdrop { background: #20252b55 !important; }
+
+/* Sheets, dialogs and forms, including the field-delete confirmation. */
+html body :is(.tp-fields-sheet,.tp-field-delete-dialog,
+  [role='dialog']:not(.maplibregl-popup)) {
+  background: #fff !important;
+  border-color: #e5e8eb !important;
+  color: #20252b !important;
+  box-shadow: 0 12px 40px #20252b22 !important;
+}
+html body .tp-fields-sheet :is(.tp-fields-sheet-field,.tp-fields-sheet-close,
+  .tp-fields-sheet-detail,.tp-fields-sheet-add,.tp-fields-delete-actions button:not(.danger)),
+html body .tp-field-delete-dialog button:not(.danger) {
+  background: #f7f8fa !important;
+  border-color: #e5e8eb !important;
+  color: #20252b !important;
+  box-shadow: none !important;
+}
+html body .tp-fields-sheet .tp-fields-sheet-field.is-selected { border-color: #919ca7 !important; }
+html body .tp-fields-sheet .tp-fields-sheet-field-icon { background: #fff !important; border-color: #e5e8eb !important; color: #303942 !important; box-shadow: none !important; }
+html body .tp-fields-sheet :is(h2,.tp-fields-sheet-field-copy strong) { color: #20252b !important; }
+html body .tp-fields-sheet :is(p,small,.tp-fields-sheet-field-copy small) { color: #697586 !important; }
+html body .tp-fields-sheet .tp-fields-sheet-delete { background: #fff5f5 !important; border-color: #efc7c7 !important; color: #a53737 !important; }
+html body .tp-fields-sheet .tp-fields-delete-actions .danger { background: #a53737 !important; color: #fff !important; }
+html body .tp-fields-sheet .tp-fields-delete-warning { background: #fff9e9 !important; color: #72511b !important; border-color: #eedfbe !important; }
+html body .tp-fields-sheet .tp-fields-delete-error { color: #a53737 !important; }
+html body :is(.tp-v1,.tp-field-detail-page,.tp-calendar-page,.tp-ai-page,
+  .tp-wxr-page,.soil-page,.tp-onboarding-page,.tp-chat-shell,.tp-authv2)
+  :is(input,textarea,select) {
+  background: #fff !important;
+  border-color: #d9dee3 !important;
+  color: #20252b !important;
+  color-scheme: light !important;
+}
+html body :is(.tp-v1,.tp-field-detail-page,.tp-calendar-page,.tp-ai-page,
+  .tp-wxr-page,.soil-page,.tp-onboarding-page,.tp-chat-shell,.tp-authv2)
+  :is(input,textarea)::placeholder { color: #87919c !important; }
+
+/* Login and auxiliary pages use the same uncluttered background. */
+body .tp-authv2 { background-image: none !important; }
+body .tp-authv2 :is(.tp-authv2-panel,.tp-authv2-feature,.tp-authv2-input) {
+  background: #fff !important; border-color: #e5e8eb !important;
+  color: #20252b !important; box-shadow: none !important;
+}
+body .soil-page :is(.soil-hero,.soil-card,.soil-ai,.soil-history,
+  .soil-sidebar,.soil-topbar,.soil-soilgrids-state,.soil-empty) {
+  background: #fff !important; border-color: #e5e8eb !important;
+  color: #20252b !important; box-shadow: none !important;
+}
+body .soil-page .soil-hero-shade { display: none !important; }
+body .tp-wxr-page :is(.tp-wxr-card,.tp-wxr-table-card,.tp-wxr-hero,
+  .tp-wxr-section,.tp-wxr-header) {
+  background: #fff !important; border-color: #e5e8eb !important;
+  color: #20252b !important; box-shadow: none !important;
+}
+
+/* Legacy module panels and embedded pages follow the same neutral hierarchy. */
+html body :is(.tp-v1,.tp-field-detail-page,.tp-calendar-page,.tp-ai-page,
+  .tp-wxr-page,.tp-wxv2-page,.soil-page,.tp-placeholder-page,
+  .tp-onboarding-page,.pt-page,.tp-chat-shell,.tp-peststore-page,
+  .tp-market-ref-page,.tp-support-page,.tp-agri-news-page,
+  .tp-nutrition-page,.tp-producer-market-page,.tp-pest-guide-page)
+  :is([class*='-card'],[class*='-panel'],[class*='-tile'],[class*='-box'],
+  [class*='-row'],[class*='-section']):not(.tp-map-stage):not(.maplibregl-map) {
+  border-color: #e5e8eb !important;
+  box-shadow: none !important;
+}
+html body :is(.tp-v1,.tp-field-detail-page,.tp-calendar-page,.tp-ai-page,
+  .tp-wxr-page,.tp-wxv2-page,.soil-page,.tp-placeholder-page,
+  .tp-onboarding-page,.pt-page,.tp-chat-shell,.tp-peststore-page,
+  .tp-market-ref-page,.tp-support-page,.tp-agri-news-page,
+  .tp-nutrition-page,.tp-producer-market-page,.tp-pest-guide-page)
+  :is([class*='-box'],[class*='-row'],[class*='-sheet'],[class*='-modal']):not(.tp-map-stage):not(.maplibregl-map) {
+  background-color: #fff !important;
+  color: #20252b !important;
+}
+html body :is(.tp-v1,.tp-field-detail-page,.tp-calendar-page,.tp-ai-page,
+  .tp-wxr-page,.tp-wxv2-page,.soil-page,.tp-placeholder-page,
+  .tp-onboarding-page,.pt-page,.tp-chat-shell,.tp-peststore-page,
+  .tp-market-ref-page,.tp-support-page,.tp-agri-news-page,
+  .tp-nutrition-page,.tp-producer-market-page,.tp-pest-guide-page)
+  :is([class*='-card'],[class*='-panel'],[class*='-tile'],[class*='-box'])
+  :is(span,em,b,a):not([class*='status']):not([class*='warning']):not([class*='error']) {
+  color: #303942 !important;
+  text-shadow: none !important;
+}
+html body :is(.tp-v1,.tp-field-detail-page,.tp-calendar-page,.tp-ai-page,
+  .tp-wxr-page,.soil-page,.tp-placeholder-page,.tp-onboarding-page,
+  .pt-page,.tp-chat-shell) button:not(.tp-brand-pusula-anchor):not([class*='danger']):not([class*='delete']):not(.maplibregl-ctrl-icon) {
+  border-color: #e5e8eb !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+html body .tp-v1 :is(.tp-ui3d-icon,.tp-nav-v2),
+html body .tp-premium-drawer-icon img { filter: grayscale(1) saturate(0) !important; }
+html body .tp-v1 .tp-brand-pusula-anchor img,
+html body .tp-premium-drawer-brand-mark { filter: none !important; }
+html body .tp-authv2-wordmark span,
+html body .tp-authv2-wordmark strong { color: #20252b !important; text-shadow: none !important; }
+html body .tp-authv2-primary { background: #303942 !important; border-color: #303942 !important; color: #fff !important; box-shadow: none !important; }
+html body .tp-authv2 :is(.tp-authv2-features,.tp-authv2-feature) { background: #fff !important; box-shadow: none !important; }
