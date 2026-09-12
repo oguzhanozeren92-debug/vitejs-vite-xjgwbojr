@@ -1,6 +1,7 @@
 import MobileWheelPicker from '../components/MobileWheelPicker';
 import PcsePilotReadiness from '../features/field-detail/components/PcsePilotReadiness';
 import FieldGrowthObservations from '../features/field-detail/components/FieldGrowthObservations';
+import SeasonModelInputs from '../features/field-detail/components/SeasonModelInputs';
 import { onboardingStyles } from '../styles/onboardingStyles';
 
 type FieldDetailScreenProps = Record<string, any>;
@@ -531,6 +532,10 @@ export default function FieldDetailScreen(props: FieldDetailScreenProps) {
 
                 {!selectedField.demo && (selectedField.cropCycle ?? 'annual') === 'annual' && (
                   <FieldGrowthObservations fieldId={String(selectedField.id)} seasons={annualSeasons} />
+                )}
+
+                {!selectedField.demo && (selectedField.cropCycle ?? 'annual') === 'annual' && (
+                  <SeasonModelInputs field={selectedField} seasons={annualSeasons} seasonsLoading={historyLoading} />
                 )}
 
                 {!selectedField.demo && (

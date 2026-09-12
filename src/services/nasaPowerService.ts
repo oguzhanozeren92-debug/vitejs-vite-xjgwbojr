@@ -57,6 +57,7 @@ function readableDate(value: string) {
 }
 
 function safeNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
   const parsed = Number(value);
 
   if (!Number.isFinite(parsed)) return null;
@@ -108,8 +109,26 @@ export async function fetchNasaPowerData(
   const start = new Date(end);
   start.setDate(start.getDate() - (days - 1));
 
-  const startDate = formatDate(start);
-  const endDate = formatDate(end);
+  return fetchNasaPowerRange(latitude, longitude, formatDate(start), formatDate(end));
+}
+
+/** Historic daily weather for an explicitly selected season; no request is made until called. */
+export async function fetchNasaPowerRange(
+  latitude: number,
+  longitude: number,
+  startDate: string,
+  endDate: string,
+): Promise<NasaPowerSummary> {
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude) ||
+      latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+    throw new Error('Günlük hava için geçerli tarla konumu gerekli.');
+  }
+  if (!/^\d{8}$/.test(startDate) || !/^\d{8}$/.test(endDate) ||
+      startDate > endDate ||
+      !Number.isFinite(Date.parse(`${startDate.slice(0, 4)}-${startDate.slice(4, 6)}-${startDate.slice(6)}T00:00:00Z`)) ||
+      !Number.isFinite(Date.parse(`${endDate.slice(0, 4)}-${endDate.slice(4, 6)}-${endDate.slice(6)}T00:00:00Z`))) {
+    throw new Error('Sezonun başlangıç ve bitiş tarihi geçerli olmalı.');
+  }
 
   const query = new URLSearchParams({
     parameters: PARAMETERS.join(','),
@@ -119,6 +138,7 @@ export async function fetchNasaPowerData(
     start: startDate,
     end: endDate,
     format: 'JSON',
+    'time-standard': 'LST',
   });
 
   const response = await fetch(`${NASA_POWER_API}?${query.toString()}`);
