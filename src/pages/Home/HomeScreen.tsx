@@ -286,10 +286,10 @@ export default function HomeScreen(props: HomeScreenProps) {
     ? nextHourlyWindow && selectedHourlyWeather.data
       ? {
           tone: 'neutral',
-          title: `İlaçlama havası: ${formatForecastHour(nextHourlyWindow.from, selectedHourlyWeather.data.timezone)}–${formatForecastHour(nextHourlyWindow.to, selectedHourlyWeather.data.timezone)}`,
-          detail: `Bu saatlerde yağış ve rüzgâr sakin görünüyor. ${hourlyPlan.nextRisk ? `Sonrasında ${hourlyPlan.nextRisk}. ` : ''}İşlem öncesi tarlayı ve ürün etiketini kontrol et.`,
+          title: `Bugün ilaçlama havası uygun: ${formatForecastHour(nextHourlyWindow.from, selectedHourlyWeather.data.timezone)}–${formatForecastHour(nextHourlyWindow.to, selectedHourlyWeather.data.timezone)}`,
+          detail: `Saatlik hava tahminine göre ${formatForecastHour(nextHourlyWindow.from, selectedHourlyWeather.data.timezone)}–${formatForecastHour(nextHourlyWindow.to, selectedHourlyWeather.data.timezone)} aralığını değerlendirebilirsin. ${hourlyPlan.nextRisk && hourlyPlan.nextRiskAt != null && hourlyPlan.nextRiskAt >= nextHourlyWindow.to ? `Sonrasında ${hourlyPlan.nextRisk}. ` : ''}İşlem öncesi tarladaki koşulları ve ürün etiketini kontrol et.`,
         }
-      : { tone: 'neutral', title: 'İlaçlama için sakin aralık yok', detail: hourlyPlan.nextRisk || hourlyPlan.message }
+      : { tone: 'neutral', title: 'Bugün ilaçlama havası uygun görünmüyor', detail: hourlyPlan.message }
     : homeField && !homeField.demo && selectedHourlyWeather?.status === 'error'
       ? { tone: 'neutral', title: 'Saatlik hava alınamadı', detail: 'İlaçlama saatini tahmin olmadan seçme; hava ekranından yeniden dene.' }
       : homeField && !homeField.demo && selectedHourlyWeather?.status === 'loading'

@@ -113,6 +113,21 @@ function screenedHour(hour: SprayHour, following: SprayHour[]): boolean {
     next.rainChance !== null && next.rainChance < 45 && next.rainMm !== null && next.rainMm < 0.2);
 }
 
+function blockingCondition(hour: SprayHour): string | null {
+  if (hour.windKmh === null || hour.gustKmh === null || hour.rainChance === null ||
+      hour.rainMm === null || hour.temperatureC === null || hour.humidity === null) {
+    return 'Saatlik hava verisi eksik';
+  }
+  if (hour.windKmh < 5) return 'Rüzgâr çok hafif; ilaç sürüklenmesi riski olabilir';
+  if (hour.windKmh > 15) return `Rüzgâr ${Math.round(hour.windKmh)} km/sa`;
+  if (hour.gustKmh > 20) return `Ani rüzgâr ${Math.round(hour.gustKmh)} km/sa`;
+  if (hour.rainChance >= 25) return `Yağış olasılığı %${Math.round(hour.rainChance)}`;
+  if (hour.rainMm >= 0.2) return `Yağış ${hour.rainMm.toFixed(1)} mm`;
+  if (hour.temperatureC < 10 || hour.temperatureC > 28) return `Sıcaklık ${Math.round(hour.temperatureC)}°C`;
+  if (hour.humidity < 40) return `Nem %${Math.round(hour.humidity)}`;
+  return null;
+}
+
 export function buildHourlySprayPlan(data: HourlySprayForecast | null | undefined, now = Date.now()): SprayHourPlan {
   if (!data?.hours.length) return { windows: [], message: 'Saatlik tahmin henüz yok.', nextRisk: null, nextRiskAt: null };
   const today = localForecastDay(now, data.timezone);
@@ -142,9 +157,18 @@ export function buildHourlySprayPlan(data: HourlySprayForecast | null | undefine
 
   // Tek bir saat işleme başlamak için yeterli zaman aralığı olarak sunulmaz.
   const useful = windows.filter((window) => window.to - window.from >= 2 * 3600000);
+  const daylight = upcoming.filter((hour) => hour.isDay === true);
+  const blockedHour = daylight.find((hour) => blockingCondition(hour) !== null);
+  const blocker = blockedHour ? blockingCondition(blockedHour) : null;
   return {
     windows: useful,
-    message: useful.length ? 'Hava açısından değerlendirilebilecek saatler' : 'Bugün için en az iki saatlik sakin bir aralık görünmüyor.',
+    message: useful.length
+      ? 'Bugün ilaçlama havası için değerlendirilebilecek saatler:'
+      : daylight.length < 2
+        ? 'Bugün en az iki saatlik gündüz aralığı kalmadı; ilaçlama için saat önerilmiyor.'
+        : blocker
+          ? `Bugün ilaçlama için uygun saat görünmüyor. Örneğin ${formatForecastHour(blockedHour!.time, data.timezone)} civarı ${blocker[0].toLocaleLowerCase('tr-TR')}${blocker.slice(1)}.`
+          : 'Bugün en az iki saatlik uygun hava aralığı görünmüyor.',
     nextRisk,
     nextRiskAt: nextRiskHour?.time ?? null,
   };
