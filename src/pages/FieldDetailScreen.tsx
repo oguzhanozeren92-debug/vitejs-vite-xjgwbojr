@@ -2,6 +2,8 @@ import MobileWheelPicker from '../components/MobileWheelPicker';
 import PcsePilotReadiness from '../features/field-detail/components/PcsePilotReadiness';
 import FieldGrowthObservations from '../features/field-detail/components/FieldGrowthObservations';
 import SeasonModelInputs from '../features/field-detail/components/SeasonModelInputs';
+import { useState } from 'react';
+import { getEntitlementSnapshot } from '../entitlements/useEntitlementStore';
 import { onboardingStyles } from '../styles/onboardingStyles';
 
 type FieldDetailScreenProps = Record<string, any>;
@@ -50,6 +52,7 @@ export default function FieldDetailScreen(props: FieldDetailScreenProps) {
     handleAddPerennialYield,
     handleAiAnalyzeActivityPhoto,
     handleDeleteActivity,
+    handleDeleteField,
     handleDeleteAnnualSeason,
     handleDeleteFieldSection,
     handleDeletePerennialYield,
@@ -118,6 +121,24 @@ export default function FieldDetailScreen(props: FieldDetailScreenProps) {
     yieldNotes,
     yieldYear,
   } = props;
+
+  const [deleteFieldOpen, setDeleteFieldOpen] = useState(false);
+  const [deleteFieldLoading, setDeleteFieldLoading] = useState(false);
+  const [deleteFieldError, setDeleteFieldError] = useState('');
+  const isPremiumFieldPlan = getEntitlementSnapshot().isPremium;
+
+  const confirmDeleteField = async () => {
+    setDeleteFieldLoading(true);
+    setDeleteFieldError('');
+    try {
+      await handleDeleteField(selectedField);
+      setDeleteFieldOpen(false);
+    } catch (error) {
+      setDeleteFieldError(error instanceof Error ? error.message : 'Tarla silinemedi. Tekrar dene.');
+    } finally {
+      setDeleteFieldLoading(false);
+    }
+  };
 
   const detailInfo = statusInfo[selectedField.status];
 
@@ -1666,6 +1687,16 @@ export default function FieldDetailScreen(props: FieldDetailScreenProps) {
                 <span className="gray">⚙</span>
                 <strong>Tarla Bilgileri</strong>
               </button>
+              {!selectedField.demo && (
+                <button type="button" className="tp-field-fab-delete" onClick={() => {
+                  setFieldFabOpen(false);
+                  setDeleteFieldError('');
+                  setDeleteFieldOpen(true);
+                }}>
+                  <span className="red">×</span>
+                  <strong>Tarlayı Sil</strong>
+                </button>
+              )}
             </div>}
 
             <button
@@ -1679,6 +1710,34 @@ export default function FieldDetailScreen(props: FieldDetailScreenProps) {
               {fieldFabOpen ? '×' : '+'}
             </button>
           </div>
+
+          {deleteFieldOpen && (
+            <div className="tp-field-delete-backdrop" onClick={() => !deleteFieldLoading && setDeleteFieldOpen(false)}>
+              <section
+                className="tp-field-delete-dialog"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="field-delete-title"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <span className="tp-field-delete-kicker">TARLA SİLME</span>
+                <h2 id="field-delete-title">Emin misin?</h2>
+                <p><strong>{selectedField.name}</strong> tarlasını ve ona bağlı kayıtları kalıcı olarak sileceksin. Bu işlem geri alınamaz.</p>
+                {!isPremiumFieldPlan && (
+                  <p className="tp-field-delete-warning">
+                    Ücretsiz planda tarla değiştirme hakkı 7 günde bir yenilenir. İlk eklemeden sonraki 24 saatlik düzeltme süresi istisnadır.
+                  </p>
+                )}
+                {deleteFieldError && <p className="tp-field-delete-error" role="alert">{deleteFieldError}</p>}
+                <div className="tp-field-delete-actions">
+                  <button type="button" onClick={() => setDeleteFieldOpen(false)} disabled={deleteFieldLoading}>Vazgeç</button>
+                  <button type="button" className="danger" onClick={() => void confirmDeleteField()} disabled={deleteFieldLoading}>
+                    {deleteFieldLoading ? 'Siliniyor…' : 'Evet, Tarlayı Sil'}
+                  </button>
+                </div>
+              </section>
+            </div>
+          )}
 
           <nav className="tp-field-detail-bottom">
             <button onClick={() => setScreen('home')}>

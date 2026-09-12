@@ -246,6 +246,7 @@ export default function App() {
     resetFieldForm,
     handleFieldCropSelection,
     handleAddField,
+    handleDeleteField,
     districtDisplayName,
   } = useFieldRegistryController({
     screen,
@@ -781,6 +782,7 @@ export default function App() {
           handleAddPerennialYield,
           handleAiAnalyzeActivityPhoto,
           handleDeleteActivity,
+          handleDeleteField,
           handleDeleteAnnualSeason,
           handleDeleteFieldSection,
           handleDeletePerennialYield,

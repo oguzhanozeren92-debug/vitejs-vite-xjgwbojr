@@ -122,3 +122,21 @@ export async function createUserField(input: CreateFieldInput) {
 
   if (error) throw error;
 }
+
+export async function deleteUserField(fieldId: string): Promise<void> {
+  if (!supabase) throw new Error('Supabase bağlantısı hazır değil.');
+
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError) throw userError;
+  if (!user) throw new Error('Tarlayı silmek için giriş yapmalısın.');
+
+  const { data, error } = await supabase
+    .from('fields')
+    .delete()
+    .eq('id', fieldId)
+    .eq('user_id', user.id)
+    .select('id');
+
+  if (error) throw error;
+  if (!data?.length) throw new Error('Tarla bulunamadı veya silme yetkin yok.');
+}

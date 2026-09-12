@@ -4752,6 +4752,98 @@ button:disabled {
 .tp-field-detail-page .tp-field-fab-menu .purple { background: #71569a !important; }
 .tp-field-detail-page .tp-field-fab-menu .cyan { background: #327d7b !important; }
 .tp-field-detail-page .tp-field-fab-menu .gray { background: #57665c !important; }
+.tp-field-detail-page .tp-field-fab-menu .red { background: #873c3c !important; }
+.tp-field-detail-page .tp-field-fab-menu .tp-field-fab-delete {
+  margin-top: 4px !important;
+  border-top: 1px solid #344036 !important;
+  border-radius: 0 0 10px 10px !important;
+  color: #ffc6c6 !important;
+}
+
+.tp-field-detail-page .tp-field-delete-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(1, 7, 3, .8);
+  backdrop-filter: blur(5px);
+}
+
+.tp-field-detail-page .tp-field-delete-dialog {
+  box-sizing: border-box;
+  width: min(100%, 390px);
+  padding: 22px;
+  border: 1px solid #36583c;
+  border-radius: 20px;
+  background: #0e1912;
+  color: #f2fff2;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .55);
+}
+
+.tp-field-detail-page .tp-field-delete-kicker {
+  color: #f8a8a8;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+
+.tp-field-detail-page .tp-field-delete-dialog h2 {
+  margin: 8px 0 12px;
+  color: #fff;
+  font-size: 23px;
+}
+
+.tp-field-detail-page .tp-field-delete-dialog p {
+  margin: 0 0 14px;
+  color: #d7e3d7;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.tp-field-detail-page .tp-field-delete-dialog .tp-field-delete-warning {
+  padding: 12px;
+  border: 1px solid #736036;
+  border-radius: 11px;
+  background: #292315;
+  color: #ffe2a3;
+}
+
+.tp-field-detail-page .tp-field-delete-dialog .tp-field-delete-error {
+  color: #ffc3c3;
+}
+
+.tp-field-detail-page .tp-field-delete-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.tp-field-detail-page .tp-field-delete-actions button {
+  min-height: 46px;
+  padding: 8px;
+  border: 1px solid #335840;
+  border-radius: 11px;
+  background: #193023;
+  color: #f2fff2;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tp-field-detail-page .tp-field-delete-actions .danger {
+  border-color: #bb5353;
+  background: #973434;
+  color: #fff;
+}
+
+.tp-field-detail-page .tp-field-delete-actions button:disabled {
+  opacity: .6;
+  cursor: wait;
+}
 
 #field-info, #field-production, #field-sections, #field-operations {
   scroll-margin-top: 92px;

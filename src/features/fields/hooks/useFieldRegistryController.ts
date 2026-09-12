@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { Dispatch, FormEvent, SetStateAction } from 'react';
 import { TURKEY_CROPS } from '../../../data/crops';
 import { lookupParcel } from '../../../lib/parcelService';
-import { createUserField, fetchUserFields } from '../../../services/fieldService';
+import { createUserField, deleteUserField, fetchUserFields } from '../../../services/fieldService';
 import {
   fetchDistrictOptions,
   fetchProvinceOptions,
@@ -409,6 +409,17 @@ export function useFieldRegistryController({
     }
   };
 
+  const handleDeleteField = async (field: Field) => {
+    if (field.demo || isNewUserPreview) {
+      throw new Error('Önizleme tarlası silinemez.');
+    }
+
+    await deleteUserField(String(field.id));
+    setRealFields((current) => current.filter((item) => String(item.id) !== String(field.id)));
+    setSelectedField((current) => String(current?.id) === String(field.id) ? null : current);
+    setScreen('home');
+  };
+
   const districtDisplayName = (districtName: string) =>
     getDistrictDisplayName(
       districtName,
@@ -469,6 +480,7 @@ export function useFieldRegistryController({
     resetFieldForm,
     handleFieldCropSelection,
     handleAddField,
+    handleDeleteField,
     districtDisplayName,
   };
 }
