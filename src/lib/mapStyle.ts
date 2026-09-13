@@ -41,8 +41,8 @@ export function createSatelliteRasterSource(
 }
 
 export const vividSatellitePaint = {
-  'raster-saturation': 0.16,
-  'raster-contrast': 0.12,
-  'raster-brightness-min': 0.015,
-  'raster-brightness-max': 0.98,
+  'raster-saturation': 0,
+  'raster-contrast': 0,
+  'raster-brightness-min': 0,
+  'raster-brightness-max': 1,
 } as const;
