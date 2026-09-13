@@ -101,6 +101,12 @@ const POLICIES: Record<string, CachePolicy> = {
         : data?.period?.to ?? 'empty',
     ),
   },
+  'satellite-history-preview': {
+    refreshAfterMs: 60 * DAY,
+    version: (data, body) => String(
+      data?.latestImageDate ?? body?.imageDate ?? 'history-preview',
+    ),
+  },
   'satellite-historical-analysis': {
     refreshAfterMs: 60 * DAY,
     version: (data, body) => String(
