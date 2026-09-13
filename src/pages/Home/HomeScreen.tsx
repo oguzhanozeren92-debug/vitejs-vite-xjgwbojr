@@ -26,6 +26,7 @@ import { useEnsureHomeSatellite } from '../../features/home-map/hooks/useEnsureH
 import { useHomeSatelliteDate } from '../../features/home-map/hooks/useHomeSatelliteDate';
 import HomeMapPusulaStrip from '../../features/pusula/components/HomeMapPusulaStrip';
 import { useHomePusula } from '../../features/pusula/hooks/useHomePusula';
+import PusulaFieldChange from '../../features/field-changes/components/PusulaFieldChange';
 import PusulaFieldQuestion from '../../features/pusula/components/PusulaFieldQuestion';
 import { usePusulaFieldCompletion } from '../../features/pusula/hooks/usePusulaFieldCompletion';
 import NdviObservationFollowUpPrompt from '../../features/field-observations/components/NdviObservationFollowUpPrompt';
@@ -377,6 +378,7 @@ export default function HomeScreen(props: HomeScreenProps) {
     todayDecisions: todayDecisionCards,
     notifications: homeSystemNotifications,
     pusulaDecision,
+    events: homeDecisionEvents,
   } = useHomeDecisionEngine({
     fieldKey,
     activeHomeLayer,
@@ -715,6 +717,15 @@ export default function HomeScreen(props: HomeScreenProps) {
             </button>
           </div>
         </header>
+
+        <PusulaFieldChange
+          events={homeField?.demo ? [] : homeDecisionEvents}
+          fieldId={fieldKey}
+          fieldName={String(homeField?.name ?? 'Tarlan')}
+          latestDate={homePhenology.timeSeriesLatestDate}
+          paused={pusulaGuideAway || Boolean(quickSheet) || sideMenuOpen}
+          onMap={() => openHomeInsightTarget('map_vegetation')}
+        />
 
         <main className="tp-main">
           <div className="tp-home-map-pusula-shell">
