@@ -4,6 +4,7 @@ import { mapRuntime } from '../../lib/mapRuntime';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarClock, Crosshair, History, Layers3, Minus, Plus, Satellite } from 'lucide-react';
 import * as maplibregl from 'maplibre-gl';
+import MapDataDate from '../map-data/components/MapDataDate';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../../supabaseClient';
@@ -2379,6 +2380,8 @@ function InteractiveHomeHealthMap({
   return (
     <div className="tp-real-home-map" style={{ height }}>
       <div ref={containerRef} className="tp-real-home-map-canvas" />
+
+      <MapDataDate latestDate={data?.latestImageDate} hasData={Boolean(smoothNdvi && bbox)} />
 
       {fieldOperationToast ? (
         <div
@@ -7544,6 +7547,15 @@ export function HomeInlineLayerMap({
   return (
     <div className="tp-real-home-map" style={{ height }}>
       <div ref={containerRef} className="tp-real-home-map-canvas" />
+      <MapDataDate
+        layer={layer}
+        latestDate={satelliteData?.latestImageDate}
+        radarRange={radarImage?.timeRange}
+        hasData={Boolean(layer === 'vegetation' ? smoothNdvi && bbox
+          : layer.startsWith('radar-') ? clippedRadarImage
+          : layer === 'soil' ? clippedSoilImage
+          : layer === 'climate' ? clippedClimateImage : clippedAgroImage)}
+      />
 
       {layer === 'vegetation' &&
       selectedTrackingPoint &&

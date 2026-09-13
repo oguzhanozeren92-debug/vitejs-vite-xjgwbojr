@@ -1,0 +1,24 @@
+.tp-measurement-date {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 46;
+  width: max-content;
+  max-width: calc(100% - 130px);
+  padding: 8px 12px;
+  border: 1px solid #d6dae0;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .96);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, .16);
+  pointer-events: none;
+  text-align: center;
+  line-height: 1.35;
+}
+.tp-measurement-date strong {
+  display: block;
+  color: #252c35;
+  font: 14px/1.35 system-ui, sans-serif;
+  overflow-wrap: anywhere;
+}
+.tp-measurement-date strong { font-weight: 700; }
