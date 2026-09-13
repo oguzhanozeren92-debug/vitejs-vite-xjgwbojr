@@ -18,13 +18,14 @@ export function openMapAtField(
   center: [number, number],
   bbox: number[] | null | undefined,
   animate: boolean,
+  zoom = 16,
 ): void {
   const camera = bbox
     ? map.cameraForBounds([[bbox[0], bbox[1]], [bbox[2], bbox[3]]], {
         padding: { top: 18, right: 18, bottom: 30, left: 18 },
         maxZoom: 18.35,
       })
-    : { center, zoom: 10 };
+    : { center, zoom };
   if (!camera) return;
   played = true;
   try { sessionStorage.setItem(SESSION_KEY, 'played'); } catch { /* Private browsing. */ }

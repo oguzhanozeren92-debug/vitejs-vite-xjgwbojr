@@ -1,4 +1,5 @@
 import { shouldPlayMapOpening, openMapAtField } from '../map-opening/mapOpening';
+import { resolveOpeningTarget } from '../map-opening/openingTarget';
 import { mapRuntime } from '../../lib/mapRuntime';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarClock, Crosshair, History, Layers3, Minus, Plus, Satellite } from 'lucide-react';
@@ -5501,11 +5502,12 @@ export function HomeInlineLayerMap({
 
     const playOpening = shouldPlayMapOpening();
     let userInteracted = false;
+    let disposed = false;
     const map = new mapRuntime.Map({
       container,
       style: HOME_SATELLITE_STYLE,
-      center: playOpening ? [20, 25] : [fieldCenter.longitude, fieldCenter.latitude],
-      zoom: playOpening ? 2 : bbox ? 14.2 : 10,
+      center: playOpening || !field?.id ? [20, 25] : [fieldCenter.longitude, fieldCenter.latitude],
+      zoom: playOpening || !field?.id ? 2 : bbox ? 14.2 : 16,
       pitch: 0,
       bearing: 0,
       minZoom: 2,
@@ -5580,11 +5582,16 @@ export function HomeInlineLayerMap({
       }
 
       if (!userInteracted) {
-        openMapAtField(map, [fieldCenter.longitude, fieldCenter.latitude], bbox, playOpening);
+        void resolveOpeningTarget(Boolean(field?.id), [fieldCenter.longitude, fieldCenter.latitude], bbox)
+          .then(target => {
+            if (disposed || userInteracted || !target) return;
+            openMapAtField(map, target.center, target.bbox, playOpening, target.zoom);
+          });
       }
     });
 
     return () => {
+      disposed = true;
       for (const marker of trackingPointMarkersRef.current) {
         try {
           marker.remove();
