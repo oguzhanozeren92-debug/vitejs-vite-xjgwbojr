@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Dispatch, FormEvent, SetStateAction } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { urlBase64ToUint8Array } from '../../../utils/fileUtils';
@@ -9,6 +9,15 @@ type UseCalendarControllerOptions = {
   realFields: Field[];
   selectedField: Field | null;
   setScreen: Dispatch<SetStateAction<Screen>>;
+};
+
+type CalendarSuggestionDetail = {
+  fieldId?: string | number | null;
+  reminderType?: string | null;
+  title?: string | null;
+  date?: string | null;
+  time?: string | null;
+  notes?: string | null;
 };
 
 export function useCalendarController({
@@ -253,6 +262,41 @@ export function useCalendarController({
     resetReminderForm(targetField);
     setReminderFormOpen(true);
   };
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleCalendarSuggestion = (event: Event) => {
+      const detail = (event as CustomEvent<CalendarSuggestionDetail>).detail ?? {};
+      const requestedFieldId = String(detail.fieldId ?? '');
+      const targetField =
+        realFields.find((field) => String(field.id) === requestedFieldId) ??
+        selectedField ??
+        realFields[0] ??
+        null;
+
+      openCalendarScreen();
+      openReminderModal(targetField);
+
+      if (detail.reminderType?.trim()) setReminderType(detail.reminderType.trim());
+      if (detail.title?.trim()) setReminderTitle(detail.title.trim());
+      if (detail.date?.trim()) setReminderDate(detail.date.trim());
+      if (detail.time?.trim()) setReminderTime(detail.time.trim());
+      if (detail.notes?.trim()) setReminderNotes(detail.notes.trim());
+    };
+
+    window.addEventListener(
+      'tp:calendar-add-suggestion',
+      handleCalendarSuggestion as EventListener,
+    );
+
+    return () => {
+      window.removeEventListener(
+        'tp:calendar-add-suggestion',
+        handleCalendarSuggestion as EventListener,
+      );
+    };
+  }, [realFields, selectedField]);
 
   const handleAddReminder = async (event: FormEvent) => {
     event.preventDefault();
