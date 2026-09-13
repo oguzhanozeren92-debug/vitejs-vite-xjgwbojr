@@ -31,101 +31,9 @@ type BridgeEntry = {
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
-
-/**
- * SADECE salt-okuma yapan, haritada aynı verinin tekrar tekrar çekilmesine
- * sebep olan fonksiyonlar burada cache'lenir. Yazma / AI / bildirim / admin
- * fonksiyonları bilerek bu listenin dışındadır.
- */
-const POLICIES: Record<string, CachePolicy> = {
-  'satellite-field-analysis': {
-    refreshAfterMs: 12 * HOUR,
-    version: (data) =>
-      String(
-        data?.latestImageDate ??
-          data?.selectedSceneDatetime ??
-          data?.generatedAt ??
-          'unknown',
-      ),
-  },
-  'satellite-scene-list': {
-    refreshAfterMs: 6 * HOUR,
-    version: (data) =>
-      String(
-        Array.isArray(data?.dates) && data.dates.length
-          ? data.dates[0]
-          : data?.period?.to ?? 'empty',
-      ),
-  },
-  'satellite-historical-analysis': {
-    refreshAfterMs: 60 * DAY,
-    version: (data, body) =>
-      String(data?.latestImageDate ?? body?.imageDate ?? 'historical'),
-  },
-  'satellite-ndvi-timeseries': {
-    refreshAfterMs: 12 * HOUR,
-    version: (data) => {
-      const points = Array.isArray(data?.points) ? data.points : [];
-      return String(points[points.length - 1]?.date ?? data?.generatedAt ?? 'empty');
-    },
-  },
-  'sentinel1-radar': {
-    refreshAfterMs: 6 * HOUR,
-    version: (data) =>
-      String(
-        data?.selectedSceneDatetime ??
-          data?.timeRange?.to?.slice?.(0, 10) ??
-          data?.generatedAt?.slice?.(0, 10) ??
-          'radar',
-      ),
-  },
-  soilgrids: {
-    refreshAfterMs: 30 * DAY,
-    version: (data, body) =>
-      [
-        data?.product ?? 'SoilGrids250m',
-        Number(body?.latitude ?? data?.requestedLatitude ?? 0).toFixed(5),
-        Number(body?.longitude ?? data?.requestedLongitude ?? 0).toFixed(5),
-      ].join(':'),
-  },
-  'era5-map': {
-    refreshAfterMs: 6 * HOUR,
-    version: (data, body) =>
-      [
-        body?.variable ?? data?.variable ?? data?.variableLabel ?? 'era5',
-        data?.period?.end ?? data?.period?.to ?? new Date().toISOString().slice(0, 10),
-      ].join(':'),
-  },
-  'field-biodiversity-context': {
-    refreshAfterMs: DAY,
-    version: (data) =>
-      [
-        data?.summary?.newestObservationAt ?? 'none',
-        data?.summary?.totalObservations ?? 0,
-      ].join(':'),
-  },
-  'field-satellite-fusion': {
-    refreshAfterMs: 12 * HOUR,
-    version: (data) =>
-      String(
-        data?.latestImageDate ??
-          data?.sentinel2?.latestImageDate ??
-          data?.generatedAt ??
-          'fusion',
-      ),
-  },
-};
-
 const DB_NAME = 'tarlapusula-data-bridge-v1';
 const STORE_NAME = 'snapshots';
 const MAX_PERSISTED_ENTRIES = 96;
-
-const memory = new Map<string, BridgeEntry>();
-const inflight = new Map<string, Promise<EdgeInvokeResult<any>>>();
-const publicJsonInflight = new Map<string, Promise<unknown>>();
-const refreshAttemptAt = new Map<string, number>();
-let dbPromise: Promise<IDBDatabase | null> | null = null;
-let hydrationPromise: Promise<void> | null = null;
 
 function stableValue(value: any): any {
   if (Array.isArray(value)) return value.map(stableValue);
@@ -156,21 +64,104 @@ function hashText(value: string) {
   return (hash >>> 0).toString(36);
 }
 
-function cacheKey(scope: string, functionName: string, body: unknown) {
-  return `${scope}:${functionName}:${hashText(stableStringify(body ?? null))}`;
+/** Salt-okuma veri kaynakları için tek freshness/versiyon sözleşmesi. */
+const POLICIES: Record<string, CachePolicy> = {
+  'weather-compare': {
+    refreshAfterMs: 30 * 60 * 1000,
+    version: (data) => hashText(stableStringify(data?.forecast ?? [])),
+  },
+  'satellite-field-analysis': {
+    refreshAfterMs: 12 * HOUR,
+    version: (data) => String(
+      data?.latestImageDate ??
+      data?.selectedSceneDatetime ??
+      data?.generatedAt ??
+      'unknown',
+    ),
+  },
+  'satellite-scene-list': {
+    refreshAfterMs: 6 * HOUR,
+    version: (data) => String(
+      Array.isArray(data?.dates) && data.dates.length
+        ? data.dates[0]
+        : data?.period?.to ?? 'empty',
+    ),
+  },
+  'satellite-historical-analysis': {
+    refreshAfterMs: 60 * DAY,
+    version: (data, body) => String(
+      data?.latestImageDate ?? body?.imageDate ?? 'historical',
+    ),
+  },
+  'satellite-ndvi-timeseries': {
+    refreshAfterMs: 12 * HOUR,
+    version: (data) => {
+      const points = Array.isArray(data?.points) ? data.points : [];
+      return String(points[points.length - 1]?.date ?? data?.generatedAt ?? 'empty');
+    },
+  },
+  'sentinel1-radar': {
+    refreshAfterMs: 6 * HOUR,
+    version: (data) => String(
+      data?.selectedSceneDatetime ??
+      data?.timeRange?.to?.slice?.(0, 10) ??
+      data?.generatedAt?.slice?.(0, 10) ??
+      'radar',
+    ),
+  },
+  soilgrids: {
+    refreshAfterMs: 30 * DAY,
+    version: (data, body) => [
+      data?.product ?? 'SoilGrids250m',
+      Number(body?.latitude ?? data?.requestedLatitude ?? 0).toFixed(5),
+      Number(body?.longitude ?? data?.requestedLongitude ?? 0).toFixed(5),
+    ].join(':'),
+  },
+  'era5-map': {
+    refreshAfterMs: 6 * HOUR,
+    version: (data, body) => [
+      body?.variable ?? data?.variable ?? data?.variableLabel ?? 'era5',
+      data?.period?.end ?? data?.period?.to ?? 'no-period',
+    ].join(':'),
+  },
+  'field-biodiversity-context': {
+    refreshAfterMs: DAY,
+    version: (data) => [
+      data?.summary?.newestObservationAt ?? 'none',
+      data?.summary?.totalObservations ?? 0,
+    ].join(':'),
+  },
+  'field-satellite-fusion': {
+    refreshAfterMs: 12 * HOUR,
+    version: (data) => String(
+      data?.latestImageDate ??
+      data?.sentinel2?.latestImageDate ??
+      data?.generatedAt ??
+      'fusion',
+    ),
+  },
+};
+
+const memory = new Map<string, BridgeEntry>();
+const inflight = new Map<string, Promise<EdgeInvokeResult<any>>>();
+const publicJsonInflight = new Map<string, Promise<unknown>>();
+const refreshAttemptAt = new Map<string, number>();
+let dbPromise: Promise<IDBDatabase | null> | null = null;
+let hydrationPromise: Promise<void> | null = null;
+
+function cacheKey(scope: string, namespace: string, body: unknown) {
+  return `${scope}:${namespace}:${hashText(stableStringify(body ?? null))}`;
 }
 
 function openDb() {
   if (typeof indexedDB === 'undefined') {
     return Promise.resolve<IDBDatabase | null>(null);
   }
-
   if (dbPromise) return dbPromise;
 
   dbPromise = new Promise((resolve) => {
     try {
       const request = indexedDB.open(DB_NAME, 1);
-
       request.onupgradeneeded = () => {
         const db = request.result;
         if (!db.objectStoreNames.contains(STORE_NAME)) {
@@ -178,7 +169,6 @@ function openDb() {
           store.createIndex('savedAt', 'savedAt');
         }
       };
-
       request.onsuccess = () => resolve(request.result);
       request.onerror = () => resolve(null);
       request.onblocked = () => resolve(null);
@@ -201,20 +191,15 @@ async function hydrate() {
       try {
         const tx = db.transaction(STORE_NAME, 'readonly');
         const request = tx.objectStore(STORE_NAME).getAll();
-
         request.onsuccess = () => {
           const entries = Array.isArray(request.result)
             ? (request.result as BridgeEntry[])
             : [];
-
           entries.forEach((entry) => {
-            if (entry?.key && entry?.data !== undefined) {
-              memory.set(entry.key, entry);
-            }
+            if (entry?.key && entry?.data !== undefined) memory.set(entry.key, entry);
           });
           resolve();
         };
-
         request.onerror = () => resolve();
       } catch {
         resolve();
@@ -227,7 +212,6 @@ async function hydrate() {
 
 async function persist(entry: BridgeEntry) {
   memory.set(entry.key, entry);
-
   const db = await openDb();
   if (!db) return;
 
@@ -247,32 +231,27 @@ async function persist(entry: BridgeEntry) {
     const all = [...memory.values()].sort((a, b) => b.savedAt - a.savedAt);
     const overflow = all.slice(MAX_PERSISTED_ENTRIES);
     if (!overflow.length) return;
-
     overflow.forEach((item) => memory.delete(item.key));
-
     const cleanup = db.transaction(STORE_NAME, 'readwrite');
     overflow.forEach((item) => cleanup.objectStore(STORE_NAME).delete(item.key));
   } catch {
-    // Cache temizliği uygulamanın çalışması için kritik değil.
+    // Cache temizliği kritik değil.
   }
 }
 
 function emitSnapshotUpdate(entry: BridgeEntry) {
   if (typeof window === 'undefined') return;
-
-  window.dispatchEvent(
-    new CustomEvent('tp:data-snapshot-updated', {
-      detail: {
-        key: entry.key,
-        functionName: entry.functionName,
-        sourceVersion: entry.sourceVersion,
-        savedAt: entry.savedAt,
-      },
-    }),
-  );
+  window.dispatchEvent(new CustomEvent('tp:data-snapshot-updated', {
+    detail: {
+      key: entry.key,
+      functionName: entry.functionName,
+      sourceVersion: entry.sourceVersion,
+      savedAt: entry.savedAt,
+    },
+  }));
 }
 
-async function refresh<T>(input: {
+async function refreshEdge<T>(input: {
   key: string;
   scope: string;
   functionName: string;
@@ -289,24 +268,16 @@ async function refresh<T>(input: {
     const result = await input.originalInvoke<T>(input.functionName, input.options);
 
     if (result.error || result.data == null) {
-      if (input.previous?.data !== undefined) {
-        return { data: input.previous.data as T, error: null };
-      }
-      return result;
+      return input.previous?.data !== undefined
+        ? { data: input.previous.data as T, error: null }
+        : result;
     }
 
     const sourceVersion = input.policy.version(result.data, input.body);
     const now = Date.now();
 
-    if (
-      input.previous &&
-      input.previous.sourceVersion &&
-      sourceVersion === input.previous.sourceVersion
-    ) {
-      const same: BridgeEntry = {
-        ...input.previous,
-        savedAt: now,
-      };
+    if (input.previous?.sourceVersion === sourceVersion) {
+      const same = { ...input.previous, savedAt: now };
       await persist(same);
       return { data: input.previous.data as T, error: null };
     }
@@ -324,9 +295,7 @@ async function refresh<T>(input: {
     await persist(entry);
     emitSnapshotUpdate(entry);
     return { data: result.data, error: null };
-  })().finally(() => {
-    inflight.delete(input.key);
-  });
+  })().finally(() => inflight.delete(input.key));
 
   inflight.set(input.key, promise as Promise<EdgeInvokeResult<any>>);
   return promise;
@@ -345,9 +314,7 @@ export function createEdgeFunctionDataBridge(input: {
     options: EdgeInvokeOptions = {},
   ): Promise<EdgeInvokeResult<T>> {
     const policy = POLICIES[functionName];
-    if (!policy) {
-      return input.originalInvoke<T>(functionName, options);
-    }
+    if (!policy) return input.originalInvoke<T>(functionName, options);
 
     await hydrate();
 
@@ -355,20 +322,17 @@ export function createEdgeFunctionDataBridge(input: {
     const body = options?.body ?? null;
     const key = cacheKey(scope, functionName, body);
     const cached = memory.get(key) ?? null;
-
     const forceRefresh =
       options?.headers?.['x-tp-force-refresh'] === '1' ||
       (body && typeof body === 'object' && (body as any).__tpForceRefresh === true);
 
     if (cached && !forceRefresh) {
       const age = Date.now() - cached.savedAt;
-
       if (age >= policy.refreshAfterMs) {
         const lastAttempt = refreshAttemptAt.get(key) ?? 0;
-
         if (Date.now() - lastAttempt >= Math.min(policy.refreshAfterMs, 30 * 60 * 1000)) {
           refreshAttemptAt.set(key, Date.now());
-          void refresh({
+          void refreshEdge({
             key,
             scope,
             functionName,
@@ -380,12 +344,11 @@ export function createEdgeFunctionDataBridge(input: {
           }).catch(() => undefined);
         }
       }
-
       return { data: cached.data as T, error: null };
     }
 
     refreshAttemptAt.set(key, Date.now());
-    return refresh<T>({
+    return refreshEdge<T>({
       key,
       scope,
       functionName,
@@ -408,11 +371,6 @@ function jsonResponseFromSnapshot(data: unknown) {
   });
 }
 
-/**
- * HomeMap'te halen URL tabanlı olan salt-okuma tarımsal grid isteklerini de
- * aynı IndexedDB snapshot deposundan geçirir. Bu özellikle ET₀ / 30 günlük
- * yağış / yüzey sıcaklığı içindir.
- */
 export async function fetchPublicJsonThroughDataBridge(input: {
   namespace: string;
   url: string;
@@ -441,7 +399,9 @@ export async function fetchPublicJsonThroughDataBridge(input: {
       const sourceVersion = [
         parsedUrl.searchParams.get('models') ?? 'fixed-model',
         parsedUrl.searchParams.get('end_date') ?? 'no-date',
-        parsedUrl.searchParams.get('hourly') ?? parsedUrl.searchParams.get('daily') ?? input.namespace,
+        parsedUrl.searchParams.get('hourly') ??
+          parsedUrl.searchParams.get('daily') ??
+          input.namespace,
       ].join(':');
 
       const entry: BridgeEntry = {
@@ -472,17 +432,9 @@ export async function fetchPublicJsonThroughDataBridge(input: {
         void loadFresh().catch(() => undefined);
       }
     }
-
     return jsonResponseFromSnapshot(cached.data);
   }
 
-  try {
-    const data = await loadFresh();
-    return jsonResponseFromSnapshot(data);
-  } catch (error) {
-    if (cached?.data !== undefined) {
-      return jsonResponseFromSnapshot(cached.data);
-    }
-    throw error;
-  }
+  const data = await loadFresh();
+  return jsonResponseFromSnapshot(data);
 }
