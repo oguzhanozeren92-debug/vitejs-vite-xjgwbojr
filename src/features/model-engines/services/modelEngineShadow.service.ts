@@ -3,7 +3,6 @@ import type {
   ModelReadinessResult,
   PyFao56FieldShadowResult,
   PyFao56ShadowComparison,
-  PyFao56ShadowInput,
   PyFao56ShadowResult,
 } from '../types';
 
@@ -12,27 +11,6 @@ function requireSupabase() {
     throw new Error('Model motoru için Supabase bağlantısı hazır değil.');
   }
   return supabase;
-}
-
-function mapPyFao56Input(input: PyFao56ShadowInput) {
-  return {
-    field_id: input.fieldId,
-    station: {
-      latitude: input.station.latitude,
-      elevation_m: input.station.elevationM,
-      wind_height_m: input.station.windHeightM,
-    },
-    days: input.days.map((day) => ({
-      date: day.date,
-      solar_radiation_mj_m2: day.solarRadiationMjM2,
-      tmax_c: day.tmaxC,
-      tmin_c: day.tminC,
-      dew_point_c: day.dewPointC,
-      wind_m_s: day.windMS,
-      rain_mm: day.rainMm,
-      kc: day.kc,
-    })),
-  };
 }
 
 function mapPyFao56Result(data: any, fallbackFieldId: string): PyFao56ShadowResult {
@@ -200,29 +178,6 @@ export async function runPyFao56FieldShadow(
   fieldId: string,
 ): Promise<PyFao56FieldShadowResult> {
   return invokeFieldShadow(fieldId, 'shadow-run-field');
-}
-
-/** Low-level/manual contract kept for gateway development and validation only. */
-export async function runPyFao56Shadow(
-  input: PyFao56ShadowInput,
-): Promise<PyFao56ShadowResult> {
-  const client = requireSupabase();
-  const { data, error } = await client.functions.invoke('model-engine-shadow', {
-    body: {
-      engine: 'pyfao56',
-      operation: 'shadow-run',
-      payload: mapPyFao56Input(input),
-    },
-  });
-
-  if (error) {
-    throw new Error(error.message || 'pyfao56 shadow çağrısı başarısız oldu.');
-  }
-  if (!data || data.ok === false) {
-    throw new Error(data?.error || 'pyfao56 shadow sonucu alınamadı.');
-  }
-
-  return mapPyFao56Result(data, input.fieldId);
 }
 
 export async function checkCropModelReadiness(
