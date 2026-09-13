@@ -1,8 +1,13 @@
 import { supabase } from '../supabaseClient';
-import type { CropCycle, Field, FieldStatus } from '../types';
+import type {
+  CropCycle,
+  Field,
+  FieldStatus,
+  IrrigationStatus,
+} from '../types';
 
 const FIELD_SELECT =
-  'id, name, city, district, village, ada, parcel, area_decare, crop, season, status, crop_cycle, planting_year, bearing, latitude, longitude, parcel_geometry, parcel_centroid_lat, parcel_centroid_lng, parcel_lookup_status, parcel_lookup_source';
+  'id, name, city, district, village, ada, parcel, area_decare, crop, season, status, crop_cycle, planting_year, bearing, irrigation_status, latitude, longitude, parcel_geometry, parcel_centroid_lat, parcel_centroid_lng, parcel_lookup_status, parcel_lookup_source';
 
 export async function fetchUserFields(): Promise<Field[]> {
   if (!supabase) return [];
@@ -63,6 +68,12 @@ export async function fetchUserFields(): Promise<Field[]> {
       item.bearing === null || item.bearing === undefined
         ? null
         : Boolean(item.bearing),
+    irrigationStatus:
+      item.irrigation_status === 'sulu' ||
+      item.irrigation_status === 'susuz' ||
+      item.irrigation_status === 'kismi'
+        ? (item.irrigation_status as IrrigationStatus)
+        : null,
   }));
 }
 
@@ -83,6 +94,7 @@ export type CreateFieldInput = {
   cropCycle: CropCycle;
   plantingYear: number | null;
   bearing: boolean;
+  irrigationStatus: IrrigationStatus;
 };
 
 export async function createUserField(input: CreateFieldInput) {
@@ -117,6 +129,7 @@ export async function createUserField(input: CreateFieldInput) {
     crop_cycle: input.cropCycle,
     planting_year: input.cropCycle === 'perennial' ? input.plantingYear : null,
     bearing: input.cropCycle === 'perennial' ? input.bearing : null,
+    irrigation_status: input.irrigationStatus,
     status: 'good',
   });
 
