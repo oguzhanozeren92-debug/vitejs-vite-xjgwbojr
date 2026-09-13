@@ -11,7 +11,13 @@ import {
 import { getNextFieldGate } from '../../../gamification/useGamificationStore';
 import { getDistrictDisplayName, getDistrictLookupName } from '../../../utils/locationUtils';
 import { shouldShowPusulaIntro } from '../../../components/PusulaIntroTrailer';
-import type { CropCycle, Field, LocationOption, Screen } from '../../../types';
+import type {
+  CropCycle,
+  Field,
+  IrrigationStatus,
+  LocationOption,
+  Screen,
+} from '../../../types';
 
 type UseFieldRegistryControllerOptions = {
   screen: Screen;
@@ -314,7 +320,10 @@ export function useFieldRegistryController({
     setFieldFormMessage('');
   };
 
-  const handleAddField = async (event: FormEvent) => {
+  const handleAddField = async (
+    event: FormEvent,
+    irrigationStatus: IrrigationStatus,
+  ) => {
     event.preventDefault();
     if (isNewUserPreview) {
       setFieldFormMessage(
@@ -350,6 +359,11 @@ export function useFieldRegistryController({
       setFieldFormMessage(
         'İl, ilçe, köy / mahalle, tarla adı, ada, parsel, alan ve ürün bilgilerini doldur.',
       );
+      return;
+    }
+
+    if (!['sulu', 'susuz', 'kismi'].includes(irrigationStatus)) {
+      setFieldFormMessage('Sulama durumunu seç.');
       return;
     }
 
@@ -396,6 +410,7 @@ export function useFieldRegistryController({
         cropCycle: fieldCropCycle,
         plantingYear: plantingYearValue,
         bearing: fieldBearing,
+        irrigationStatus,
       });
 
       resetFieldForm();
