@@ -55,9 +55,6 @@ function readableDate(value: string) {
 }
 
 function routeFor(engine: string, operation: string) {
-  if (engine === 'pyfao56' && operation === 'shadow-run') {
-    return '/v1/irrigation/pyfao56/shadow';
-  }
   if (engine === 'pcse' && operation === 'readiness') {
     return '/v1/phenology/pcse/readiness';
   }
