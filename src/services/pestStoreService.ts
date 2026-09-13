@@ -27,7 +27,10 @@ export type BkuOfficialUse = {
   sourceUrl: string | null;
 };
 
-export type BkuUsageSource = 'official-bku' | 'grounded-label' | 'none';
+export type BkuUsageSource =
+  | 'official-bku'
+  | 'grounded-label'
+  | 'none';
 
 export type BkuLookupResult = {
   status: 'exact' | 'probable' | 'not_found' | 'error';
@@ -43,6 +46,7 @@ export type BkuLookupResult = {
   note: string | null;
   diagnostics?: string[];
 };
+
 
 export type AiKnowledgeFallback = {
   status: 'available' | 'unavailable';
@@ -129,6 +133,7 @@ export type InventoryProductInput = Omit<
   'id' | 'userId' | 'createdAt' | 'updatedAt'
 >;
 
+const CACHE_PREFIX = 'tp_pest_store_products_v1_';
 const LABEL_ANALYSIS_CACHE_PREFIX = 'tp_pest_label_analysis_v2_';
 const LABEL_ANALYSIS_TIMEOUT_MS = 35_000;
 const VERIFIED_USAGE_CACHE_PREFIX = 'tp_pest_verified_usage_v1_';
@@ -164,17 +169,24 @@ function usageIdentityFromAnalysis(
     'productName' | 'activeIngredients' | 'formulation' | 'bkuLookup'
   >,
 ) {
-  const productName = analysis.bkuLookup?.matchedProductName || analysis.productName;
+  const productName =
+    analysis.bkuLookup?.matchedProductName || analysis.productName;
   const activeIngredients =
-    analysis.bkuLookup?.matchedActiveIngredients || analysis.activeIngredients || '';
+    analysis.bkuLookup?.matchedActiveIngredients ||
+    analysis.activeIngredients ||
+    '';
   const formulation =
-    analysis.bkuLookup?.matchedFormulation || analysis.formulation || '';
+    analysis.bkuLookup?.matchedFormulation ||
+    analysis.formulation ||
+    '';
 
   const name = normalizeIdentityPart(productName);
   const active = normalizeIdentityPart(activeIngredients);
   const form = normalizeIdentityPart(formulation);
 
+  // Başka ürünün verisini taşımamak için ürün adı + etken madde şart.
   if (!name || !active) return null;
+
   return `${name}|${active}|${form}`;
 }
 
@@ -193,9 +205,13 @@ function loadVerifiedUsageSnapshot(
     if (!raw) return null;
 
     const parsed = JSON.parse(raw) as VerifiedUsageSnapshot;
-    if (!parsed || parsed.identity !== identity || !parsed.savedAt) return null;
+
+    if (!parsed || parsed.identity !== identity || !parsed.savedAt) {
+      return null;
+    }
 
     const age = Date.now() - new Date(parsed.savedAt).getTime();
+
     if (
       !Number.isFinite(age) ||
       age < 0 ||
@@ -215,9 +231,13 @@ function saveVerifiedUsageSnapshot(
   analysis: PesticideLabelAnalysis,
   resolved: ResolvedUsage,
 ) {
-  if (resolved.source !== 'official-bku' && resolved.source !== 'label-ocr') {
+  if (
+    resolved.source !== 'official-bku' &&
+    resolved.source !== 'label-ocr'
+  ) {
     return;
   }
+
   if (!resolved.rows.length && !resolved.crops.length) return;
 
   try {
@@ -234,7 +254,10 @@ function saveVerifiedUsageSnapshot(
       rows: resolved.rows,
     };
 
-    window.localStorage.setItem(usageCacheKey(identity), JSON.stringify(snapshot));
+    window.localStorage.setItem(
+      usageCacheKey(identity),
+      JSON.stringify(snapshot),
+    );
   } catch {
     // localStorage kapalıysa sessizce devam et.
   }
@@ -244,10 +267,15 @@ function normalizeKnowledgeFallback(raw: any): AiKnowledgeFallback | null {
   if (!raw || typeof raw !== 'object') return null;
 
   const crops = Array.isArray(raw.crops)
-    ? raw.crops.map((item: any) => String(item ?? '').trim()).filter(Boolean)
+    ? raw.crops
+        .map((item: any) => String(item ?? '').trim())
+        .filter(Boolean)
     : [];
+
   const targets = Array.isArray(raw.targets)
-    ? raw.targets.map((item: any) => String(item ?? '').trim()).filter(Boolean)
+    ? raw.targets
+        .map((item: any) => String(item ?? '').trim())
+        .filter(Boolean)
     : [];
 
   return {
@@ -267,10 +295,14 @@ function normalizeKnowledgeFallback(raw: any): AiKnowledgeFallback | null {
 }
 
 function uniqueStrings(values: string[]) {
-  return Array.from(new Set(values.map((item) => item.trim()).filter(Boolean)));
+  return Array.from(
+    new Set(values.map((item) => item.trim()).filter(Boolean)),
+  );
 }
 
-function resolveUsageData(analysis: PesticideLabelAnalysis): ResolvedUsage {
+function resolveUsageData(
+  analysis: PesticideLabelAnalysis,
+): ResolvedUsage {
   const officialUses =
     analysis.bkuLookup?.usageSource === 'official-bku'
       ? analysis.bkuLookup.uses
@@ -344,6 +376,7 @@ function resolveUsageData(analysis: PesticideLabelAnalysis): ResolvedUsage {
   }
 
   const cached = loadVerifiedUsageSnapshot(analysis);
+
   if (cached) {
     return {
       source: 'verified-cache',
@@ -363,16 +396,22 @@ function resolveUsageData(analysis: PesticideLabelAnalysis): ResolvedUsage {
   }
 
   const knowledge = analysis.knowledgeFallback;
+
   if (
     knowledge?.status === 'available' &&
-    (knowledge.summary || knowledge.crops.length || knowledge.targets.length)
+    (knowledge.summary ||
+      knowledge.crops.length ||
+      knowledge.targets.length)
   ) {
     return {
       source: 'ai-knowledge',
       originalSource: null,
       verified: false,
       summary:
-        knowledge.summary || analysis.productType || analysis.purpose || null,
+        knowledge.summary ||
+        analysis.productType ||
+        analysis.purpose ||
+        null,
       crops: knowledge.crops,
       targets: knowledge.targets,
       rows: [],
@@ -412,11 +451,16 @@ function finalizeAnalysis(
     saveVerifiedUsageSnapshot(analysis, resolvedUsage);
   }
 
-  return { ...analysis, resolvedUsage };
+  return {
+    ...analysis,
+    resolvedUsage,
+  };
 }
+
 
 /**
  * Güvenli yerel fallback kataloğu.
+ *
  * Buraya SADECE doğrulanmış bir etiket fotoğrafının SHA-256 hash'i ile,
  * o fotoğraftan/resmî kaynaktan doğrulanmış veri eklenmelidir.
  * Bilerek boş bırakılmıştır; ürün/doz uydurulmaz.
@@ -439,11 +483,14 @@ async function fileSha256(file: File): Promise<string | null> {
 
 function loadCachedLabelAnalysis(hash: string): PesticideLabelAnalysis | null {
   try {
-    const raw = window.localStorage.getItem(`${LABEL_ANALYSIS_CACHE_PREFIX}${hash}`);
+    const raw = window.localStorage.getItem(
+      `${LABEL_ANALYSIS_CACHE_PREFIX}${hash}`,
+    );
     if (!raw) return null;
 
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object') return null;
+
     return normalizeAnalysis(parsed);
   } catch {
     return null;
@@ -475,7 +522,9 @@ function withTimeout<T>(
   message: string,
 ): Promise<T> {
   return new Promise<T>((resolve, reject) => {
-    const timer = window.setTimeout(() => reject(new Error(message)), timeoutMs);
+    const timer = window.setTimeout(() => {
+      reject(new Error(message));
+    }, timeoutMs);
 
     promise.then(
       (value) => {
@@ -491,12 +540,15 @@ function withTimeout<T>(
 }
 
 function friendlyAnalyzeError(error: unknown) {
-  const message = error instanceof Error ? error.message : String(error ?? '');
+  const message =
+    error instanceof Error ? error.message : String(error ?? '');
+
   const normalized = message.toLocaleLowerCase('tr-TR');
 
   if (normalized.includes('zaman aş')) {
     return 'Etiket AI servisi zaman aşımına uğradı.';
   }
+
   if (
     normalized.includes('gemini_api_key') ||
     normalized.includes('api key') ||
@@ -504,6 +556,7 @@ function friendlyAnalyzeError(error: unknown) {
   ) {
     return 'Etiket AI servisi yapılandırılmamış. Supabase Edge Function secret ayarlarında GEMINI_API_KEY kontrol edilmeli.';
   }
+
   if (
     normalized.includes('401') ||
     normalized.includes('oturum') ||
@@ -511,6 +564,7 @@ function friendlyAnalyzeError(error: unknown) {
   ) {
     return 'Etiket analizi için oturum doğrulanamadı. Çıkış yapıp tekrar giriş yapmayı dene.';
   }
+
   if (
     normalized.includes('429') ||
     normalized.includes('quota') ||
@@ -518,6 +572,7 @@ function friendlyAnalyzeError(error: unknown) {
   ) {
     return 'AI servis kotası/geçici yoğunluk nedeniyle yanıt vermedi.';
   }
+
   if (
     normalized.includes('failed to fetch') ||
     normalized.includes('network') ||
@@ -529,28 +584,51 @@ function friendlyAnalyzeError(error: unknown) {
   return message || 'Etiket analiz servisi çalıştırılamadı.';
 }
 
-function requireInventorySupabase() {
-  if (!supabase) {
-    throw new Error(
-      'Depo bağlantısı hazır değil. Stok verisi yalnızca Supabase üzerinde tutulur.',
-    );
+function cacheKey(userId: string) {
+  return `${CACHE_PREFIX}${userId}`;
+}
+
+export function loadInventoryCache(userId: string): InventoryProduct[] {
+  try {
+    window.localStorage.removeItem(cacheKey(userId));
+  } catch {
+    // Eski stok cache'i temizlenemese bile canonical kaynak Supabase'dir.
   }
-  return supabase;
+  return [];
+}
+
+export function saveInventoryCache(
+  userId: string,
+  products: InventoryProduct[],
+) {
+  // Stok için localStorage ikinci bir gerçeklik olamaz. Eski local-* kayıtlar
+  // React state'e eklenmeye çalışılırsa aynı dizi üzerinde ayıklanır.
+  const canonicalProducts = products.filter(
+    (product) => !String(product.id).startsWith('local-'),
+  );
+  products.splice(0, products.length, ...canonicalProducts);
+
+  try {
+    window.localStorage.removeItem(cacheKey(userId));
+  } catch {
+    // Supabase tek stok otoritesi olarak devam eder.
+  }
 }
 
 export async function resolveInventoryUser(
   explicitUser?: User | null,
 ): Promise<User> {
   if (explicitUser) return explicitUser;
-  const client = requireInventorySupabase();
+  if (!supabase) throw new Error('Supabase bağlantısı hazır değil.');
 
   const {
     data: { user },
     error,
-  } = await client.auth.getUser();
+  } = await supabase.auth.getUser();
 
   if (error) throw error;
   if (!user) throw new Error('Depoyu kullanmak için giriş yapmalısın.');
+
   return user;
 }
 
@@ -597,25 +675,31 @@ function productToRow(userId: string, input: InventoryProductInput) {
 export async function fetchInventoryProducts(
   userId: string,
 ): Promise<InventoryProduct[]> {
-  const client = requireInventorySupabase();
+  if (!supabase) {
+    throw new Error('Depo bağlantısı hazır değil. Stok verisi yalnızca Supabase üzerinde tutulur.');
+  }
 
-  const { data, error } = await client
+  const { data, error } = await supabase
     .from('farm_inventory_products')
     .select('*')
     .eq('user_id', userId)
     .order('updated_at', { ascending: false });
 
   if (error) throw error;
-  return (data ?? []).map(rowToProduct);
+
+  const products = (data ?? []).map(rowToProduct);
+  return products;
 }
 
 export async function createInventoryProduct(
   userId: string,
   input: InventoryProductInput,
 ): Promise<InventoryProduct> {
-  const client = requireInventorySupabase();
+  if (!supabase) {
+    throw new Error('Depo bağlantısı hazır değil. Ürün yerel stok olarak oluşturulmadı.');
+  }
 
-  const { data, error } = await client
+  const { data, error } = await supabase
     .from('farm_inventory_products')
     .insert(productToRow(userId, input))
     .select('*')
@@ -630,9 +714,11 @@ export async function updateInventoryProduct(
   id: string,
   input: InventoryProductInput,
 ): Promise<InventoryProduct> {
-  const client = requireInventorySupabase();
+  if (!supabase) {
+    throw new Error('Depo bağlantısı hazır değil. Stok değişikliği kaydedilmedi.');
+  }
 
-  const { data, error } = await client
+  const { data, error } = await supabase
     .from('farm_inventory_products')
     .update(productToRow(userId, input))
     .eq('id', id)
@@ -644,10 +730,15 @@ export async function updateInventoryProduct(
   return rowToProduct(data);
 }
 
-export async function removeInventoryProduct(userId: string, id: string) {
-  const client = requireInventorySupabase();
+export async function removeInventoryProduct(
+  userId: string,
+  id: string,
+) {
+  if (!supabase) {
+    throw new Error('Depo bağlantısı hazır değil. Ürün silinmedi.');
+  }
 
-  const { error } = await client
+  const { error } = await supabase
     .from('farm_inventory_products')
     .delete()
     .eq('id', id)
@@ -660,7 +751,7 @@ export async function uploadPesticideLabelPhoto(
   userId: string,
   file: File,
 ): Promise<string> {
-  const client = requireInventorySupabase();
+  if (!supabase) return '';
 
   const extension =
     file.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') ||
@@ -669,7 +760,7 @@ export async function uploadPesticideLabelPhoto(
     .toString(36)
     .slice(2, 8)}.${extension}`;
 
-  const { error } = await client.storage
+  const { error } = await supabase.storage
     .from('pesticide-labels')
     .upload(path, file, {
       cacheControl: '3600',
@@ -691,7 +782,9 @@ async function fileToBase64(file: File): Promise<string> {
       resolve(commaIndex >= 0 ? result.slice(commaIndex + 1) : result);
     };
 
-    reader.onerror = () => reject(new Error('Etiket fotoğrafı okunamadı.'));
+    reader.onerror = () =>
+      reject(new Error('Etiket fotoğrafı okunamadı.'));
+
     reader.readAsDataURL(file);
   });
 }
@@ -706,7 +799,11 @@ async function readInvokeError(error: any): Promise<string> {
       try {
         const body = await clone.json();
         const message =
-          body?.userMessage ?? body?.error ?? body?.message ?? body?.details;
+          body?.userMessage ??
+          body?.error ??
+          body?.message ??
+          body?.details;
+
         if (message) return String(message);
       } catch {
         try {
@@ -729,7 +826,11 @@ function normalizeBkuLookup(raw: any): BkuLookupResult | null {
 
   const validStatus = new Set(['exact', 'probable', 'not_found', 'error']);
   const status = validStatus.has(raw.status) ? raw.status : 'not_found';
-  const validUsageSources = new Set(['official-bku', 'grounded-label', 'none']);
+  const validUsageSources = new Set([
+    'official-bku',
+    'grounded-label',
+    'none',
+  ]);
   const usageSource = validUsageSources.has(raw.usageSource)
     ? raw.usageSource
     : 'none';
@@ -750,7 +851,8 @@ function normalizeBkuLookup(raw: any): BkuLookupResult | null {
               ? item.group.trim()
               : null,
           activeIngredients:
-            typeof item?.activeIngredients === 'string' && item.activeIngredients.trim()
+            typeof item?.activeIngredients === 'string' &&
+            item.activeIngredients.trim()
               ? item.activeIngredients.trim()
               : null,
           formulation:
@@ -778,7 +880,8 @@ function normalizeBkuLookup(raw: any): BkuLookupResult | null {
     status,
     usageSource,
     matchedProductName:
-      typeof raw.matchedProductName === 'string' && raw.matchedProductName.trim()
+      typeof raw.matchedProductName === 'string' &&
+      raw.matchedProductName.trim()
         ? raw.matchedProductName.trim()
         : null,
     matchedRegistrationNumber:
@@ -806,7 +909,9 @@ function normalizeBkuLookup(raw: any): BkuLookupResult | null {
         ? raw.checkedAt.trim()
         : null,
     note:
-      typeof raw.note === 'string' && raw.note.trim() ? raw.note.trim() : null,
+      typeof raw.note === 'string' && raw.note.trim()
+        ? raw.note.trim()
+        : null,
     diagnostics: Array.isArray(raw.diagnostics)
       ? raw.diagnostics
           .map((item: any) => String(item ?? '').trim())
@@ -843,11 +948,18 @@ function normalizeAnalysis(raw: any): PesticideLabelAnalysis {
     : [];
 
   const numericAmount = Number(raw?.totalAmountFromLabel);
+
   const validUnits = new Set(['kg', 'lt', 'gr', 'ml']);
   const unitFromLabel = validUnits.has(raw?.unitFromLabel)
     ? (raw.unitFromLabel as InventoryUnit)
     : null;
-  const validCategories = new Set(['pesticide', 'fertilizer', 'unknown']);
+
+  const validCategories = new Set([
+    'pesticide',
+    'fertilizer',
+    'unknown',
+  ]);
+
   const validConfidence = new Set(['high', 'medium', 'low']);
 
   return {
@@ -855,13 +967,17 @@ function normalizeAnalysis(raw: any): PesticideLabelAnalysis {
       typeof raw?.productName === 'string' && raw.productName.trim()
         ? raw.productName.trim()
         : 'Etiketten ürün adı okunamadı',
-    category: validCategories.has(raw?.category) ? raw.category : 'unknown',
+    category: validCategories.has(raw?.category)
+      ? raw.category
+      : 'unknown',
     registrationNumber:
-      typeof raw?.registrationNumber === 'string' && raw.registrationNumber.trim()
+      typeof raw?.registrationNumber === 'string' &&
+      raw.registrationNumber.trim()
         ? raw.registrationNumber.trim()
         : null,
     activeIngredients:
-      typeof raw?.activeIngredients === 'string' && raw.activeIngredients.trim()
+      typeof raw?.activeIngredients === 'string' &&
+      raw.activeIngredients.trim()
         ? raw.activeIngredients.trim()
         : null,
     formulation:
@@ -884,14 +1000,28 @@ function normalizeAnalysis(raw: any): PesticideLabelAnalysis {
       ? raw.supportedCrops
           .map((item: any) => String(item ?? '').trim())
           .filter(Boolean)
-      : Array.from(new Set(dosageTable.map((item) => item.crop).filter(Boolean))),
+      : Array.from(
+          new Set(
+            dosageTable
+              .map((item) => item.crop)
+              .filter(Boolean),
+          ),
+        ),
     targetOrganisms: Array.isArray(raw?.targetOrganisms)
       ? raw.targetOrganisms
           .map((item: any) => String(item ?? '').trim())
           .filter(Boolean)
-      : Array.from(new Set(dosageTable.map((item) => item.target).filter(Boolean))),
+      : Array.from(
+          new Set(
+            dosageTable
+              .map((item) => item.target)
+              .filter(Boolean),
+          ),
+        ),
     totalAmountFromLabel:
-      Number.isFinite(numericAmount) && numericAmount > 0 ? numericAmount : null,
+      Number.isFinite(numericAmount) && numericAmount > 0
+        ? numericAmount
+        : null,
     unitFromLabel,
     dosageTable,
     warnings:
@@ -903,7 +1033,9 @@ function normalizeAnalysis(raw: any): PesticideLabelAnalysis {
       Number(raw?.preHarvestIntervalDays) >= 0
         ? Number(raw.preHarvestIntervalDays)
         : null,
-    confidence: validConfidence.has(raw?.confidence) ? raw.confidence : 'low',
+    confidence: validConfidence.has(raw?.confidence)
+      ? raw.confidence
+      : 'low',
     source:
       raw?.source === 'cache' || raw?.source === 'verified-local'
         ? raw.source
@@ -914,7 +1046,9 @@ function normalizeAnalysis(raw: any): PesticideLabelAnalysis {
         : null,
     officialVerification: raw?.officialVerification === true,
     bkuLookup: normalizeBkuLookup(raw?.bkuLookup),
-    knowledgeFallback: normalizeKnowledgeFallback(raw?.knowledgeFallback),
+    knowledgeFallback: normalizeKnowledgeFallback(
+      raw?.knowledgeFallback,
+    ),
     resolvedUsage: null,
   };
 }
@@ -929,7 +1063,9 @@ export async function analyzePesticideLabel(
   }
 
   if (file.size > 10 * 1024 * 1024) {
-    throw new Error('Etiket fotoğrafı çok büyük. 10 MB altında bir görsel kullan.');
+    throw new Error(
+      'Etiket fotoğrafı çok büyük. 10 MB altında bir görsel kullan.',
+    );
   }
 
   const fileHash = await fileSha256(file);
@@ -940,13 +1076,17 @@ export async function analyzePesticideLabel(
     }
 
     const imageBase64 = await fileToBase64(file);
-    const invokePromise = supabase.functions.invoke('analyze-pesticide-label', {
-      body: {
-        imageBase64,
-        mimeType: file.type || 'image/jpeg',
-        fileName: file.name,
+
+    const invokePromise = supabase.functions.invoke(
+      'analyze-pesticide-label',
+      {
+        body: {
+          imageBase64,
+          mimeType: file.type || 'image/jpeg',
+          fileName: file.name,
+        },
       },
-    });
+    );
 
     const { data, error } = await withTimeout(
       invokePromise,
@@ -954,12 +1094,21 @@ export async function analyzePesticideLabel(
       'Etiket AI servisi zaman aşımına uğradı.',
     );
 
-    if (error) throw new Error(await readInvokeError(error));
-    if (!data) throw new Error('Etiket analiz servisinden sonuç alınamadı.');
+    if (error) {
+      throw new Error(await readInvokeError(error));
+    }
+
+    if (!data) {
+      throw new Error('Etiket analiz servisinden sonuç alınamadı.');
+    }
 
     if (data.error) {
       throw new Error(
-        String(data.userMessage ?? data.error ?? 'Etiket analizi başarısız.'),
+        String(
+          data.userMessage ??
+            data.error ??
+            'Etiket analizi başarısız.',
+        ),
       );
     }
 
@@ -972,13 +1121,17 @@ export async function analyzePesticideLabel(
       }),
     );
 
-    if (fileHash) saveCachedLabelAnalysis(fileHash, analysis);
+    if (fileHash) {
+      saveCachedLabelAnalysis(fileHash, analysis);
+    }
+
     return analysis;
   } catch (error) {
     const reason = friendlyAnalyzeError(error);
 
     if (fileHash) {
       const verified = VERIFIED_LOCAL_LABELS[fileHash];
+
       if (verified) {
         return finalizeAnalysis(
           normalizeAnalysis({
@@ -991,6 +1144,7 @@ export async function analyzePesticideLabel(
       }
 
       const cached = loadCachedLabelAnalysis(fileHash);
+
       if (cached) {
         return finalizeAnalysis(
           normalizeAnalysis({
