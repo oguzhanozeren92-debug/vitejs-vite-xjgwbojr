@@ -11,8 +11,10 @@ import {
   analyzePesticideLabel,
   createInventoryProduct,
   fetchInventoryProducts,
+  loadInventoryCache,
   removeInventoryProduct,
   resolveInventoryUser,
+  saveInventoryCache,
   updateInventoryProduct,
   uploadPesticideLabelPhoto,
   type InventoryCategory,
@@ -319,24 +321,31 @@ export default function PestStoreScreen({
   const [inventoryMessage, setInventoryMessage] = useState('');
 
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<'all' | 'ilac' | 'gubre' | 'low'>('all');
+  const [filter, setFilter] = useState<
+    'all' | 'ilac' | 'gubre' | 'low'
+  >('all');
+
   const [stockSort, setStockSort] = useState<'name' | 'stock'>('name');
 
   const [labelFile, setLabelFile] = useState<File | null>(null);
   const [labelPreview, setLabelPreview] = useState('');
-  const [analysis, setAnalysis] = useState<PesticideLabelAnalysis | null>(null);
+  const [analysis, setAnalysis] =
+    useState<PesticideLabelAnalysis | null>(null);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [analysisMessage, setAnalysisMessage] = useState('');
 
-  const [resultCategory, setResultCategory] = useState<InventoryCategory>('ilac');
+  const [resultCategory, setResultCategory] =
+    useState<InventoryCategory>('ilac');
   const [totalAmount, setTotalAmount] = useState('');
   const [remainingAmount, setRemainingAmount] = useState('');
   const [unit, setUnit] = useState<InventoryUnit>('kg');
   const [selectedFieldIds, setSelectedFieldIds] = useState<string[]>([]);
   const [savingProduct, setSavingProduct] = useState(false);
 
-  const [editingProduct, setEditingProduct] = useState<InventoryProduct | null>(null);
-  const [editDraft, setEditDraft] = useState<InventoryProductInput | null>(null);
+  const [editingProduct, setEditingProduct] =
+    useState<InventoryProduct | null>(null);
+  const [editDraft, setEditDraft] =
+    useState<InventoryProductInput | null>(null);
   const [editSaving, setEditSaving] = useState(false);
 
   const resultRef = useRef<HTMLDivElement | null>(null);
@@ -353,9 +362,10 @@ export default function PestStoreScreen({
       } catch (error) {
         if (!active) return;
         setInventoryMessage(
-          error instanceof Error ? error.message : 'Kullanıcı bilgisi alınamadı.',
+          error instanceof Error
+            ? error.message
+            : 'Kullanıcı bilgisi alınamadı.',
         );
-        setProducts([]);
         setLoadingProducts(false);
       }
     };
@@ -373,6 +383,9 @@ export default function PestStoreScreen({
     let active = true;
 
     const load = async () => {
+      const cached = loadInventoryCache(resolvedUser.id);
+      if (active && cached.length) setProducts(cached);
+
       try {
         setLoadingProducts(true);
         const remote = await fetchInventoryProducts(resolvedUser.id);
@@ -383,9 +396,13 @@ export default function PestStoreScreen({
         setInventoryMessage('');
       } catch (error) {
         if (!active) return;
-        setProducts([]);
+
         setInventoryMessage(
-          `Depo verisi alınamadı; yerel stok gösterilmiyor. ${
+          `Supabase depo verisi alınamadı. ${
+            cached.length
+              ? 'Önbellekteki ürünler gösteriliyor.'
+              : 'SQL kurulumunu yaptıktan sonra tekrar dene.'
+          } ${
             error instanceof Error ? `(${error.message})` : ''
           }`,
         );
@@ -430,6 +447,8 @@ export default function PestStoreScreen({
     });
   }, [filter, products, search]);
 
+  // Global üst banttaki TEK Pusula'ya depo durumunu aktar.
+  // Burada ikinci bir Pusula logosu render edilmez.
   useEffect(() => {
     const detail = {
       screen: 'inventoryHub',
@@ -454,14 +473,20 @@ export default function PestStoreScreen({
     };
 
     try {
-      window.sessionStorage.setItem('tp_pusula_depot_state_v1', JSON.stringify(detail));
+      window.sessionStorage.setItem(
+        'tp_pusula_depot_state_v1',
+        JSON.stringify(detail),
+      );
     } catch {
       // sessionStorage kapalıysa canlı event yine çalışır.
     }
 
-    window.dispatchEvent(new CustomEvent('tp-pusula-depot-state', { detail }));
+    window.dispatchEvent(
+      new CustomEvent('tp-pusula-depot-state', { detail }),
+    );
   }, [loadingProducts, products, realFields]);
 
+  // Üst banttaki Pusula'nın aksiyonlarını mevcut depo ekranına bağla.
   useEffect(() => {
     const handleDepotAction = (event: Event) => {
       const customEvent = event as CustomEvent<{
@@ -472,21 +497,46 @@ export default function PestStoreScreen({
       if (customEvent.detail?.screen !== 'inventoryHub') return;
 
       if (customEvent.detail.action === 'scan') {
-        const scanCard = document.querySelector('.tp-peststore-scan-card') as HTMLElement | null;
-        scanCard?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        window.setTimeout(() => scanInputRef.current?.click(), 360);
+        const scanCard = document.querySelector(
+          '.tp-peststore-scan-card',
+        ) as HTMLElement | null;
+
+        scanCard?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+
+        // Kullanıcı Pusula'daki "Etiketi Tara" butonuna bastığı için
+        // aynı kullanıcı etkileşimi zincirinde dosya seçiciyi açmayı dene.
+        window.setTimeout(() => {
+          scanInputRef.current?.click();
+        }, 360);
+
         return;
       }
 
       if (customEvent.detail.action === 'stock') {
-        const stockPanel = document.querySelector('.tp-peststore-stock-panel') as HTMLElement | null;
-        stockPanel?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const stockPanel = document.querySelector(
+          '.tp-peststore-stock-panel',
+        ) as HTMLElement | null;
+
+        stockPanel?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
       }
     };
 
-    window.addEventListener('tp-pusula-depot-action', handleDepotAction as EventListener);
+    window.addEventListener(
+      'tp-pusula-depot-action',
+      handleDepotAction as EventListener,
+    );
+
     return () => {
-      window.removeEventListener('tp-pusula-depot-action', handleDepotAction as EventListener);
+      window.removeEventListener(
+        'tp-pusula-depot-action',
+        handleDepotAction as EventListener,
+      );
     };
   }, []);
 
@@ -498,7 +548,9 @@ export default function PestStoreScreen({
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
 
-    if (labelPreview) URL.revokeObjectURL(labelPreview);
+    if (labelPreview) {
+      URL.revokeObjectURL(labelPreview);
+    }
 
     setLabelFile(file);
     setLabelPreview(file ? URL.createObjectURL(file) : '');
@@ -519,8 +571,11 @@ export default function PestStoreScreen({
       );
 
       const result = await analyzePesticideLabel(labelFile);
+
       setAnalysis(result);
-      setResultCategory(result.category === 'fertilizer' ? 'gubre' : 'ilac');
+      setResultCategory(
+        result.category === 'fertilizer' ? 'gubre' : 'ilac',
+      );
 
       if (result.totalAmountFromLabel != null) {
         const amount = String(result.totalAmountFromLabel);
@@ -528,7 +583,9 @@ export default function PestStoreScreen({
         setRemainingAmount(amount);
       }
 
-      if (result.unitFromLabel) setUnit(result.unitFromLabel);
+      if (result.unitFromLabel) {
+        setUnit(result.unitFromLabel);
+      }
 
       const dosageCrops = (
         result.resolvedUsage?.crops?.length
@@ -553,7 +610,9 @@ export default function PestStoreScreen({
           'AI servisi yanıt vermedi. Fotoğrafın SHA-256 değeriyle birebir eşleşen doğrulanmış yerel kayıt gösteriliyor.',
         );
       } else if (result.resolvedUsage?.source === 'official-bku') {
-        setAnalysisMessage('Ürün ve kullanım satırları resmî BKÜ kaynağında doğrulandı.');
+        setAnalysisMessage(
+          'Ürün ve kullanım satırları resmî BKÜ kaynağında doğrulandı.',
+        );
       } else if (result.resolvedUsage?.source === 'label-ocr') {
         setAnalysisMessage(
           'BKÜ kullanım satırı boş döndü; bitki, hedef ve varsa doz bilgileri fotoğraftaki etiketten kullanılıyor.',
@@ -567,15 +626,22 @@ export default function PestStoreScreen({
           'BKÜ ve etiket kullanım tablosu boş kaldı. Genel AI bilgi notu gösteriliyor; bu alanlar resmî tavsiye değildir ve AI doz üretmez.',
         );
       } else {
-        setAnalysisMessage('Ürün kimliği bulundu ancak bitki/doz kullanım kaynağı bulunamadı.');
+        setAnalysisMessage(
+          'Ürün kimliği bulundu ancak bitki/doz kullanım kaynağı bulunamadı.',
+        );
       }
 
       window.setTimeout(() => {
-        resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        resultRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        });
       }, 80);
     } catch (error) {
       setAnalysisMessage(
-        error instanceof Error ? error.message : 'Etiket AI ile analiz edilemedi.',
+        error instanceof Error
+          ? error.message
+          : 'Etiket AI ile analiz edilemedi.',
       );
     } finally {
       setAnalysisLoading(false);
@@ -590,11 +656,22 @@ export default function PestStoreScreen({
     );
   };
 
-  const upsertProductState = (product: InventoryProduct) => {
-    setProducts((current) => [
-      product,
-      ...current.filter((item) => item.id !== product.id),
-    ]);
+  const upsertProductState = (
+    product: InventoryProduct,
+    cacheUserId: string | null = resolvedUser?.id ?? null,
+  ) => {
+    setProducts((current) => {
+      const next = [
+        product,
+        ...current.filter((item) => item.id !== product.id),
+      ];
+
+      if (cacheUserId) {
+        saveInventoryCache(cacheUserId, next);
+      }
+
+      return next;
+    });
   };
 
   const handleSaveAnalyzed = async () => {
@@ -603,8 +680,14 @@ export default function PestStoreScreen({
       return;
     }
 
+    // Türkiye'de kullanıcılar ondalık değerleri genellikle 0,5 / 1,25
+    // şeklinde giriyor. Number('0,5') NaN döndürdüğü için virgülü normalize et.
     const parseAmount = (value: string) => {
-      const clean = String(value ?? '').trim().replace(/\s+/g, '').replace(',', '.');
+      const clean = String(value ?? '')
+        .trim()
+        .replace(/\s+/g, '')
+        .replace(',', '.');
+
       return Number(clean);
     };
 
@@ -615,16 +698,25 @@ export default function PestStoreScreen({
       setAnalysisMessage('Toplam ambalaj miktarını doğru gir.');
       return;
     }
+
     if (!Number.isFinite(remaining) || remaining < 0) {
-      setAnalysisMessage('Kalan stok miktarını doğru gir. Örn: 0,5 veya 0.5');
+      setAnalysisMessage(
+        'Kalan stok miktarını doğru gir. Örn: 0,5 veya 0.5',
+      );
       return;
     }
+
     if (remaining > total) {
-      setAnalysisMessage('Kalan stok toplam ambalaj miktarından büyük olamaz.');
+      setAnalysisMessage(
+        'Kalan stok toplam ambalaj miktarından büyük olamaz.',
+      );
       return;
     }
 
     let currentUser = resolvedUser;
+
+    // Sayfa ilk açıldığında resolvedUser state'i henüz dolmamış olabilir.
+    // Butonu kalıcı kilitlemek yerine kaydetme anında oturumu tekrar çöz.
     if (!currentUser) {
       try {
         currentUser = await resolveInventoryUser(user);
@@ -644,11 +736,18 @@ export default function PestStoreScreen({
       setAnalysisMessage('Ürün depoya kaydediliyor...');
 
       let photoPath: string | null = null;
+
       if (labelFile) {
         try {
-          photoPath = await uploadPesticideLabelPhoto(currentUser.id, labelFile);
+          photoPath = await uploadPesticideLabelPhoto(
+            currentUser.id,
+            labelFile,
+          );
         } catch (photoError) {
-          console.warn('Etiket fotoğrafı Storage’a yüklenemedi:', photoError);
+          console.warn(
+            'Etiket fotoğrafı Storage’a yüklenemedi:',
+            photoError,
+          );
         }
       }
 
@@ -657,8 +756,11 @@ export default function PestStoreScreen({
         category: resultCategory,
         activeIngredients: analysis.activeIngredients,
         registrationNumber:
-          analysis.bkuLookup?.matchedRegistrationNumber ?? analysis.registrationNumber,
-        formulation: analysis.bkuLookup?.matchedFormulation ?? analysis.formulation,
+          analysis.bkuLookup?.matchedRegistrationNumber ??
+          analysis.registrationNumber,
+        formulation:
+          analysis.bkuLookup?.matchedFormulation ??
+          analysis.formulation,
         manufacturer: analysis.manufacturer,
         totalAmount: total,
         remainingAmount: remaining,
@@ -667,36 +769,70 @@ export default function PestStoreScreen({
         photoUrl: photoPath,
       };
 
-      const saved = await createInventoryProduct(currentUser.id, input);
-      upsertProductState(saved);
-
-      let pointMessage = '';
       try {
-        const reward = await addPoints('ADD_INVENTORY', {
-          dedupeKey: `inventory:${saved.id}`,
-          metadata: {
-            source: 'pest_store',
-            productId: saved.id,
-            productName: saved.productName,
-          },
-          toastTitle: 'Depoya ürün ekleme ödülü',
-        });
+        const saved = await createInventoryProduct(
+          currentUser.id,
+          input,
+        );
 
-        if (reward.awarded && reward.awardedPoints > 0) {
-          pointMessage = ` +${reward.awardedPoints} Puan kazandın.`;
+        upsertProductState(saved, currentUser.id);
+
+        let pointMessage = '';
+
+        try {
+          const reward = await addPoints('ADD_INVENTORY', {
+            dedupeKey: `inventory:${saved.id}`,
+            metadata: {
+              source: 'pest_store',
+              productId: saved.id,
+              productName: saved.productName,
+            },
+            toastTitle: 'Depoya ürün ekleme ödülü',
+          });
+
+          if (reward.awarded && reward.awardedPoints > 0) {
+            pointMessage = ` +${reward.awardedPoints} Puan kazandın.`;
+          }
+        } catch (pointError) {
+          console.warn(
+            'Depo puanı verilemedi; ürün kaydı korundu:',
+            pointError,
+          );
         }
-      } catch (pointError) {
-        console.warn('Depo puanı verilemedi; ürün kaydı korundu:', pointError);
-      }
 
-      setAnalysisMessage(
-        `Ürün depoya kaydedildi ve stok listesine eklendi.${pointMessage}`,
-      );
+        setAnalysisMessage(
+          `Ürün Supabase deposuna kaydedildi ve stok listesine eklendi.${pointMessage}`,
+        );
+      } catch (remoteError) {
+        const now = new Date().toISOString();
+
+        const localProduct: InventoryProduct = {
+          id:
+            typeof crypto !== 'undefined' &&
+            'randomUUID' in crypto
+              ? `local-${crypto.randomUUID()}`
+              : `local-${Date.now()}`,
+          userId: currentUser.id,
+          ...input,
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        upsertProductState(localProduct, currentUser.id);
+
+        setAnalysisMessage(
+          `Supabase kaydı yapılamadı; ürün geçici olarak cihaz önbelleğine kaydedildi. ${
+            remoteError instanceof Error
+              ? remoteError.message
+              : ''
+          }`,
+        );
+      }
     } catch (error) {
       setAnalysisMessage(
-        `Ürün depoya kaydedilemedi; stok listesi değiştirilmedi. ${
-          error instanceof Error ? error.message : ''
-        }`,
+        error instanceof Error
+          ? error.message
+          : 'Ürün depoya kaydedilemedi.',
       );
     } finally {
       setSavingProduct(false);
@@ -742,17 +878,30 @@ export default function PestStoreScreen({
 
     try {
       setEditSaving(true);
-      const updated = await updateInventoryProduct(
-        resolvedUser.id,
-        editingProduct.id,
-        editDraft,
-      );
-      upsertProductState(updated);
+
+      if (editingProduct.id.startsWith('local-')) {
+        const updated: InventoryProduct = {
+          ...editingProduct,
+          ...editDraft,
+          updatedAt: new Date().toISOString(),
+        };
+        upsertProductState(updated);
+      } else {
+        const updated = await updateInventoryProduct(
+          resolvedUser.id,
+          editingProduct.id,
+          editDraft,
+        );
+        upsertProductState(updated);
+      }
+
       setInventoryMessage('Ürün bilgileri güncellendi.');
       closeEdit();
     } catch (error) {
       setInventoryMessage(
-        error instanceof Error ? error.message : 'Ürün güncellenemedi.',
+        error instanceof Error
+          ? error.message
+          : 'Ürün güncellenemedi.',
       );
     } finally {
       setEditSaving(false);
@@ -761,11 +910,22 @@ export default function PestStoreScreen({
 
   const handleDelete = async (product: InventoryProduct) => {
     if (!resolvedUser) return;
-    if (!window.confirm(`${product.productName} depodan silinsin mi?`)) return;
+
+    if (!window.confirm(`${product.productName} depodan silinsin mi?`)) {
+      return;
+    }
 
     try {
-      await removeInventoryProduct(resolvedUser.id, product.id);
-      setProducts((current) => current.filter((item) => item.id !== product.id));
+      if (!product.id.startsWith('local-')) {
+        await removeInventoryProduct(resolvedUser.id, product.id);
+      }
+
+      setProducts((current) => {
+        const next = current.filter((item) => item.id !== product.id);
+        saveInventoryCache(resolvedUser.id, next);
+        return next;
+      });
+
       setInventoryMessage('Ürün depodan silindi.');
     } catch (error) {
       setInventoryMessage(
@@ -774,8 +934,11 @@ export default function PestStoreScreen({
     }
   };
 
+
   const totalProducts = products.length;
-  const lowStockProducts = products.filter((product) => stockPercent(product) <= 25).length;
+  const lowStockProducts = products.filter(
+    (product) => stockPercent(product) <= 25,
+  ).length;
 
   const linkedFieldIds = new Set(
     products.flatMap((product) =>
@@ -785,14 +948,27 @@ export default function PestStoreScreen({
     ),
   );
 
-  const pesticideCount = products.filter((product) => product.category === 'ilac').length;
-  const fertilizerCount = products.filter((product) => product.category === 'gubre').length;
+  const pesticideCount = products.filter(
+    (product) => product.category === 'ilac',
+  ).length;
+
+  const fertilizerCount = products.filter(
+    (product) => product.category === 'gubre',
+  ).length;
 
   const dashboardProducts = [...filteredProducts].sort((a, b) => {
-    if (stockSort === 'stock') return stockPercent(a) - stockPercent(b);
-    return String(a.productName || '').localeCompare(String(b.productName || ''), 'tr');
+    if (stockSort === 'stock') {
+      return stockPercent(a) - stockPercent(b);
+    }
+
+    return String(a.productName || '').localeCompare(
+      String(b.productName || ''),
+      'tr',
+    );
   });
 
+  // Depo ekranında Pusula tek bir aktif tarlayı değil kullanıcının TÜM gerçek
+  // tarlalarını ve depodaki TÜM ürünleri birlikte değerlendirir.
   const fieldProductCoverage = realFields.map((field) => {
     const fieldId = String(field.id);
     const linkedProducts = products.filter((product) =>
@@ -804,13 +980,23 @@ export default function PestStoreScreen({
       name: field.name,
       crop: field.crop,
       productCount: linkedProducts.length,
-      lowStockCount: linkedProducts.filter((product) => stockPercent(product) <= 25).length,
+      lowStockCount: linkedProducts.filter(
+        (product) => stockPercent(product) <= 25,
+      ).length,
     };
   });
 
-  const fieldsWithProducts = fieldProductCoverage.filter((field) => field.productCount > 0);
-  const fieldsWithoutProducts = fieldProductCoverage.filter((field) => field.productCount === 0);
-  const multiFieldProducts = products.filter((product) => (product.fieldIds?.length ?? 0) > 1).length;
+  const fieldsWithProducts = fieldProductCoverage.filter(
+    (field) => field.productCount > 0,
+  );
+
+  const fieldsWithoutProducts = fieldProductCoverage.filter(
+    (field) => field.productCount === 0,
+  );
+
+  const multiFieldProducts = products.filter(
+    (product) => (product.fieldIds?.length ?? 0) > 1,
+  ).length;
 
   const stockHealthText =
     totalProducts === 0
@@ -839,12 +1025,17 @@ export default function PestStoreScreen({
       const input = document.querySelector(
         '.tp-peststore-dropzone input[type="file"]',
       ) as HTMLInputElement | null;
+
       input?.click();
     }, 350);
   };
 
   return (
     <div className="tp-peststore-page">
+      {/*
+        Sol menü ve üst bant artık uygulama seviyesinde tek kaynaktan gelir:
+        AppDrawer + GlobalPusulaBand. Bu ekran kendi menüsünü/header'ını üretmez.
+      */}
       <style>{`
         .tp-peststore-page .tp-peststore-content{
           margin-left:0!important;
@@ -866,7 +1057,9 @@ export default function PestStoreScreen({
             <strong>{gamification.lastAward.title}</strong>
             <small>
               Toplam{' '}
-              {new Intl.NumberFormat('tr-TR').format(gamification.points)}{' '}
+              {new Intl.NumberFormat('tr-TR').format(
+                gamification.points,
+              )}{' '}
               Puan
             </small>
           </div>
@@ -875,6 +1068,7 @@ export default function PestStoreScreen({
 
       <div className="tp-peststore-content">
         <main className="tp-peststore-main">
+          
           <section className="tp-depot-dashboard-head">
             <div className="tp-depot-dashboard-copy">
               <span>DEPO YÖNETİMİ</span>
@@ -902,7 +1096,12 @@ export default function PestStoreScreen({
 
           <section className="tp-depot-stat-grid">
             <button type="button" onClick={() => setFilter('all')}>
-              <img className="tp-depot-stat-icon" src={depotIcon('total-products.webp')} alt="" crossOrigin="anonymous" />
+              <img
+                className="tp-depot-stat-icon"
+                src={depotIcon('total-products.webp')}
+                alt=""
+                crossOrigin="anonymous"
+              />
               <small>Toplam Ürün</small>
               <strong>{totalProducts}</strong>
               <span>ürün</span>
@@ -910,7 +1109,12 @@ export default function PestStoreScreen({
             </button>
 
             <button type="button" onClick={() => setFilter('ilac')}>
-              <img className="tp-depot-stat-icon" src={depotIcon('pesticide.webp')} alt="" crossOrigin="anonymous" />
+              <img
+                className="tp-depot-stat-icon"
+                src={depotIcon('pesticide.webp')}
+                alt=""
+                crossOrigin="anonymous"
+              />
               <small>İlaç</small>
               <strong>{pesticideCount}</strong>
               <span>ürün</span>
@@ -918,7 +1122,12 @@ export default function PestStoreScreen({
             </button>
 
             <button type="button" onClick={() => setFilter('low')}>
-              <img className="tp-depot-stat-icon" src={depotIcon('low-stock.webp')} alt="" crossOrigin="anonymous" />
+              <img
+                className="tp-depot-stat-icon"
+                src={depotIcon('low-stock.webp')}
+                alt=""
+                crossOrigin="anonymous"
+              />
               <small>Azalan Stok</small>
               <strong>{lowStockProducts}</strong>
               <span>ürün</span>
@@ -926,7 +1135,12 @@ export default function PestStoreScreen({
             </button>
 
             <button type="button">
-              <img className="tp-depot-stat-icon" src={depotIcon('linked-fields.webp')} alt="" crossOrigin="anonymous" />
+              <img
+                className="tp-depot-stat-icon"
+                src={depotIcon('linked-fields.webp')}
+                alt=""
+                crossOrigin="anonymous"
+              />
               <small>Bağlı Tarlalar</small>
               <strong>{linkedFieldIds.size}</strong>
               <span>tarla</span>
@@ -937,12 +1151,16 @@ export default function PestStoreScreen({
           <section className="tp-depot-status-card">
             <div className="tp-depot-status-copy">
               <span>DEPO DURUMU</span>
-              <strong>{totalProducts ? `${totalProducts} ürün kayıtlı` : 'Depo boş'}</strong>
+              <strong>
+                {totalProducts ? `${totalProducts} ürün kayıtlı` : 'Depo boş'}
+              </strong>
+
               <p>
                 {totalProducts
                   ? `${fertilizerCount} gübre · ${pesticideCount} ilaç · ${lowStockProducts} azalan stok`
                   : 'İlk ürününü fotoğrafla veya elle ekleyebilirsin.'}
               </p>
+
               <div className="tp-depot-status-bar">
                 <i
                   style={{
@@ -956,14 +1174,35 @@ export default function PestStoreScreen({
             </div>
 
             <div className="tp-depot-status-visual">
-              <img className="tp-depot-status-image" src={depotIcon('warehouse.webp')} alt="Depo" crossOrigin="anonymous" />
+              <img
+                className="tp-depot-status-image"
+                src={depotIcon('warehouse.webp')}
+                alt="Depo"
+                crossOrigin="anonymous"
+              />
+
               <div className="tp-depot-health-copy">
                 <span>STOK SAĞLIĞI</span>
                 <b>{stockHealthText}</b>
+
                 <ul>
-                  <li><i className="good" /><span>{Math.max(0, totalProducts - lowStockProducts)} ürün yeterli</span></li>
-                  <li><i className="warning" /><span>{lowStockProducts} ürün azalıyor</span></li>
-                  <li><i className="field" /><span>{fieldsWithProducts.length}/{realFields.length} tarlada ürün eşleşmesi</span></li>
+                  <li>
+                    <i className="good" />
+                    <span>
+                      {Math.max(0, totalProducts - lowStockProducts)} ürün yeterli
+                    </span>
+                  </li>
+                  <li>
+                    <i className="warning" />
+                    <span>{lowStockProducts} ürün azalıyor</span>
+                  </li>
+                  <li>
+                    <i className="field" />
+                    <span>
+                      {fieldsWithProducts.length}/{realFields.length} tarlada ürün
+                      eşleşmesi
+                    </span>
+                  </li>
                 </ul>
               </div>
             </div>
@@ -979,18 +1218,31 @@ export default function PestStoreScreen({
           <section className="tp-depot-toolbar">
             <label>
               <Icon name="search" size={15} />
-              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Ürün ara..." />
+              <input
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder="Ürün ara..."
+              />
             </label>
+
             <button type="button" onClick={() => setFilter(filter === 'low' ? 'all' : 'low')}>
-              <Icon name="filter" size={15} /> Filtrele
+              <Icon name="filter" size={15} />
+              Filtrele
             </button>
-            <button type="button" onClick={() => setStockSort((current) => current === 'name' ? 'stock' : 'name')}>
+
+            <button
+              type="button"
+              onClick={() => setStockSort((current) => current === 'name' ? 'stock' : 'name')}
+            >
               ↕ Sırala
             </button>
           </section>
 
           <section className="tp-depot-pusula-note" data-pusula-depot-target>
-            <div><span>PUSULA'DAN ÖNERİ</span><strong>{pusulaDashboardText}</strong></div>
+            <div>
+              <span>PUSULA'DAN ÖNERİ</span>
+              <strong>{pusulaDashboardText}</strong>
+            </div>
             <button
               type="button"
               onClick={() =>
@@ -1015,64 +1267,157 @@ export default function PestStoreScreen({
           </section>
 
           <section className="tp-depot-action-row">
-            <button type="button" className="primary" onClick={openScanner}>
-              <img className="tp-depot-action-icon" src={depotIcon('photo-add.webp')} alt="" crossOrigin="anonymous" />
-              <span><strong>Etiketi Tara</strong><small>Fotoğraf çekerek ürün ekle</small></span>
+            <button
+              type="button"
+              className="primary"
+              onClick={openScanner}
+            >
+              <img
+                className="tp-depot-action-icon"
+                src={depotIcon('photo-add.webp')}
+                alt=""
+                crossOrigin="anonymous"
+              />
+              <span>
+                <strong>Etiketi Tara</strong>
+                <small>Fotoğraf çekerek ürün ekle</small>
+              </span>
             </button>
-            <button type="button" onClick={() => document.querySelector('.tp-peststore-analysis')?.scrollIntoView({ behavior: 'smooth' })}>
-              <img className="tp-depot-action-icon" src={depotIcon('total-products.webp')} alt="" crossOrigin="anonymous" />
-              <span><strong>Elle Ürün Ekle</strong><small>Ürün bilgilerini kendin gir</small></span>
+
+            <button
+              type="button"
+              onClick={() => document.querySelector('.tp-peststore-analysis')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              <img
+                className="tp-depot-action-icon"
+                src={depotIcon('total-products.webp')}
+                alt=""
+                crossOrigin="anonymous"
+              />
+              <span>
+                <strong>Elle Ürün Ekle</strong>
+                <small>Ürün bilgilerini kendin gir</small>
+              </span>
             </button>
-            <button type="button" onClick={() => document.querySelector('.tp-peststore-stock-list')?.scrollIntoView({ behavior: 'smooth' })}>
-              <img className="tp-depot-action-icon" src={depotIcon('low-stock.webp')} alt="" crossOrigin="anonymous" />
-              <span><strong>Stok Güncelle</strong><small>Mevcut ürünü düzenle</small></span>
+
+            <button
+              type="button"
+              onClick={() => document.querySelector('.tp-peststore-stock-list')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              <img
+                className="tp-depot-action-icon"
+                src={depotIcon('low-stock.webp')}
+                alt=""
+                crossOrigin="anonymous"
+              />
+              <span>
+                <strong>Stok Güncelle</strong>
+                <small>Mevcut ürünü düzenle</small>
+              </span>
             </button>
           </section>
 
           <section className="tp-peststore-top-grid">
             <article className="tp-peststore-card tp-peststore-scan-card">
               <div className="tp-peststore-card-head">
-                <span><Icon name="camera" size={19} /></span>
-                <div><small>AI ETİKET OKUMA</small><h2>Ürün Etiketi Tarama</h2></div>
+                <span>
+                  <Icon name="camera" size={19} />
+                </span>
+                <div>
+                  <small>AI ETİKET OKUMA</small>
+                  <h2>Ürün Etiketi Tarama</h2>
+                </div>
               </div>
 
-              <label className={`tp-peststore-dropzone ${labelFile ? 'has-file' : ''}`}>
-                <input ref={scanInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} />
+              <label
+                className={`tp-peststore-dropzone ${
+                  labelFile ? 'has-file' : ''
+                }`}
+              >
+                <input
+                  ref={scanInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleFileChange}
+                />
+
                 {labelPreview ? (
-                  <img src={labelPreview} alt="Yüklenen ürün etiketi önizlemesi" />
+                  <img
+                    src={labelPreview}
+                    alt="Yüklenen ürün etiketi önizlemesi"
+                  />
                 ) : (
-                  <span><Icon name="scan" size={26} /></span>
+                  <span>
+                    <Icon name="scan" size={26} />
+                  </span>
                 )}
-                <strong>{labelFile?.name ?? 'İlaç veya gübre etiketinin net fotoğrafını yükle'}</strong>
-                <p>Ürün adı, ruhsat/tescil no, etken madde ve dozaj tablosu mümkün olduğunca net görünmeli.</p>
+
+                <strong>
+                  {labelFile?.name ??
+                    'İlaç veya gübre etiketinin net fotoğrafını yükle'}
+                </strong>
+                <p>
+                  Ürün adı, ruhsat/tescil no, etken madde ve dozaj tablosu
+                  mümkün olduğunca net görünmeli.
+                </p>
               </label>
 
-              <button type="button" className="tp-peststore-primary" disabled={!labelFile || analysisLoading} onClick={() => void handleAnalyze()}>
+              <button
+                type="button"
+                className="tp-peststore-primary"
+                disabled={!labelFile || analysisLoading}
+                onClick={() => void handleAnalyze()}
+              >
                 {analysisLoading ? (
-                  <><span className="tp-peststore-spinner" />BKÜ Etiketi AI ile Analiz Ediliyor...</>
+                  <>
+                    <span className="tp-peststore-spinner" />
+                    BKÜ Etiketi AI ile Analiz Ediliyor...
+                  </>
                 ) : (
-                  <><Icon name="scan" size={16} />BKÜ Verisi İçin Etiketi Tara & Analiz Et</>
+                  <>
+                    <Icon name="scan" size={16} />
+                    BKÜ Verisi İçin Etiketi Tara & Analiz Et
+                  </>
                 )}
               </button>
 
-              {analysisMessage && <div className="tp-peststore-inline-message">{analysisMessage}</div>}
+              {analysisMessage && (
+                <div className="tp-peststore-inline-message">
+                  {analysisMessage}
+                </div>
+              )}
             </article>
 
             <article className="tp-peststore-card tp-peststore-stock-panel">
               <div className="tp-peststore-card-head">
-                <span><Icon name="box" size={19} /></span>
-                <div><small>STOK TAKİBİ</small><h2>Depom</h2></div>
+                <span>
+                  <Icon name="box" size={19} />
+                </span>
+                <div>
+                  <small>STOK TAKİBİ</small>
+                  <h2>Depom</h2>
+                </div>
                 <b>{products.length} ürün</b>
               </div>
 
               <div className="tp-peststore-toolbar">
                 <label>
                   <Icon name="search" size={15} />
-                  <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Depoda ürün ara..." />
+                  <input
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Depoda ürün ara..."
+                  />
                 </label>
+
                 <label>
                   <Icon name="filter" size={15} />
-                  <select value={filter} onChange={(event) => setFilter(event.target.value as typeof filter)}>
+                  <select
+                    value={filter}
+                    onChange={(event) =>
+                      setFilter(event.target.value as typeof filter)
+                    }
+                  >
                     <option value="all">Tüm Ürünler</option>
                     <option value="ilac">İlaçlar</option>
                     <option value="gubre">Gübreler</option>
@@ -1081,59 +1426,152 @@ export default function PestStoreScreen({
                 </label>
               </div>
 
-              {inventoryMessage && <div className="tp-peststore-inline-message">{inventoryMessage}</div>}
+              {inventoryMessage && (
+                <div className="tp-peststore-inline-message">
+                  {inventoryMessage}
+                </div>
+              )}
 
               {loadingProducts && products.length === 0 ? (
-                <div className="tp-peststore-empty"><span className="tp-peststore-spinner light" /><strong>Depo yükleniyor...</strong></div>
+                <div className="tp-peststore-empty">
+                  <span className="tp-peststore-spinner light" />
+                  <strong>Depo yükleniyor...</strong>
+                </div>
               ) : filteredProducts.length === 0 ? (
                 <div className="tp-peststore-empty">
                   <Icon name="box" size={24} />
-                  <strong>{products.length ? 'Bu filtrede ürün bulunamadı.' : 'Deponuzda henüz kayıtlı ürün bulunmuyor.'}</strong>
-                  <p>Etiket taratarak ilk ilaç veya gübre kaydını oluşturabilirsin.</p>
+                  <strong>
+                    {products.length
+                      ? 'Bu filtrede ürün bulunamadı.'
+                      : 'Deponuzda henüz kayıtlı ürün bulunmuyor.'}
+                  </strong>
+                  <p>
+                    Etiket taratarak ilk ilaç veya gübre kaydını
+                    oluşturabilirsin.
+                  </p>
                 </div>
               ) : (
                 <div className="tp-peststore-stock-list">
                   {dashboardProducts.map((product) => {
                     const percent = stockPercent(product);
                     const tone = stockTone(percent);
+
                     return (
-                      <article className="tp-peststore-stock-item" key={product.id}>
+                      <article
+                        className="tp-peststore-stock-item"
+                        key={product.id}
+                      >
                         <div className="tp-peststore-stock-title">
                           <div className="tp-peststore-product-main">
                             <div className="tp-peststore-product-visual" aria-hidden="true">
-                              <img src={depotIcon(product.category === 'ilac' ? 'pesticide.webp' : 'fertilizer.webp')} alt="" crossOrigin="anonymous" />
-                              <span className={`stock-visual-level ${tone}`}><i style={{ height: `${percent}%` }} /></span>
+                              <img
+                                src={depotIcon(
+                                  product.category === 'ilac'
+                                    ? 'pesticide.webp'
+                                    : 'fertilizer.webp',
+                                )}
+                                alt=""
+                                crossOrigin="anonymous"
+                              />
+                              <span className={`stock-visual-level ${tone}`}>
+                                <i style={{ height: `${percent}%` }} />
+                              </span>
                             </div>
+
                             <div>
-                              <span className={`tp-peststore-kind ${product.category}`}>{product.category === 'ilac' ? 'İLAÇ' : 'GÜBRE'}</span>
-                              <strong>{product.productName}</strong>
-                              <small>{product.activeIngredients || product.manufacturer || 'Etken madde / üretici bilgisi yok'}</small>
+                            <span
+                              className={`tp-peststore-kind ${product.category}`}
+                            >
+                              {product.category === 'ilac'
+                                ? 'İLAÇ'
+                                : 'GÜBRE'}
+                            </span>
+                            <strong>{product.productName}</strong>
+                            <small>
+                              {product.activeIngredients ||
+                                product.manufacturer ||
+                                'Etken madde / üretici bilgisi yok'}
+                            </small>
                             </div>
                           </div>
+
                           <div className="tp-peststore-stock-actions">
-                            <button type="button" onClick={() => openEdit(product)} aria-label="Ürünü düzenle"><Icon name="edit" size={14} /></button>
-                            <button type="button" onClick={() => void handleDelete(product)} aria-label="Ürünü sil"><Icon name="trash" size={14} /></button>
+                            <button
+                              type="button"
+                              onClick={() => openEdit(product)}
+                              aria-label="Ürünü düzenle"
+                            >
+                              <Icon name="edit" size={14} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void handleDelete(product)}
+                              aria-label="Ürünü sil"
+                            >
+                              <Icon name="trash" size={14} />
+                            </button>
                           </div>
                         </div>
 
                         <div className="tp-peststore-stock-numbers">
-                          <strong>{formatAmount(product.remainingAmount)} {product.unit}</strong>
-                          <span>/ {formatAmount(product.totalAmount)} {product.unit}</span>
-                          <i className={tone}>{tone === 'critical' ? 'Kritik stok' : tone === 'low' ? 'Azalıyor' : `%${Math.round(percent)}`}</i>
+                          <strong>
+                            {formatAmount(product.remainingAmount)}{' '}
+                            {product.unit}
+                          </strong>
+                          <span>
+                            / {formatAmount(product.totalAmount)}{' '}
+                            {product.unit}
+                          </span>
+                          <i className={tone}>
+                            {tone === 'critical'
+                              ? 'Kritik stok'
+                              : tone === 'low'
+                                ? 'Azalıyor'
+                                : `%${Math.round(percent)}`}
+                          </i>
                         </div>
-                        <div className="tp-peststore-progress"><span className={tone} style={{ width: `${percent}%` }} /></div>
+
+                        <div className="tp-peststore-progress">
+                          <span
+                            className={tone}
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
 
                         <div className="tp-peststore-registration">
-                          <Icon name={product.registrationNumber ? 'check' : 'warning'} size={13} />
-                          <span>
-                            {product.category === 'ilac'
-                              ? product.registrationNumber
-                                ? `Etiketten ruhsat no: ${product.registrationNumber}`
-                                : 'Ruhsat no etiketten okunamadı'
-                              : product.registrationNumber
-                                ? `Gübre tescil/beyan no: ${product.registrationNumber}`
-                                : 'Gübre tescil/beyan no okunamadı'}
-                          </span>
+                          {product.category === 'ilac' ? (
+                            <>
+                              <Icon
+                                name={
+                                  product.registrationNumber
+                                    ? 'check'
+                                    : 'warning'
+                                }
+                                size={13}
+                              />
+                              <span>
+                                {product.registrationNumber
+                                  ? `Etiketten ruhsat no: ${product.registrationNumber}`
+                                  : 'Ruhsat no etiketten okunamadı'}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <Icon
+                                name={
+                                  product.registrationNumber
+                                    ? 'check'
+                                    : 'warning'
+                                }
+                                size={13}
+                              />
+                              <span>
+                                {product.registrationNumber
+                                  ? `Gübre tescil/beyan no: ${product.registrationNumber}`
+                                  : 'Gübre tescil/beyan no okunamadı'}
+                              </span>
+                            </>
+                          )}
                         </div>
 
                         <div className="tp-peststore-field-relevance">
@@ -1150,10 +1588,20 @@ export default function PestStoreScreen({
                         {product.fieldIds.length > 0 && (
                           <div className="tp-peststore-field-chips">
                             {product.fieldIds.map((fieldId) => {
-                              const field = realFields.find((item) => String(item.id) === fieldId);
+                              const field = realFields.find(
+                                (item) => String(item.id) === fieldId,
+                              );
+
                               if (!field) return null;
+
                               return (
-                                <button key={fieldId} type="button" onClick={() => onNavigateToField?.(fieldId)}>
+                                <button
+                                  key={fieldId}
+                                  type="button"
+                                  onClick={() =>
+                                    onNavigateToField?.(fieldId)
+                                  }
+                                >
                                   {field.name} · {field.crop}
                                 </button>
                               );
@@ -1169,7 +1617,10 @@ export default function PestStoreScreen({
           </section>
 
           {analysis && (
-            <section className="tp-peststore-analysis" ref={resultRef}>
+            <section
+              className="tp-peststore-analysis"
+              ref={resultRef}
+            >
               <div className="tp-peststore-analysis-heading">
                 <span>
                   {analysis.source === 'cache'
@@ -1180,13 +1631,22 @@ export default function PestStoreScreen({
                 </span>
                 <h2>BKÜ Etiket Analizi & Stok Kaydı</h2>
                 <p>
-                  Bu sonuç canlı Bakanlık sorgusu değildir. Yalnızca yüklediğin etikette okunabilen veriler gösterilir; kullanımda
-                  ürünün güncel resmî etiketi ve yetkili kayıtları esas alınmalıdır.
+                  Bu sonuç canlı Bakanlık sorgusu değildir. Yalnızca
+                  yüklediğin etikette okunabilen veriler gösterilir; kullanımda
+                  ürünün güncel resmî etiketi ve yetkili kayıtları esas
+                  alınmalıdır.
                 </p>
               </div>
 
-              <div className={`tp-peststore-analysis-source ${analysis.source ?? 'ai'}`}>
-                <Icon name={analysis.source === 'ai' ? 'ai' : 'warning'} size={15} />
+              <div
+                className={`tp-peststore-analysis-source ${
+                  analysis.source ?? 'ai'
+                }`}
+              >
+                <Icon
+                  name={analysis.source === 'ai' ? 'ai' : 'warning'}
+                  size={15}
+                />
                 <div>
                   <strong>
                     {analysis.source === 'cache'
@@ -1213,7 +1673,11 @@ export default function PestStoreScreen({
                 </div>
               </div>
 
-              <div className={`tp-peststore-smart-summary ${analysis.resolvedUsage?.source ?? 'identity-only'}`}>
+              <div
+                className={`tp-peststore-smart-summary ${
+                  analysis.resolvedUsage?.source ?? 'identity-only'
+                }`}
+              >
                 <div className="tp-peststore-smart-summary-head">
                   <span>
                     <Icon
@@ -1227,6 +1691,7 @@ export default function PestStoreScreen({
                       size={16}
                     />
                   </span>
+
                   <div>
                     <small>
                       {analysis.resolvedUsage?.source === 'official-bku'
@@ -1239,9 +1704,21 @@ export default function PestStoreScreen({
                               ? 'AI BİLGİ NOTU · RESMÎ DEĞİL'
                               : 'ÜRÜN KİMLİĞİ ÖZETİ'}
                     </small>
-                    <strong>{analysis.resolvedUsage?.summary || analysis.bkuLookup?.matchedGroup || analysis.productType || analysis.purpose || 'Ürün kimliği tespit edildi'}</strong>
+
+                    <strong>
+                      {analysis.resolvedUsage?.summary ||
+                        analysis.bkuLookup?.matchedGroup ||
+                        analysis.productType ||
+                        analysis.purpose ||
+                        'Ürün kimliği tespit edildi'}
+                    </strong>
                   </div>
-                  <b className={`tp-peststore-source-pill ${analysis.resolvedUsage?.source ?? 'identity-only'}`}>
+
+                  <b
+                    className={`tp-peststore-source-pill ${
+                      analysis.resolvedUsage?.source ?? 'identity-only'
+                    }`}
+                  >
                     {analysis.resolvedUsage?.source === 'official-bku'
                       ? 'BKÜ'
                       : analysis.resolvedUsage?.source === 'label-ocr'
@@ -1255,189 +1732,564 @@ export default function PestStoreScreen({
                 </div>
 
                 <div className="tp-peststore-smart-summary-grid">
-                  <div><small>Ne işe yarar?</small><strong>{analysis.resolvedUsage?.summary || analysis.bkuLookup?.matchedGroup || analysis.productType || analysis.purpose || 'Ürün tipi tespit edildi ancak kullanım açıklaması bulunamadı'}</strong></div>
+                  <div>
+                    <small>Ne işe yarar?</small>
+                    <strong>
+                      {analysis.resolvedUsage?.summary ||
+                        analysis.bkuLookup?.matchedGroup ||
+                        analysis.productType ||
+                        analysis.purpose ||
+                        'Ürün tipi tespit edildi ancak kullanım açıklaması bulunamadı'}
+                    </strong>
+                  </div>
+
                   <div>
                     <small>Kullanılabildiği / olası bitkiler</small>
-                    <div className={`tp-peststore-ai-chips ${analysis.resolvedUsage?.source === 'ai-knowledge' ? 'unverified' : ''}`}>
-                      {analysis.resolvedUsage?.crops?.length
-                        ? analysis.resolvedUsage.crops.map((crop) => <span key={crop}>{crop}</span>)
-                        : <em>Bitki kullanım verisi bulunamadı</em>}
+                    <div
+                      className={`tp-peststore-ai-chips ${
+                        analysis.resolvedUsage?.source === 'ai-knowledge'
+                          ? 'unverified'
+                          : ''
+                      }`}
+                    >
+                      {analysis.resolvedUsage?.crops?.length ? (
+                        analysis.resolvedUsage.crops.map((crop) => (
+                          <span key={crop}>{crop}</span>
+                        ))
+                      ) : (
+                        <em>Bitki kullanım verisi bulunamadı</em>
+                      )}
                     </div>
                   </div>
+
                   <div className="wide">
                     <small>Hedef hastalık / zararlı / yabancı ot</small>
-                    <div className={`tp-peststore-ai-chips warning ${analysis.resolvedUsage?.source === 'ai-knowledge' ? 'unverified' : ''}`}>
-                      {analysis.resolvedUsage?.targets?.length
-                        ? analysis.resolvedUsage.targets.map((target) => <span key={target}>{target}</span>)
-                        : <em>Hedef kullanım verisi bulunamadı</em>}
+                    <div
+                      className={`tp-peststore-ai-chips warning ${
+                        analysis.resolvedUsage?.source === 'ai-knowledge'
+                          ? 'unverified'
+                          : ''
+                      }`}
+                    >
+                      {analysis.resolvedUsage?.targets?.length ? (
+                        analysis.resolvedUsage.targets.map((target) => (
+                          <span key={target}>{target}</span>
+                        ))
+                      ) : (
+                        <em>Hedef kullanım verisi bulunamadı</em>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 {analysis.resolvedUsage?.note && (
-                  <div className={`tp-peststore-resolution-note ${analysis.resolvedUsage.source}`}>
-                    <Icon name={analysis.resolvedUsage.source === 'official-bku' ? 'check' : 'warning'} size={13} />
+                  <div
+                    className={`tp-peststore-resolution-note ${
+                      analysis.resolvedUsage.source
+                    }`}
+                  >
+                    <Icon
+                      name={
+                        analysis.resolvedUsage.source === 'official-bku'
+                          ? 'check'
+                          : 'warning'
+                      }
+                      size={13}
+                    />
                     <span>{analysis.resolvedUsage.note}</span>
                   </div>
                 )}
               </div>
 
-              {analysis.resolvedUsage?.source === 'verified-cache' && analysis.resolvedUsage.rows.length > 0 && (
-                <div className="tp-peststore-fallback-dose-card">
-                  <div className="tp-peststore-dose-head">
-                    <div><small>DOĞRULANMIŞ YEDEK KULLANIM KAYDI</small><h3>{analysis.resolvedUsage.originalSource === 'official-bku' ? 'Önceki resmî BKÜ kaydı' : 'Önceki etiket okuma kaydı'}</h3></div>
+              {analysis.resolvedUsage?.source === 'verified-cache' &&
+                analysis.resolvedUsage.rows.length > 0 && (
+                  <div className="tp-peststore-fallback-dose-card">
+                    <div className="tp-peststore-dose-head">
+                      <div>
+                        <small>DOĞRULANMIŞ YEDEK KULLANIM KAYDI</small>
+                        <h3>
+                          {analysis.resolvedUsage.originalSource ===
+                          'official-bku'
+                            ? 'Önceki resmî BKÜ kaydı'
+                            : 'Önceki etiket okuma kaydı'}
+                        </h3>
+                      </div>
+                    </div>
+
+                    <div className="tp-peststore-dose-list">
+                      {analysis.resolvedUsage.rows.map((row, index) => (
+                        <article
+                          className="tp-peststore-dose-row"
+                          key={`${row.crop}-${row.target}-${index}`}
+                        >
+                          <div>
+                            <small>Bitki</small>
+                            <strong>{row.crop || '—'}</strong>
+                          </div>
+                          <div>
+                            <small>Hedef</small>
+                            <strong>{row.target || '—'}</strong>
+                          </div>
+                          <div className="dose">
+                            <small>Kaydedilmiş doz</small>
+                            <strong>{row.dose || 'Doz kaydı yok'}</strong>
+                          </div>
+                          <div>
+                            <small>Hasat aralığı</small>
+                            <strong>
+                              {row.preHarvestIntervalDays != null
+                                ? `${row.preHarvestIntervalDays} gün`
+                                : '—'}
+                            </strong>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
                   </div>
-                  <div className="tp-peststore-dose-list">
-                    {analysis.resolvedUsage.rows.map((row, index) => (
-                      <article className="tp-peststore-dose-row" key={`${row.crop}-${row.target}-${index}`}>
-                        <div><small>Bitki</small><strong>{row.crop || '—'}</strong></div>
-                        <div><small>Hedef</small><strong>{row.target || '—'}</strong></div>
-                        <div className="dose"><small>Kaydedilmiş doz</small><strong>{row.dose || 'Doz kaydı yok'}</strong></div>
-                        <div><small>Hasat aralığı</small><strong>{row.preHarvestIntervalDays != null ? `${row.preHarvestIntervalDays} gün` : '—'}</strong></div>
-                      </article>
-                    ))}
-                  </div>
-                </div>
-              )}
+                )}
 
               {analysis.resolvedUsage?.source === 'ai-knowledge' && (
                 <div className="tp-peststore-ai-knowledge-warning">
                   <Icon name="warning" size={15} />
                   <div>
                     <strong>AI bilgi bankası fallback'i kullanılıyor</strong>
-                    <span>Bu bitki ve hedef alanları genel tarımsal bilgi niteliğindedir; resmî ruhsat/tavsiye değildir. Güvenlik nedeniyle AI sayısal doz üretmez.</span>
+                    <span>
+                      Bu bitki ve hedef alanları genel tarımsal bilgi
+                      niteliğindedir; resmî ruhsat/tavsiye değildir.
+                      Güvenlik nedeniyle AI sayısal doz üretmez.
+                    </span>
                   </div>
                 </div>
               )}
 
-              {analysis.bkuLookup?.status === 'exact' && analysis.bkuLookup.uses.length > 0 && (
-                <div className="tp-peststore-bku-official">
-                  <div className="tp-peststore-bku-official-head">
-                    <div>
-                      <span><Icon name="check" size={15} /></span>
+              {analysis.bkuLookup?.status === 'exact' &&
+                analysis.bkuLookup.uses.length > 0 && (
+                  <div className="tp-peststore-bku-official">
+                    <div className="tp-peststore-bku-official-head">
                       <div>
-                        <small>{analysis.bkuLookup.usageSource === 'official-bku' ? 'CANLI RESMÎ BKÜ KULLANIM VERİSİ' : 'BKÜ RUHSATI + KAYNAKLI ÜRÜN ETİKETİ'}</small>
-                        <h3>{analysis.bkuLookup.matchedProductName || analysis.productName}</h3>
+                        <span>
+                          <Icon name="check" size={15} />
+                        </span>
+                        <div>
+                          <small>
+                            {analysis.bkuLookup.usageSource === 'official-bku'
+                              ? 'CANLI RESMÎ BKÜ KULLANIM VERİSİ'
+                              : 'BKÜ RUHSATI + KAYNAKLI ÜRÜN ETİKETİ'}
+                          </small>
+                          <h3>
+                            {analysis.bkuLookup.matchedProductName ||
+                              analysis.productName}
+                          </h3>
+                        </div>
                       </div>
+                      <b>
+                        {analysis.bkuLookup.usageSource === 'official-bku'
+                          ? 'BKÜ DOĞRULANDI'
+                          : 'ÜRÜN DOĞRULANDI'}
+                      </b>
                     </div>
-                    <b>{analysis.bkuLookup.usageSource === 'official-bku' ? 'BKÜ DOĞRULANDI' : 'ÜRÜN DOĞRULANDI'}</b>
-                  </div>
 
-                  <div className="tp-peststore-bku-match">
-                    <span>Etken madde: <strong>{analysis.bkuLookup.matchedActiveIngredients || analysis.activeIngredients || '—'}</strong></span>
-                    <span>Formülasyon: <strong>{analysis.bkuLookup.matchedFormulation || analysis.formulation || '—'}</strong></span>
-                    {analysis.bkuLookup.matchedRegistrationNumber && <span>Ruhsat no: <strong>{analysis.bkuLookup.matchedRegistrationNumber}</strong></span>}
-                  </div>
+                    <div className="tp-peststore-bku-match">
+                      <span>
+                        Etken madde:{' '}
+                        <strong>
+                          {analysis.bkuLookup.matchedActiveIngredients ||
+                            analysis.activeIngredients ||
+                            '—'}
+                        </strong>
+                      </span>
+                      <span>
+                        Formülasyon:{' '}
+                        <strong>
+                          {analysis.bkuLookup.matchedFormulation ||
+                            analysis.formulation ||
+                            '—'}
+                        </strong>
+                      </span>
+                      {analysis.bkuLookup.matchedRegistrationNumber && (
+                        <span>
+                          Ruhsat no:{' '}
+                          <strong>
+                            {analysis.bkuLookup.matchedRegistrationNumber}
+                          </strong>
+                        </span>
+                      )}
+                    </div>
 
-                  <div className="tp-peststore-bku-use-list">
-                    {analysis.bkuLookup.uses.map((row, index) => (
-                      <article key={`${row.crop}-${row.target}-${row.dose}-${index}`}>
-                        <div><small>Bitki</small><strong>{row.crop}</strong></div>
-                        <div><small>Hastalık / Zararlı</small><strong>{row.target}</strong></div>
-                        <div className="dose"><small>{analysis.bkuLookup?.usageSource === 'official-bku' ? 'Resmî BKÜ dozu' : 'Kaynaklı etiket dozu'}</small><strong>{row.dose}</strong></div>
-                        <div><small>Hasat aralığı</small><strong>{row.preHarvestIntervalDays != null ? `${row.preHarvestIntervalDays} gün` : '—'}</strong></div>
-                        <div><small>Grup</small><strong>{row.group || analysis.productType || '—'}</strong></div>
-                        {row.sourceUrl && <a href={row.sourceUrl} target="_blank" rel="noreferrer">{analysis.bkuLookup?.usageSource === 'official-bku' ? 'BKÜ kaynağını aç' : 'Etiket kaynağını aç'}</a>}
-                      </article>
-                    ))}
-                  </div>
+                    <div className="tp-peststore-bku-use-list">
+                      {analysis.bkuLookup.uses.map((row, index) => (
+                        <article
+                          key={`${row.crop}-${row.target}-${row.dose}-${index}`}
+                        >
+                          <div>
+                            <small>Bitki</small>
+                            <strong>{row.crop}</strong>
+                          </div>
+                          <div>
+                            <small>Hastalık / Zararlı</small>
+                            <strong>{row.target}</strong>
+                          </div>
+                          <div className="dose">
+                            <small>
+                              {analysis.bkuLookup.usageSource === 'official-bku'
+                                ? 'Resmî BKÜ dozu'
+                                : 'Kaynaklı etiket dozu'}
+                            </small>
+                            <strong>{row.dose}</strong>
+                          </div>
+                          <div>
+                            <small>Hasat aralığı</small>
+                            <strong>
+                              {row.preHarvestIntervalDays != null
+                                ? `${row.preHarvestIntervalDays} gün`
+                                : '—'}
+                            </strong>
+                          </div>
+                          <div>
+                            <small>Grup</small>
+                            <strong>{row.group || analysis.productType || '—'}</strong>
+                          </div>
+                          {row.sourceUrl && (
+                            <a
+                              href={row.sourceUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {analysis.bkuLookup.usageSource === 'official-bku'
+                                ? 'BKÜ kaynağını aç'
+                                : 'Etiket kaynağını aç'}
+                            </a>
+                          )}
+                        </article>
+                      ))}
+                    </div>
 
-                  <div className="tp-peststore-bku-footer">
-                    <span>Son canlı kontrol: {analysis.bkuLookup.checkedAt ? new Date(analysis.bkuLookup.checkedAt).toLocaleString('tr-TR') : '—'}</span>
-                    {analysis.bkuLookup.sourceUrls[0] && <a href={analysis.bkuLookup.sourceUrls[0]} target="_blank" rel="noreferrer">Resmî BKÜ kaynağı</a>}
-                  </div>
-                </div>
-              )}
+                    <div className="tp-peststore-bku-footer">
+                      <span>
+                        Son canlı kontrol:{' '}
+                        {analysis.bkuLookup.checkedAt
+                          ? new Date(
+                              analysis.bkuLookup.checkedAt,
+                            ).toLocaleString('tr-TR')
+                          : '—'}
+                      </span>
 
-              {analysis.bkuLookup?.status === 'exact' && analysis.bkuLookup.uses.length === 0 && (
-                <div className="tp-peststore-bku-status exact-empty">
-                  <Icon name="check" size={15} />
-                  <div>
-                    <strong>BKÜ ruhsat kaydı doğrulandı</strong>
-                    <span>{analysis.bkuLookup.matchedRegistrationNumber ? `Ruhsat no ${analysis.bkuLookup.matchedRegistrationNumber}. ` : ''}{analysis.bkuLookup.note || 'Bitki ve doz kullanım kaynağı henüz bulunamadı.'}</span>
+                      {analysis.bkuLookup.sourceUrls[0] && (
+                        <a
+                          href={analysis.bkuLookup.sourceUrls[0]}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Resmî BKÜ kaynağı
+                        </a>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {analysis.bkuLookup && analysis.bkuLookup.status !== 'exact' && (
-                <div className={`tp-peststore-bku-status ${analysis.bkuLookup.status}`}>
-                  <Icon name="warning" size={15} />
-                  <div>
-                    <strong>{analysis.bkuLookup.status === 'probable' ? 'BKÜ’de aday eşleşme bulundu, kesin doğrulanamadı' : analysis.bkuLookup.status === 'error' ? 'Canlı BKÜ sorgusu tamamlanamadı' : 'BKÜ’de kesin ürün eşleşmesi bulunamadı'}</strong>
-                    <span>{analysis.bkuLookup.note || 'Güvenlik nedeniyle başka bir ürünün doz bilgisi bu ürüne aktarılmadı.'}</span>
+              {analysis.bkuLookup?.status === 'exact' &&
+                analysis.bkuLookup.uses.length === 0 && (
+                  <div className="tp-peststore-bku-status exact-empty">
+                    <Icon name="check" size={15} />
+                    <div>
+                      <strong>
+                        BKÜ ruhsat kaydı doğrulandı
+                      </strong>
+                      <span>
+                        {analysis.bkuLookup.matchedRegistrationNumber
+                          ? `Ruhsat no ${analysis.bkuLookup.matchedRegistrationNumber}. `
+                          : ''}
+                        {analysis.bkuLookup.note ||
+                          'Bitki ve doz kullanım kaynağı henüz bulunamadı.'}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+
+              {analysis.bkuLookup &&
+                analysis.bkuLookup.status !== 'exact' && (
+                  <div
+                    className={`tp-peststore-bku-status ${analysis.bkuLookup.status}`}
+                  >
+                    <Icon name="warning" size={15} />
+                    <div>
+                      <strong>
+                        {analysis.bkuLookup.status === 'probable'
+                          ? 'BKÜ’de aday eşleşme bulundu, kesin doğrulanamadı'
+                          : analysis.bkuLookup.status === 'error'
+                            ? 'Canlı BKÜ sorgusu tamamlanamadı'
+                            : 'BKÜ’de kesin ürün eşleşmesi bulunamadı'}
+                      </strong>
+                      <span>
+                        {analysis.bkuLookup.note ||
+                          'Güvenlik nedeniyle başka bir ürünün doz bilgisi bu ürüne aktarılmadı.'}
+                      </span>
+                    </div>
+                  </div>
+                )}
 
               {analysis.bkuLookup?.diagnostics?.length ? (
                 <details className="tp-peststore-bku-diagnostics">
                   <summary>BKÜ bağlantı ayrıntıları</summary>
-                  <div>{analysis.bkuLookup.diagnostics.map((item, index) => <span key={`${item}-${index}`}>{item}</span>)}</div>
+                  <div>
+                    {analysis.bkuLookup.diagnostics.map((item, index) => (
+                      <span key={`${item}-${index}`}>{item}</span>
+                    ))}
+                  </div>
                 </details>
               ) : null}
 
               {analysis.dosageTable?.length > 0 && (
                 <div className="tp-peststore-dose-panel tp-peststore-label-dose-panel">
-                  <div className="tp-peststore-dose-head"><div><small>ETİKETTEN OKUNAN DOZAJ</small><h3>Fotoğrafta görünen kullanım satırları</h3></div><b>{analysis.dosageTable.length} kullanım satırı</b></div>
+                  <div className="tp-peststore-dose-head">
+                    <div>
+                      <small>ETİKETTEN OKUNAN DOZAJ</small>
+                      <h3>Fotoğrafta görünen kullanım satırları</h3>
+                    </div>
+                    <b>{analysis.dosageTable.length} kullanım satırı</b>
+                  </div>
+
                   <div className="tp-peststore-dose-list">
                     {analysis.dosageTable.map((row, index) => (
-                      <article className="tp-peststore-dose-row" key={`${row.crop}-${row.target}-${index}`}>
-                        <div><small>Bitki</small><strong>{row.crop || '—'}</strong></div>
-                        <div><small>Hastalık / Zararlı</small><strong>{row.target || '—'}</strong></div>
-                        <div className="dose"><small>Etiketteki doz</small><strong>{row.dosageLabel || row.dosagePer100L || 'Etiketten okunamadı'}</strong></div>
-                        <div><small>Uygulama zamanı</small><strong>{row.applicationTiming || '—'}</strong></div>
-                        <div><small>Hasat aralığı</small><strong>{row.preHarvestIntervalDays != null ? `${row.preHarvestIntervalDays} gün` : '—'}</strong></div>
+                      <article
+                        className="tp-peststore-dose-row"
+                        key={`${row.crop}-${row.target}-${index}`}
+                      >
+                        <div>
+                          <small>Bitki</small>
+                          <strong>{row.crop || '—'}</strong>
+                        </div>
+
+                        <div>
+                          <small>Hastalık / Zararlı</small>
+                          <strong>{row.target || '—'}</strong>
+                        </div>
+
+                        <div className="dose">
+                          <small>Etiketteki doz</small>
+                          <strong>
+                            {row.dosageLabel ||
+                              row.dosagePer100L ||
+                              'Etiketten okunamadı'}
+                          </strong>
+                        </div>
+
+                        <div>
+                          <small>Uygulama zamanı</small>
+                          <strong>{row.applicationTiming || '—'}</strong>
+                        </div>
+
+                        <div>
+                          <small>Hasat aralığı</small>
+                          <strong>
+                            {row.preHarvestIntervalDays != null
+                              ? `${row.preHarvestIntervalDays} gün`
+                              : '—'}
+                          </strong>
+                        </div>
                       </article>
                     ))}
                   </div>
-                  <p className="tp-peststore-dose-notice">Doz değerleri yalnızca yüklediğin etikette okunabilen metindir. Uygulama öncesi ürünün güncel resmî etiketi ve ruhsat bilgisi esas alınmalıdır.</p>
+
+                  <p className="tp-peststore-dose-notice">
+                    Doz değerleri yalnızca yüklediğin etikette okunabilen metindir.
+                    Uygulama öncesi ürünün güncel resmî etiketi ve ruhsat bilgisi esas alınmalıdır.
+                  </p>
                 </div>
               )}
 
               <div className="tp-peststore-analysis-grid">
                 <article className="tp-peststore-card">
                   <div className="tp-peststore-result-status">
-                    <div><span><Icon name="flask" size={18} /></span><div><small>ÜRÜN</small><h3>{analysis.productName}</h3></div></div>
-                    <b className={`confidence ${analysis.confidence}`}>{confidenceLabel(analysis.confidence)}</b>
+                    <div>
+                      <span>
+                        <Icon name="flask" size={18} />
+                      </span>
+                      <div>
+                        <small>ÜRÜN</small>
+                        <h3>{analysis.productName}</h3>
+                      </div>
+                    </div>
+
+                    <b className={`confidence ${analysis.confidence}`}>
+                      {confidenceLabel(analysis.confidence)}
+                    </b>
                   </div>
+
                   <div className="tp-peststore-facts">
                     <div>
-                      <small>{resultCategory === 'ilac' ? 'Ruhsat durumu' : 'Tescil / beyan durumu'}</small>
-                      <strong>{analysis.bkuLookup?.matchedRegistrationNumber ? `${analysis.bkuLookup.matchedRegistrationNumber} · BKÜ'de doğrulandı` : analysis.registrationNumber ? `${analysis.registrationNumber} · Etiketten okundu` : 'Ruhsat numarası bulunamadı'}</strong>
-                      <p>{analysis.bkuLookup?.status === 'exact' ? `${analysis.bkuLookup.matchedGroup || 'BKÜ kaydı'} · Resmî ruhsat kaydı eşleşti` : 'Resmî BKÜ eşleşmesi bekleniyor.'}</p>
+                      <small>
+                        {resultCategory === 'ilac'
+                          ? 'Ruhsat durumu'
+                          : 'Tescil / beyan durumu'}
+                      </small>
+                      <strong>
+                        {analysis.bkuLookup?.matchedRegistrationNumber
+                          ? `${analysis.bkuLookup.matchedRegistrationNumber} · BKÜ'de doğrulandı`
+                          : analysis.registrationNumber
+                            ? `${analysis.registrationNumber} · Etiketten okundu`
+                            : 'Ruhsat numarası bulunamadı'}
+                      </strong>
+                      <p>
+                        {analysis.bkuLookup?.status === 'exact'
+                          ? `${analysis.bkuLookup.matchedGroup || 'BKÜ kaydı'} · Resmî ruhsat kaydı eşleşti`
+                          : 'Resmî BKÜ eşleşmesi bekleniyor.'}
+                      </p>
                     </div>
-                    <div><small>Etken madde / içerik</small><strong>{analysis.bkuLookup?.matchedActiveIngredients || analysis.activeIngredients || 'Henüz doğrulanamadı'}</strong></div>
-                    <div><small>Formülasyon</small><strong>{analysis.bkuLookup?.matchedFormulation || analysis.formulation || 'Henüz doğrulanamadı'}</strong></div>
-                    <div><small>Üretici / firma</small><strong>{analysis.manufacturer || 'Etiketten okunamadı'}</strong></div>
-                    <div className="wide"><small>Temel kullanım amacı</small><strong>{analysis.bkuLookup?.matchedGroup || analysis.purpose || analysis.productType || 'Henüz doğrulanamadı'}</strong></div>
-                    {analysis.preHarvestIntervalDays != null && <div><small>Hasat aralığı</small><strong>{analysis.preHarvestIntervalDays} gün</strong></div>}
+
+                    <div>
+                      <small>Etken madde / içerik</small>
+                      <strong>
+                        {analysis.bkuLookup?.matchedActiveIngredients ||
+                          analysis.activeIngredients ||
+                          'Henüz doğrulanamadı'}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <small>Formülasyon</small>
+                      <strong>
+                        {analysis.bkuLookup?.matchedFormulation ||
+                          analysis.formulation ||
+                          'Henüz doğrulanamadı'}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <small>Üretici / firma</small>
+                      <strong>
+                        {analysis.manufacturer || 'Etiketten okunamadı'}
+                      </strong>
+                    </div>
+
+                    <div className="wide">
+                      <small>Temel kullanım amacı</small>
+                      <strong>
+                        {analysis.bkuLookup?.matchedGroup ||
+                          analysis.purpose ||
+                          analysis.productType ||
+                          'Henüz doğrulanamadı'}
+                      </strong>
+                    </div>
+
+                    {analysis.preHarvestIntervalDays != null && (
+                      <div>
+                        <small>Hasat aralığı</small>
+                        <strong>
+                          {analysis.preHarvestIntervalDays} gün
+                        </strong>
+                      </div>
+                    )}
                   </div>
-                  {analysis.warnings && <div className="tp-peststore-warning-box"><Icon name="warning" size={17} /><div><strong>Etiketten okunan uyarılar</strong><p>{analysis.warnings}</p></div></div>}
+
+                  {analysis.warnings && (
+                    <div className="tp-peststore-warning-box">
+                      <Icon name="warning" size={17} />
+                      <div>
+                        <strong>Etiketten okunan uyarılar</strong>
+                        <p>{analysis.warnings}</p>
+                      </div>
+                    </div>
+                  )}
                 </article>
               </div>
 
               <article className="tp-peststore-card tp-peststore-stock-entry">
-                <div className="tp-peststore-card-head"><span><Icon name="package" size={19} /></span><div><small>DEPOMA KAYDET</small><h2>Stok Girişi & Tarla İlişkisi</h2></div></div>
+                <div className="tp-peststore-card-head">
+                  <span>
+                    <Icon name="package" size={19} />
+                  </span>
+                  <div>
+                    <small>DEPOMA KAYDET</small>
+                    <h2>Stok Girişi & Tarla İlişkisi</h2>
+                  </div>
+                </div>
+
                 <div className="tp-peststore-form-grid">
-                  <label><span>Ürün türü</span><select value={resultCategory} onChange={(event) => setResultCategory(event.target.value as InventoryCategory)}><option value="ilac">İlaç / BKÜ</option><option value="gubre">Gübre</option></select></label>
-                  <label><span>Toplam ambalaj miktarı</span><input inputMode="decimal" value={totalAmount} onChange={(event) => setTotalAmount(event.target.value)} placeholder="Örn. 5" /></label>
-                  <label><span>Şu an kalan miktar</span><input inputMode="decimal" value={remainingAmount} onChange={(event) => setRemainingAmount(event.target.value)} placeholder="Örn. 3.5" /></label>
-                  <label><span>Birim</span><select value={unit} onChange={(event) => setUnit(event.target.value as InventoryUnit)}><option value="kg">kg</option><option value="lt">lt</option><option value="gr">gr</option><option value="ml">ml</option></select></label>
+                  <label>
+                    <span>Ürün türü</span>
+                    <select
+                      value={resultCategory}
+                      onChange={(event) =>
+                        setResultCategory(
+                          event.target.value as InventoryCategory,
+                        )
+                      }
+                    >
+                      <option value="ilac">İlaç / BKÜ</option>
+                      <option value="gubre">Gübre</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Toplam ambalaj miktarı</span>
+                    <input
+                      inputMode="decimal"
+                      value={totalAmount}
+                      onChange={(event) =>
+                        setTotalAmount(event.target.value)
+                      }
+                      placeholder="Örn. 5"
+                    />
+                  </label>
+
+                  <label>
+                    <span>Şu an kalan miktar</span>
+                    <input
+                      inputMode="decimal"
+                      value={remainingAmount}
+                      onChange={(event) =>
+                        setRemainingAmount(event.target.value)
+                      }
+                      placeholder="Örn. 3.5"
+                    />
+                  </label>
+
+                  <label>
+                    <span>Birim</span>
+                    <select
+                      value={unit}
+                      onChange={(event) =>
+                        setUnit(event.target.value as InventoryUnit)
+                      }
+                    >
+                      <option value="kg">kg</option>
+                      <option value="lt">lt</option>
+                      <option value="gr">gr</option>
+                      <option value="ml">ml</option>
+                    </select>
+                  </label>
                 </div>
 
                 <div className="tp-peststore-fields-select">
                   <span>KULLANILABİLECEĞİ / İLİŞKİLİ TARLALAR</span>
+
                   {realFields.length === 0 ? (
-                    <p>Henüz kayıtlı gerçek tarla yok. Ürünü tarla seçmeden de depoya kaydedebilirsin.</p>
+                    <p>
+                      Henüz kayıtlı gerçek tarla yok. Ürünü tarla seçmeden de
+                      depoya kaydedebilirsin.
+                    </p>
                   ) : (
                     <div>
                       {realFields.map((field) => {
                         const fieldId = String(field.id);
-                        const checked = selectedFieldIds.includes(fieldId);
+                        const checked =
+                          selectedFieldIds.includes(fieldId);
+
                         return (
-                          <label className={checked ? 'selected' : ''} key={fieldId}>
-                            <input type="checkbox" checked={checked} onChange={() => toggleField(fieldId)} />
-                            <span><strong>{field.name}</strong><small>{field.crop}</small></span>
+                          <label
+                            className={checked ? 'selected' : ''}
+                            key={fieldId}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => toggleField(fieldId)}
+                            />
+                            <span>
+                              <strong>{field.name}</strong>
+                              <small>{field.crop}</small>
+                            </span>
                           </label>
                         );
                       })}
@@ -1445,8 +2297,23 @@ export default function PestStoreScreen({
                   )}
                 </div>
 
-                <button type="button" className="tp-peststore-save-product" disabled={savingProduct} onClick={() => void handleSaveAnalyzed()}>
-                  {savingProduct ? <><span className="tp-peststore-spinner" />Depoya kaydediliyor...</> : <><Icon name="plus" size={17} />BU ÜRÜNÜ DEPOMA KAYDET</>}
+                <button
+                  type="button"
+                  className="tp-peststore-save-product"
+                  disabled={savingProduct}
+                  onClick={() => void handleSaveAnalyzed()}
+                >
+                  {savingProduct ? (
+                    <>
+                      <span className="tp-peststore-spinner" />
+                      Depoya kaydediliyor...
+                    </>
+                  ) : (
+                    <>
+                      <Icon name="plus" size={17} />
+                      BU ÜRÜNÜ DEPOMA KAYDET
+                    </>
+                  )}
                 </button>
               </article>
             </section>
@@ -1455,30 +2322,172 @@ export default function PestStoreScreen({
       </div>
 
       <nav className="tp-peststore-bottom-nav">
-        <button type="button" onClick={() => navigate('home')}><Icon name="home" size={18} /><span>Ana Sayfa</span></button>
-        <button type="button" onClick={() => navigate('home')}><Icon name="field" size={18} /><span>Tarlalarım</span></button>
-        <button type="button" className="tp-peststore-bottom-ai" onClick={() => navigate('aiAnalysis')}><b><Icon name="ai" size={19} /></b><span>AI Analiz</span></button>
-        <button type="button" onClick={() => navigate('calendar')}><Icon name="calendar" size={18} /><span>Takvim</span></button>
-        <button type="button" onClick={() => setSideMenuOpen(true)}><Icon name="more" size={18} /><span>Daha Fazla</span></button>
+        <button type="button" onClick={() => navigate('home')}>
+          <Icon name="home" size={18} />
+          <span>Ana Sayfa</span>
+        </button>
+
+        <button type="button" onClick={() => navigate('home')}>
+          <Icon name="field" size={18} />
+          <span>Tarlalarım</span>
+        </button>
+
+        <button
+          type="button"
+          className="tp-peststore-bottom-ai"
+          onClick={() => navigate('aiAnalysis')}
+        >
+          <b>
+            <Icon name="ai" size={19} />
+          </b>
+          <span>AI Analiz</span>
+        </button>
+
+        <button type="button" onClick={() => navigate('calendar')}>
+          <Icon name="calendar" size={18} />
+          <span>Takvim</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSideMenuOpen(true)}
+        >
+          <Icon name="more" size={18} />
+          <span>Daha Fazla</span>
+        </button>
       </nav>
 
       {editingProduct && editDraft && (
         <div className="tp-peststore-modal-layer">
-          <button type="button" className="tp-peststore-modal-backdrop" onClick={closeEdit} aria-label="Düzenleme penceresini kapat" />
-          <section className="tp-peststore-modal" role="dialog" aria-modal="true" aria-label="Depo ürününü düzenle">
+          <button
+            type="button"
+            className="tp-peststore-modal-backdrop"
+            onClick={closeEdit}
+            aria-label="Düzenleme penceresini kapat"
+          />
+
+          <section
+            className="tp-peststore-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Depo ürününü düzenle"
+          >
             <div className="tp-peststore-modal-head">
-              <div><small>STOK DÜZENLE</small><h2>{editingProduct.productName}</h2></div>
-              <button type="button" onClick={closeEdit} aria-label="Kapat"><Icon name="close" size={17} /></button>
+              <div>
+                <small>STOK DÜZENLE</small>
+                <h2>{editingProduct.productName}</h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeEdit}
+                aria-label="Kapat"
+              >
+                <Icon name="close" size={17} />
+              </button>
             </div>
 
             <div className="tp-peststore-edit-grid">
-              <label className="wide"><span>Ürün adı</span><input value={editDraft.productName} onChange={(event) => setEditDraft({ ...editDraft, productName: event.target.value })} /></label>
-              <label><span>Tür</span><select value={editDraft.category} onChange={(event) => setEditDraft({ ...editDraft, category: event.target.value as InventoryCategory })}><option value="ilac">İlaç / BKÜ</option><option value="gubre">Gübre</option></select></label>
-              <label><span>Birim</span><select value={editDraft.unit} onChange={(event) => setEditDraft({ ...editDraft, unit: event.target.value as InventoryUnit })}><option value="kg">kg</option><option value="lt">lt</option><option value="gr">gr</option><option value="ml">ml</option></select></label>
-              <label><span>Toplam miktar</span><input inputMode="decimal" value={editDraft.totalAmount} onChange={(event) => setEditDraft({ ...editDraft, totalAmount: Number(event.target.value) })} /></label>
-              <label><span>Kalan miktar</span><input inputMode="decimal" value={editDraft.remainingAmount} onChange={(event) => setEditDraft({ ...editDraft, remainingAmount: Number(event.target.value) })} /></label>
-              <label className="wide"><span>Etken madde / içerik</span><input value={editDraft.activeIngredients ?? ''} onChange={(event) => setEditDraft({ ...editDraft, activeIngredients: event.target.value || null })} /></label>
-              <label className="wide"><span>Ruhsat / tescil / beyan no</span><input value={editDraft.registrationNumber ?? ''} onChange={(event) => setEditDraft({ ...editDraft, registrationNumber: event.target.value || null })} /></label>
+              <label className="wide">
+                <span>Ürün adı</span>
+                <input
+                  value={editDraft.productName}
+                  onChange={(event) =>
+                    setEditDraft({
+                      ...editDraft,
+                      productName: event.target.value,
+                    })
+                  }
+                />
+              </label>
+
+              <label>
+                <span>Tür</span>
+                <select
+                  value={editDraft.category}
+                  onChange={(event) =>
+                    setEditDraft({
+                      ...editDraft,
+                      category: event.target.value as InventoryCategory,
+                    })
+                  }
+                >
+                  <option value="ilac">İlaç / BKÜ</option>
+                  <option value="gubre">Gübre</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Birim</span>
+                <select
+                  value={editDraft.unit}
+                  onChange={(event) =>
+                    setEditDraft({
+                      ...editDraft,
+                      unit: event.target.value as InventoryUnit,
+                    })
+                  }
+                >
+                  <option value="kg">kg</option>
+                  <option value="lt">lt</option>
+                  <option value="gr">gr</option>
+                  <option value="ml">ml</option>
+                </select>
+              </label>
+
+              <label>
+                <span>Toplam miktar</span>
+                <input
+                  inputMode="decimal"
+                  value={editDraft.totalAmount}
+                  onChange={(event) =>
+                    setEditDraft({
+                      ...editDraft,
+                      totalAmount: Number(event.target.value),
+                    })
+                  }
+                />
+              </label>
+
+              <label>
+                <span>Kalan miktar</span>
+                <input
+                  inputMode="decimal"
+                  value={editDraft.remainingAmount}
+                  onChange={(event) =>
+                    setEditDraft({
+                      ...editDraft,
+                      remainingAmount: Number(event.target.value),
+                    })
+                  }
+                />
+              </label>
+
+              <label className="wide">
+                <span>Etken madde / içerik</span>
+                <input
+                  value={editDraft.activeIngredients ?? ''}
+                  onChange={(event) =>
+                    setEditDraft({
+                      ...editDraft,
+                      activeIngredients: event.target.value || null,
+                    })
+                  }
+                />
+              </label>
+
+              <label className="wide">
+                <span>Ruhsat / tescil / beyan no</span>
+                <input
+                  value={editDraft.registrationNumber ?? ''}
+                  onChange={(event) =>
+                    setEditDraft({
+                      ...editDraft,
+                      registrationNumber: event.target.value || null,
+                    })
+                  }
+                />
+              </label>
             </div>
 
             <div className="tp-peststore-fields-select compact">
@@ -1487,8 +2496,12 @@ export default function PestStoreScreen({
                 {realFields.map((field) => {
                   const fieldId = String(field.id);
                   const checked = editDraft.fieldIds.includes(fieldId);
+
                   return (
-                    <label key={`edit-${fieldId}`} className={checked ? 'selected' : ''}>
+                    <label
+                      key={`edit-${fieldId}`}
+                      className={checked ? 'selected' : ''}
+                    >
                       <input
                         type="checkbox"
                         checked={checked}
@@ -1496,12 +2509,17 @@ export default function PestStoreScreen({
                           setEditDraft({
                             ...editDraft,
                             fieldIds: checked
-                              ? editDraft.fieldIds.filter((id) => id !== fieldId)
+                              ? editDraft.fieldIds.filter(
+                                  (id) => id !== fieldId,
+                                )
                               : [...editDraft.fieldIds, fieldId],
                           })
                         }
                       />
-                      <span><strong>{field.name}</strong><small>{field.crop}</small></span>
+                      <span>
+                        <strong>{field.name}</strong>
+                        <small>{field.crop}</small>
+                      </span>
                     </label>
                   );
                 })}
@@ -1509,8 +2527,17 @@ export default function PestStoreScreen({
             </div>
 
             <div className="tp-peststore-modal-actions">
-              <button type="button" onClick={closeEdit}>Vazgeç</button>
-              <button type="button" className="primary" disabled={editSaving} onClick={() => void handleEditSave()}>{editSaving ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}</button>
+              <button type="button" onClick={closeEdit}>
+                Vazgeç
+              </button>
+              <button
+                type="button"
+                className="primary"
+                disabled={editSaving}
+                onClick={() => void handleEditSave()}
+              >
+                {editSaving ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
+              </button>
             </div>
           </section>
         </div>
