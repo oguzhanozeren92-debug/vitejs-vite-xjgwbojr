@@ -130,6 +130,8 @@ begin
 end;
 $$;
 
+revoke all on function public.tp_sync_model_readiness_tasks(uuid) from public;
+revoke all on function public.tp_sync_model_readiness_tasks(uuid) from anon;
 grant execute on function public.tp_sync_model_readiness_tasks(uuid) to authenticated;
 
 create or replace function public.tp_complete_field_task(p_task_id uuid)
