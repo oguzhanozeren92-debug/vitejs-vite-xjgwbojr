@@ -1,22 +1,25 @@
-# TarlaPusula Entegrasyon Hazırlık Merkezi
+# TarlaPusula Entegrasyon ve UX Hazırlık Merkezi
 
-Bu klasör, açık kaynak ve harici tarım motorlarını **çalışan uygulamaya dokunmadan** entegrasyona hazır hale getirmek için kullanılır. Aynı hazırlık alanı, bu motorların ihtiyaç duyduğu gerçek kullanıcı verisini güvenli ve sade biçimde toplayacak harita/Görevlerim UX planlarını da tutar.
+Bu klasör, TarlaPusula'da sınır/uygulama zamanı geldiğinde araştırmaya geri dönmeden doğrudan implementasyona geçebilmek için tutulur. **Çalışan `main` uygulama kodu bu hazırlık dokümanları yüzünden değiştirilmez.**
 
-## Ana kural
+Hazırlık iki hattı birlikte yönetir:
 
-Bir proje doğrudan `main` uygulama akışına alınmaz. Önce şu kapılardan geçer:
+1. açık kaynak/model entegrasyonları,
+2. bu motorların ve Pusula'nın ihtiyaç duyduğu gerçek veriyi güvenli biçimde toplayan ürün/UX altyapısı.
 
-1. ihtiyaç doğrulama — mevcut TarlaPusula servisi aynı işi zaten yapıyor mu?
-2. lisans kontrolü — kod, model, dataset ve harici API şartları.
-3. veri yeterliliği — gerçek ve tarihli input var mı?
-4. bağımsız pilot — fixture/açık veri üzerinde çalışma.
-5. shadow mode — gerçek TarlaPusula verisiyle ama kullanıcı kararını değiştirmeden kıyas.
-6. adapter sözleşmesi — üçüncü taraf formatı domain içine sızmaz.
-7. kalite kapısı — kabul metriği önceden tanımlıdır.
-8. feature flag / kill switch — üretimde varsayılan kapalı ve geri alınabilir.
-9. Pusula kanıt şeması — sonuç kaynak+tarih+kalite ile taşınır.
-10. sınırlı pilot — allowlist/field cohort.
-11. production — ancak doğrulama, lisans, privacy, fallback ve rollback tamamlanınca.
+## Ana kurallar
+
+- mevcut çalışan özellik gereksiz yere yeniden yazılmaz.
+- üçüncü taraf motor önce PoC/shadow/validation kapılarından geçer.
+- eksik veri uydurulmaz; `no_data/not_ready` gerçek durumdur.
+- Pusula AI hesap motoru değildir; doğrulanmış kanıtları açıklar/birleştirir.
+- Supabase/API çağrıları component içine dağılmaz; service sınırı korunur.
+- secret hiçbir zaman Vite frontend bundle'a konmaz.
+- kullanıcı verisi GitHub fixture'ı yapılmaz.
+- Görev, Bildirim, Takvim ve Pusula insight birbirinin yerine kullanılmaz.
+- puan client'ın yazdığı rakama göre değil server-authoritative rule/completion'a göre verilir.
+- aynı iş için reward idempotent/deduped olur.
+- push/konum/AI consent gibi izinleri açtırmak için Pusula puanı verilmez.
 
 ## Hazırlık dosyaları
 
@@ -26,101 +29,183 @@ Bir proje doğrudan `main` uygulama akışına alınmaz. Önce şu kapılardan g
 | `02-pcse.md` | PCSE/WOFOST gerçek yıllık ürün pilotu |
 | `03-aquacrop.md` | AquaCrop su-verim/sulama senaryosu |
 | `04-autogeobound.md` | otomatik tarla sınırı önerisi |
-| `05-disease-models.md` | AgML/PlantVillage ve hastalık modeli benchmarkı |
-| `06-farmvibes-agstack.md` | FarmVibes ve AgStack seçici araştırma |
+| `05-disease-models.md` | AgML/PlantVillage hastalık modeli benchmarkı |
+| `06-farmvibes-agstack.md` | FarmVibes + AgStack seçici araştırma |
 | `07-satellite-data-stack.md` | sentinelhub-py, eo-learn, custom scripts, OpenET, geemap |
-| `08-openagri-services.md` | OpenAgri Weather/Irrigation/FarmCalendar/Pest&Disease + Asset Registry |
+| `08-openagri-services.md` | OpenAgri servisleri + Asset Registry |
 | `09-remaining-candidates.md` | farmOS ve belirsiz/eski adayların temizliği |
-| `10-license-matrix.md` | kod/veri/API lisans ve production kapısı |
-| `11-execution-runbook.md` | shadow -> pilot -> production uygulama runbook'u |
-| `12-common-contracts-and-schema.md` | ortak adapter tipleri ve Supabase schema taslağı |
-| `13-validation-test-matrix.md` | motor bazlı fixture, benchmark ve kabul testleri |
-| `14-feature-flags-and-env.md` | feature flag, secrets, timeout, cache, kill switch |
-| `15-data-readiness.md` | model bazlı minimum gerçek veri gereksinimleri |
-| `16-upstream-pins.md` | 2026-09-13 exact upstream commit snapshot'ları ve pin güncelleme prosedürü |
-| `17-model-gateway-api.md` | private model gateway HTTP/auth/version/idempotency sözleşmesi |
-| `18-implementation-file-map.md` | sınır kalkınca oluşturulacak/değiştirilecek dosyaların motor bazlı haritası |
-| `19-execution-backlog.md` | uygulanabilir motor iş kartları, bağımlılıklar ve bitti tanımları |
-| `20-pusula-evidence-policy.md` | Pusula'nın model/ölçüm/uydu/GBIF kanıtlarını nasıl tartacağı |
-| `21-operations-cost-privacy.md` | compute/API maliyeti, cache, privacy, retention ve failure fallback kapıları |
-| `22-map-fullscreen-history-ux.md` | map-tap tam ekran, ikon temizliği, görünür veri tarihi ve önizlemeli uydu geçmişi |
-| `23-field-tasks-and-pusula-points.md` | Görevlerim domain modeli, eksik veri görevleri ve idempotent Pusula puanı mekanizması |
-| `24-notification-vs-task-routing.md` | actionable işlerin Görevlerim'e, bilgi/uyarıların Bildirimler/Pusula'ya yönlendirilmesi |
-| `25-map-tasks-implementation-plan.md` | exact PR sırası, dosya haritası, migration/reward/test ve non-regression planı |
-| `STATUS.md` | tek bakışta hazırlık ve canlılık durumu |
+| `10-license-matrix.md` | kod/model/dataset/API lisans matrisi |
+| `11-execution-runbook.md` | shadow → pilot → production runbook |
+| `12-common-contracts-and-schema.md` | ortak adapter contractları + schema taslağı |
+| `13-validation-test-matrix.md` | fixture/benchmark/kabul testleri |
+| `14-feature-flags-and-env.md` | feature flag, secret, timeout, cache, kill switch |
+| `15-data-readiness.md` | motor bazlı minimum gerçek veri |
+| `16-upstream-pins.md` | exact upstream commit snapshot'ları |
+| `17-model-gateway-api.md` | private model gateway sözleşmesi |
+| `18-implementation-file-map.md` | motor bazlı exact dosya haritası |
+| `19-execution-backlog.md` | motor iş kartları ve bağımlılıklar |
+| `20-pusula-evidence-policy.md` | Pusula evidence/kanıt politikası |
+| `21-operations-cost-privacy.md` | compute/API maliyet, privacy, retention, fallback |
+| `22-map-fullscreen-history-ux.md` | map-tap tam ekran + history preview gallery |
+| `23-field-tasks-and-pusula-points.md` | Görevlerim + eksik veri + Pusula puanı |
+| `24-notification-vs-task-routing.md` | Task/Notification/Pusula ayrımı |
+| `25-map-tasks-implementation-plan.md` | harita/Görevlerim exact uygulama sırası |
+| `26-map-footer-date-real-compass.md` | normal haritada görünür veri tarihi + gerçek pusula |
+| `27-pusula-ai-hub-rebuild.md` | bottom-nav Pusula AI'yı gerçek hub'a dönüştürme |
+| `28-notifications-settings-real-screens.md` | Bildirimler ve Ayarlar'ı placeholder'dan çıkarma |
+| `29-map-opening-field-switch-transitions.md` | dünya→tarla ve tarla→tarla kamera geçişleri |
+| `30-map-focus-mode.md` | `Haritada gör` için çakışmasız Focus Mode |
+| `31-calendar-action-today-push-pipeline.md` | Takvimime ekle → Today → Push zinciri |
+| `32-ux-polish-execution-plan.md` | 2026-09-13 UX incelemesinin exact PR/backlog sırası |
+| `STATUS.md` | tek bakışta motor readiness durumu |
 
-## Ortak mimari
+## Ortak teknik mimari
 
 ```text
 TarlaPusula gerçek verisi
   -> input normalizer
-  -> integration adapter
-  -> external/model runner
-  -> normalized IntegrationResult
-  -> quality / validation gate
-  -> decision engine
-  -> Pusula evidence
-  -> UI / bildirim / takvim
+  -> feature/domain service
+  -> integration adapter / model runner (gerekiyorsa)
+  -> normalized result + quality/evidence
+  -> decision layer
+  -> Pusula / Task / Calendar / Notification router
+  -> UI
 ```
 
-**Pusula AI hesap motoru değildir.** Sayısal/teknik motorların doğrulanmış sonucunu kullanıcıya açıklar ve birden fazla kanıtı bağlama göre birleştirir.
-
-## Eksik veri -> Görevlerim bağlantısı
-
-Model entegrasyonları için gereken gerçek veri kullanıcıya dağınık popuplar/bildirimler halinde sorulmayacak. Yeni hedef:
-
-```text
-engine/data readiness
-   -> deterministic TaskCandidate
-   -> Görevlerim
-   -> kullanıcı mevcut feature akışında veriyi kaydeder
-   -> server completion doğrulaması
-   -> bir kez Pusula puanı
-   -> task active listeden kalkar
-   -> yeni veri engine/Pusula tarafından kullanılabilir
-```
-
-Dış API arızası veya kullanıcının çözemeyeceği veri eksikliği task yapılmaz.
-
-## Python motorların sınırı
-
-PCSE, pyfao56, AquaCrop, AgML ve benzeri Python paketleri React/Vite bundle'a gömülmez.
+Python motorlar React/Vite bundle'a gömülmez:
 
 ```text
 React UI
    |
-trusted backend / Supabase auth boundary
+trusted auth/backend boundary
    |
 Model Gateway
-   |--- pyfao56 runner
-   |--- PCSE runner
-   |--- AquaCrop runner
-   |--- geospatial / ML runner
+   |--- pyfao56
+   |--- PCSE
+   |--- AquaCrop
+   |--- geospatial / ML runners
 ```
 
-Deployment sağlayıcısı daha sonra seçilebilir; uygulama sözleşmesi sağlayıcıdan bağımsız tutulur.
+## Task / Notification / Calendar / Pusula ayrımı
 
-## Öncelik sırası
+```text
+Görev
+= kullanıcının yapacağı ve completion kriteri olan iş
+
+Bildirim
+= kullanıcının haberdar olması gereken olay/değişiklik
+
+Takvim
+= kullanıcının belirli gün/saatte yapmayı planladığı iş
+
+Pusula insight
+= kanıtlardan üretilen kısa yorum/öneri
+```
+
+Örnek:
+
+```text
+"Sulama durumunu tamamla"          -> Görev (+P completion'da)
+"Bu gece don riski var"            -> Bildirim
+"Yarın 09:00 batı alanını kontrol" -> Takvim
+"Batı alanı çevresine göre zayıf"  -> Pusula insight
+```
+
+Task takvime planlanabilir; ancak reminder eklemek task'ı tamamlamaz ve puan vermez.
+
+## Eksik veri → Görevlerim
+
+```text
+engine / Pusula data readiness
+   -> deterministic TaskCandidate
+   -> Görevlerim
+   -> kullanıcı ilgili gerçek feature'da veriyi kaydeder
+   -> server completion doğrulaması
+   -> bir kez Pusula reward
+   -> task aktif listeden kalkar
+   -> veri karar/model katmanına açılır
+```
+
+API arızası, provider gecikmesi veya kullanıcının çözemeyeceği sistem sorunu task yapılmaz.
+
+## Harita ürün kararı
+
+Harita ilk bakışta sade, dokundukça derinleşen yapıdadır.
+
+Normal durumda:
+- veri tarihi görünür,
+- gerçek bearing pusulası görünür,
+- map tap tam ekran yapar,
+- ayrı fullscreen ikonu yoktur; o slot Görevlerim'e ayrılır,
+- history ikonunda sabit `Geçmiş` yazısı yoktur,
+- geçmiş Sentinel-2 arşivi thumbnail gallery olarak açılır.
+
+`Haritada gör` ayrı Focus Mode açar; üst üste binen action/icon şeritleri göstermez.
+
+## Pusula AI ürün kararı
+
+Bottom-nav `Pusula AI` doğrudan fotoğraf analizine gitmez. Yeni Hub:
+
+```text
+Pusula AI Hub
+  -> güncel kısa değerlendirme
+  -> Neden?
+  -> Haritada gör
+  -> gerektiğinde Takvimime ekle
+  -> Fotoğraftan Analiz
+  -> geçmiş / görev bağlantıları
+```
+
+Fotoğraf analizi ayrı alt araçtır. Hub'ın üzerine GlobalPusulaBand dev overlay bindirmez.
+
+## Bildirimler ve Ayarlar
+
+`notificationsHub` ve `settingsHub` artık ürün planında placeholder değildir.
+
+- Bildirimler: gerçek inbox, read/unread, filter, deep-link; Task tekrarları yok.
+- Ayarlar: hesap, notification preferences, Pusula AI consent, theme/app, konum/privacy.
+- consent/permission açmak reward değildir.
+
+## Harita açılış hareketi
+
+Mevcut bir-kez/session bastırma kuralı kaldırılacak.
+
+- her yeni app/page açılışında world/general → selected field,
+- aynı render içinde double-play yok,
+- field switch'te kısa regional zoom-out → target field,
+- reduced-motion tercihinde animasyon atlanır,
+- animasyon API sorgu sayısını artırmaz.
+
+## Takvim pipeline
+
+Mevcut Calendar + push altyapısı yeniden kullanılacak:
+
+```text
+Pusula / Weather / Irrigation / Focus action
+        -> CalendarActionDraft
+        -> prefilled "Takvimime ekle" sheet
+        -> calendar_reminders
+        -> günü gelince Today
+        -> izin varsa due push
+```
+
+Reminder oluşturmak = 0P. Task ile bağlıysa puan gerçek task completion'da gelir.
+
+## Motor önceliği
 
 | Öncelik | Motor | Karar |
 | --- | --- | --- |
 | P0 | pyfao56 | mevcut PoC'yi aynı gün/konum/veriyle shadow doğrula |
-| P0 | PCSE/WOFOST | gerçek yıllık ürün ve saha evre gözlemleriyle pilot |
-| P1 | AquaCrop-OSPy | sezon su/verim ve sulama senaryosu |
-| P1 | AutoGeoBound | öneri sınırı + TerraDraw düzenleme + kullanıcı onayı |
-| P1 | OpenAgri Pest&Disease | GDD/risk modeli benchmarkı; teşhis değil risk sinyali |
-| P2 | AgML/PlantVillage | mevcut hastalık AI'a karşı gerçek saha benchmarkı |
-| P2 | FarmVibes.AI | yalnızca ölçülebilir değer sağlayan modüller |
-| RESEARCH | AgStack Asset Registry | gerçek interoperability ihtiyacı varsa |
-| HOLD | sentinelhub-py / eo-learn | mevcut Copernicus hattına üstünlük göstermedikçe eklenmez |
-| HOLD | OpenAgri Weather/Irrigation/FarmCalendar | mevcut sistemlerle büyük ölçüde çakışıyor; referans/benchmark |
-| HOLD | geemap | R&D/notebook aracı, production dependency değil |
-| REFERENCE | OpenET | resmi kullanım alanı Batı ABD odaklı; Türkiye için adapter yazılmayacak |
-| REFERENCE | farmOS | veri modeli/işlem günlüğü fikirleri; full sistem değil |
+| P0 | PCSE/WOFOST | gerçek yıllık ürün + saha evreleriyle pilot |
+| P1 | AquaCrop-OSPy | sezon su/verim senaryosu |
+| P1 | AutoGeoBound | candidate boundary + TerraDraw + kullanıcı onayı |
+| P1 | Pest&Disease | risk/GDD benchmark; teşhis değil risk sinyali |
+| P2 | AgML/PlantVillage | gerçek saha benchmarkı |
+| P2 | FarmVibes.AI | yalnız ölçülebilir faydalı modüller |
+| HOLD | sentinelhub-py / eo-learn | mevcut Copernicus hattını geçmedikçe yok |
+| REFERENCE | OpenET | Türkiye live adapter planı yok |
 
-## 2026-09-13 upstream snapshot'ları
-
-Implementation başlangıç pinleri `16-upstream-pins.md` içinde tutulur. Öne çıkanlar:
+## Başlangıç upstream pinleri
 
 ```text
 pyfao56       1d242ee985be0edbc4946f06e7e94a487d4bc0c9
@@ -132,146 +217,40 @@ AgML           c3343fc3b3f8abd89983927da3fc8319cb019d49
 FarmVibes.AI   d10670e18742d05aec50f73e4695d47978908994
 ```
 
-Bunlar “sonsuza kadar kullan” sürümleri değildir; reproducible başlangıç snapshot'larıdır. Implementasyon PR'ında upstream tekrar kontrol edilip bilinçli biçimde pinlenir.
+Implementation PR'ında upstream tekrar kontrol edilir; `latest` körlemesine kullanılmaz.
 
-## Aktif kuyruktan çıkarılan / reference'a düşürülenler
-
-- `YieldStack` — güvenilir tekil upstream doğrulanmadı.
-- `AgriGuard` — aynı isimde çok sayıda bağımsız demo var; exact upstream yok.
-- `agro-gis` — hangi repo ve hangi somut faydanın kastedildiği doğrulanmadı.
-- `Crop AI / CropGuard-like` — üretim bağımlılığı değil, UX/model fikir referansı.
-- `OpenET` — resmi OpenET kullanımı Batı ABD/17 batı eyaleti bağlamında; Türkiye live ET kaynağı olarak planlanmıyor.
-
-## Feature flag kuralı
-
-Motorlar production'da varsayılan `off` başlar:
+## Uygulama sırası — UX
 
 ```text
-ENABLE_PYFAO56=false
-ENABLE_PCSE=false
-ENABLE_AQUACROP=false
-ENABLE_AUTOGEOBOUND=false
-ENABLE_PEST_RISK_ENGINE=false
-ENABLE_DISEASE_MODEL_V2=false
-ENABLE_FARMVIBES_EXPERIMENT=false
-ENABLE_AGSTACK_GEOID=false
+mevcut 22–25 harita/history/task epic'i
+        |
+TP-UX-100 map footer/date/real compass
+TP-UX-110 world→field + field switch transition
+TP-UX-120 map focus mode
+TP-UX-130 calendar action pipeline
+TP-SHELL-140 notifications inbox
+TP-SHELL-150 settings screen
+TP-AI-160 Pusula AI hub
+TP-TASK-170 cross-feature task/points wiring
 ```
 
-`ENABLE_OPENET` aktif planın parçası değildir; resmi Türkiye/global kapsama oluşursa yeniden değerlendirilir.
+Ayrıntı `32-ux-polish-execution-plan.md` içinde.
 
-Bunların server-side uygulanması tercih edilir. **Secret/API credential için `VITE_*` kullanılmaz**; Vite frontend değişkenleri istemci bundle'ına girebilir.
+## READY_FOR_IMPLEMENTATION kuralı
 
-## Güvenlik ve veri prensipleri
+Bir iş implementation'a geçmeden önce uygun olan maddeler hazır olmalı:
 
-- gerçek kullanıcı verisi PoC fixture olarak GitHub'a commit edilmez.
-- özel tarla koordinatı yalnızca gereken servise ve minimum kapsamda gönderilir.
-- eksik veri model tarafından uydurulmaz; `no_data/not_ready` döner.
-- eski cache güncelmiş gibi gösterilmez.
-- model çıktısı tek başına ilaçlama/gübreleme/sulama emri değildir.
-- kritik sonuçlarda veri tarihi, kaynak ve model sürümü izlenebilir olmalıdır.
-- dış motor doğrudan React component'ten çağrılmaz.
-- frontend secret görmez.
-- her motor tek hareketle kapatılabilir olmalıdır.
-- yeni motor fail olursa mevcut çalışan TarlaPusula motoru/manuel akış devam eder.
-- task ödülü client'ın gönderdiği puan değerine güvenmez; server rule/completion ile doğrulanır.
-- aynı task/olay için puan dedupe/idempotent olmalıdır.
+- exact mevcut dosya sınırı,
+- domain/input/output contract,
+- veri readiness,
+- no-fake/no-data davranışı,
+- server auth/RLS ihtiyacı,
+- task/notification/calendar routing,
+- reward completion + dedupe,
+- mobile overlap/safe-area planı,
+- test/kabul kriteri,
+- fallback/rollback,
+- Pusula evidence davranışı,
+- privacy/consent sınırı.
 
-## Pusula kanıt kuralı
-
-Pusula şu ayrımı korur:
-- ölçüm
-- kullanıcı kaydı
-- uzaktan algılama
-- model sonucu
-- dış/bölgesel gözlem
-
-PCSE tahmini saha gözlemi gibi, GBIF kaydı tarlada varlık gibi, AquaCrop senaryosu garanti verim gibi sunulmaz. Ayrıntı `20-pusula-evidence-policy.md` içinde.
-
-## Bildirim / Görev ayrımı
-
-- **Görev:** kullanıcı bir şey yapacak ve completion kriteri var.
-- **Bildirim:** kullanıcı bir olay/değişiklikten haberdar olacak.
-- **Pusula insight:** kanıtlardan üretilen yorum/öneri.
-
-Eksik veriler varsayılan olarak Bildirimler'e atılmaz; `Görevlerim`de yaşar. Ayrıntı `24-notification-vs-task-routing.md`.
-
-## Harita UX epic'i
-
-Sınır kalkınca önerilen sıra:
-
-```text
-PR-1 map tap fullscreen + fullscreen icon -> Görevlerim
-PR-2 satellite history preview gallery + archive bug
-PR-3 Task Engine core
-PR-4 server persistence + atomic reward
-PR-5 missing-data tasks
-PR-6 notification/task routing
-PR-7 Pusula task context
-```
-
-Exact dosya ve kabul kriterleri `25-map-tasks-implementation-plan.md` içinde.
-
-## Lisans özeti
-
-Tam matris `10-license-matrix.md` içinde.
-
-Öne çıkanlar:
-- pyfao56: CC0 1.0 / public-domain dedication.
-- AquaCrop-OSPy: Apache-2.0.
-- AutoGeoBound: Apache-2.0.
-- AgML: Apache-2.0.
-- PlantVillage (`README_HF.md` metadata): CC BY-SA 3.0; attribution/share-alike etkisi ayrıca incelenir.
-- FarmVibes.AI: MIT.
-- sentinelhub-py / eo-learn: MIT.
-- Sentinel Hub custom-scripts: CC-BY-SA-4.0.
-- PCSE: EUPL 1.1 veya uygun sonraki sürümler.
-- OpenAgri Irrigation/Pest&Disease: EUPL-1.2.
-- farmOS: GPL-2.0.
-- AgStack Asset Registry: repo metadata'sında lisans görünmüyor; production öncesi manuel doğrulama zorunlu.
-
-## İlk implementation işleri
-
-Motor işleri `19-execution-backlog.md` kartlarını kullanır:
-
-```text
-TP-INT-001 common contracts
-TP-INT-002 model gateway minimum contract
-TP-INT-010 pyfao56 shadow
-TP-INT-020 PCSE pilot
-TP-INT-030 AquaCrop scenarios
-TP-INT-040 AutoGeoBound
-TP-INT-050 Pest Risk
-TP-INT-060 Disease benchmark
-TP-INT-080 FarmVibes research
-```
-
-UX/Görev epic'i `25-map-tasks-implementation-plan.md` sırasını kullanır. Veri işleri (`TP-DATA-*`) Görevlerim üzerinden kullanıcıya dönüştürülebilir.
-
-## `READY_FOR_IMPLEMENTATION` tanımı
-
-Bir entegrasyon ancak şu maddeler hazırsa uygulama PR'ına geçebilir:
-
-- [ ] exact upstream repo ve pinned version/commit
-- [ ] kod/model/dataset/API lisans notları
-- [ ] girdi şeması
-- [ ] çıktı şeması
-- [ ] adapter sınırı
-- [ ] gerekli backend/model-runner planı
-- [ ] veri readiness kontrolü
-- [ ] feature flag + kill switch
-- [ ] timeout/cache/rate/cost guard
-- [ ] fixture/test senaryoları
-- [ ] kabul metriği
-- [ ] fallback/rollback
-- [ ] Pusula evidence formatı
-- [ ] privacy ve authorization sınırı
-
-Harita/Görev epic'i için ayrıca:
-- [ ] map fullscreen non-regression planı
-- [ ] satellite history archive + preview contract
-- [ ] task completion condition
-- [ ] server-authoritative reward rule
-- [ ] task/notification routing
-- [ ] duplicate/idempotency test
-
-Detaylı motor durumu için `STATUS.md`, motor sırası için `11-execution-runbook.md`, motor iş kartları için `19-execution-backlog.md`, harita/Görevlerim için `22`–`25` dosyaları kullanılır.
+Motorlar için detay `11`, `13`, `15`, `16`, `19`; yeni UX için `22`–`32` dosyaları kullanılır.
