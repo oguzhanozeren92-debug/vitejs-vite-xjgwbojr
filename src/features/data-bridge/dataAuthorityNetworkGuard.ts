@@ -2,7 +2,16 @@ import { fetchPublicJsonThroughDataBridge } from './edgeFunctionDataBridge';
 
 let installed = false;
 
-function canonicalizeHomeAgroRequest(url: URL) {
+type CanonicalAgroRequest = {
+  namespace: string;
+  url: URL;
+  responseAlias?: {
+    sourceKey: string;
+    targetKey: string;
+  };
+};
+
+function canonicalizeHomeAgroRequest(url: URL): CanonicalAgroRequest | null {
   const hourly = url.searchParams.get('hourly') ?? '';
   const daily = url.searchParams.get('daily') ?? '';
 
@@ -12,7 +21,14 @@ function canonicalizeHomeAgroRequest(url: URL) {
     url.searchParams.set('hourly', 'soil_temperature_0cm');
     url.searchParams.set('models', 'era5_land');
     url.searchParams.set('cell_selection', 'land');
-    return { namespace: 'home-agro:surface-temperature', url };
+    return {
+      namespace: 'home-agro:surface-temperature',
+      url,
+      responseAlias: {
+        sourceKey: 'soil_temperature_0cm',
+        targetKey: 'soil_temperature_0_to_7cm',
+      },
+    };
   }
 
   if (daily === 'et0_fao_evapotranspiration') {
@@ -31,6 +47,45 @@ function canonicalizeHomeAgroRequest(url: URL) {
   }
 
   return null;
+}
+
+async function adaptCanonicalResponse(
+  response: Response,
+  alias?: CanonicalAgroRequest['responseAlias'],
+) {
+  if (!alias) return response;
+
+  const payload = await response.clone().json();
+  const entries = Array.isArray(payload) ? payload : [payload];
+
+  const adapted = entries.map((entry: any) => {
+    if (!entry?.hourly || !Array.isArray(entry.hourly?.[alias.sourceKey])) {
+      return entry;
+    }
+
+    return {
+      ...entry,
+      hourly: {
+        ...entry.hourly,
+        [alias.targetKey]: entry.hourly[alias.sourceKey],
+      },
+      hourly_units: entry?.hourly_units
+        ? {
+            ...entry.hourly_units,
+            [alias.targetKey]: entry.hourly_units?.[alias.sourceKey],
+          }
+        : entry?.hourly_units,
+    };
+  });
+
+  return new Response(
+    JSON.stringify(Array.isArray(payload) ? adapted : adapted[0]),
+    {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    },
+  );
 }
 
 /**
@@ -78,12 +133,14 @@ export function installDataAuthorityNetworkGuard() {
         const canonical = canonicalizeHomeAgroRequest(new URL(url.toString()));
 
         if (canonical) {
-          return fetchPublicJsonThroughDataBridge({
+          const response = await fetchPublicJsonThroughDataBridge({
             namespace: canonical.namespace,
             url: canonical.url.toString(),
             nativeFetch,
             refreshAfterMs: 6 * 60 * 60 * 1000,
           });
+
+          return adaptCanonicalResponse(response, canonical.responseAlias);
         }
       }
     } catch (error) {
