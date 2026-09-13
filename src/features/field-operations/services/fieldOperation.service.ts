@@ -6,6 +6,39 @@ import type {
   FieldOperationType,
 } from '../types/fieldOperation';
 
+type PendingInventorySelection = {
+  fieldId: string;
+  type: FieldOperationType;
+  productId: string;
+};
+
+let pendingInventorySelection: PendingInventorySelection | null = null;
+
+/**
+ * Gübreleme/ilaçlama ortak formundan önce seçilen exact depo ürününü aynı
+ * işlem oturumuna bağlar. Bu geçici seçim yalnız form oturumu içindir;
+ * kalıcı gerçek veri server RPC ile yazılır.
+ */
+export function setPendingFieldOperationInventory(
+  selection: PendingInventorySelection | null,
+) {
+  pendingInventorySelection = selection;
+}
+
+export function clearPendingFieldOperationInventory() {
+  pendingInventorySelection = null;
+}
+
+function pendingInventoryFor(
+  fieldId: string,
+  type: FieldOperationType,
+): string | null {
+  const pending = pendingInventorySelection;
+  if (!pending) return null;
+  if (pending.fieldId !== fieldId || pending.type !== type) return null;
+  return pending.productId;
+}
+
 function nullableText(value: unknown) {
   const text = String(value ?? '').trim();
   return text || null;
@@ -151,31 +184,45 @@ export async function createFieldOperation(
   if (quantity != null && quantity < 0) throw new Error('Miktar sıfırdan küçük olamaz.');
   if (cost != null && cost < 0) throw new Error('Maliyet sıfırdan küçük olamaz.');
 
-  const { data, error } = await supabase.rpc('tp_create_field_operation', {
-    p_field_id: fieldId,
-    p_activity_type: input.type,
-    p_activity_date: date,
-    p_product_name: nullableText(input.productName),
-    p_quantity: quantity,
-    p_unit: quantity == null ? null : nullableText(input.unit),
-    p_cost: cost,
-    p_notes: nullableText(input.notes),
-    p_photo_path: nullableText(input.photoPath),
-    p_ai_analysis: input.aiAnalysis ?? null,
-    p_ai_analyzed_at:
-      input.aiAnalysis == null
-        ? null
-        : nullableText(input.aiAnalyzedAt) ?? new Date().toISOString(),
-    p_inventory_product_id: nullableText(input.inventoryProductId),
-  });
+  const inventoryProductId =
+    nullableText(input.inventoryProductId) ?? pendingInventoryFor(fieldId, input.type);
 
-  if (error) throw error;
-  const row = Array.isArray(data) ? data[0] : data;
-  if (!row) throw new Error('İşlem kaydedildi ancak kayıt bilgisi alınamadı.');
+  try {
+    const { data, error } = await supabase.rpc('tp_create_field_operation', {
+      p_field_id: fieldId,
+      p_activity_type: input.type,
+      p_activity_date: date,
+      p_product_name: nullableText(input.productName),
+      p_quantity: quantity,
+      p_unit: quantity == null ? null : nullableText(input.unit),
+      p_cost: cost,
+      p_notes: nullableText(input.notes),
+      p_photo_path: nullableText(input.photoPath),
+      p_ai_analysis: input.aiAnalysis ?? null,
+      p_ai_analyzed_at:
+        input.aiAnalysis == null
+          ? null
+          : nullableText(input.aiAnalyzedAt) ?? new Date().toISOString(),
+      p_inventory_product_id: inventoryProductId,
+    });
 
-  const operation = mapOperation(row);
-  emitFieldOperationChange(operation, 'saved', operation);
-  return operation;
+    if (error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) throw new Error('İşlem kaydedildi ancak kayıt bilgisi alınamadı.');
+
+    const operation = mapOperation(row);
+    emitFieldOperationChange(operation, 'saved', operation);
+    return operation;
+  } finally {
+    // Seçim tek işlem içindir. Başarılı veya başarısız denemeden sonra yeni
+    // kayıt eski depo seçimini yanlışlıkla devralmamalı.
+    if (
+      pendingInventorySelection?.fieldId === fieldId &&
+      pendingInventorySelection?.type === input.type
+    ) {
+      clearPendingFieldOperationInventory();
+    }
+  }
 }
 
 /**
