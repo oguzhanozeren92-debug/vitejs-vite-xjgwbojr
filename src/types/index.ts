@@ -33,6 +33,8 @@ export type FieldStatus = 'good' | 'check' | 'urgent';
 
 export type CropCycle = 'annual' | 'perennial';
 
+export type IrrigationStatus = 'sulu' | 'susuz' | 'kismi';
+
 export type LocationOption = {
   id: number;
   name: string;
@@ -61,6 +63,7 @@ export type Field = {
   cropCycle?: CropCycle;
   plantingYear?: number | null;
   bearing?: boolean | null;
+  irrigationStatus?: IrrigationStatus | null;
 };
 
 export type FieldSection = {
