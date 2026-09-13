@@ -2,6 +2,10 @@ import {
   createClient,
   type SupabaseClient,
 } from '@supabase/supabase-js';
+import {
+  createEdgeFunctionDataBridge,
+  warmEdgeFunctionDataBridge,
+} from './features/data-bridge/edgeFunctionDataBridge';
 
 const env = import.meta.env;
 
@@ -60,6 +64,35 @@ if (isSupabaseConfigured) {
         },
       },
     );
+
+    /*
+     * TEK VERİ KÖPRÜSÜ
+     * -------------------------------------------------------
+     * Harita/uydu/toprak/iklim gibi salt-okuma Edge Function çağrıları artık
+     * hangi ekran çağırırsa çağırsın aynı persistent snapshot deposundan geçer.
+     *
+     * Böylece Home, UnifiedMap ve diğer ekranlar aynı veri için paralel istek
+     * açmaz. Son başarılı snapshot ekranda kalır; kaynak gerçekten yenilenirse
+     * arka plandaki refresh cache'i atomik olarak değiştirir.
+     */
+    const functionsClient = client.functions as any;
+    const originalInvoke = functionsClient.invoke.bind(functionsClient);
+
+    functionsClient.invoke = createEdgeFunctionDataBridge({
+      originalInvoke,
+      getScope: async () => {
+        try {
+          const { data } = await client!.auth.getSession();
+          return data.session?.user?.id ?? 'anon';
+        } catch {
+          return 'anon';
+        }
+      },
+    });
+
+    // IndexedDB snapshot'larını React ekranları açılmadan mümkün olduğunca erken
+    // belleğe al. Bu, uygulama tekrar açıldığında ilk katman geçişini hızlandırır.
+    void warmEdgeFunctionDataBridge();
 
     console.log(
       'TarlaPusula Supabase bağlantısı hazır:',
