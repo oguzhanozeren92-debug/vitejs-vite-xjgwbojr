@@ -37,9 +37,9 @@ export type FieldOperation = {
   unit: string | null;
   cost: number | null;
   notes: string | null;
-  photoPath: string | null;
-  aiAnalysis: unknown | null;
-  aiAnalyzedAt: string | null;
+  photoPath?: string | null;
+  aiAnalysis?: unknown | null;
+  aiAnalyzedAt?: string | null;
   createdAt: string;
 };
 
