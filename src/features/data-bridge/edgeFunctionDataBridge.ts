@@ -72,12 +72,26 @@ const POLICIES: Record<string, CachePolicy> = {
   },
   'satellite-field-analysis': {
     refreshAfterMs: 12 * HOUR,
-    version: (data) => String(
-      data?.latestImageDate ??
-      data?.selectedSceneDatetime ??
-      data?.generatedAt ??
-      'unknown',
-    ),
+    version: (data, body) => {
+      if (body?.listScenes) {
+        return String(
+          Array.isArray(data?.dates) && data.dates.length
+            ? data.dates[0]
+            : data?.period?.to ?? 'empty',
+        );
+      }
+
+      if (body?.imageDate) {
+        return String(data?.latestImageDate ?? body.imageDate);
+      }
+
+      return String(
+        data?.latestImageDate ??
+          data?.selectedSceneDatetime ??
+          data?.generatedAt ??
+          'unknown',
+      );
+    },
   },
   'satellite-scene-list': {
     refreshAfterMs: 6 * HOUR,
@@ -141,6 +155,18 @@ const POLICIES: Record<string, CachePolicy> = {
     ),
   },
 };
+
+function isCacheableEdgeData(data: unknown): boolean {
+  if (data == null) return false;
+  if (
+    typeof data === 'object' &&
+    'success' in data &&
+    (data as { success?: unknown }).success === false
+  ) {
+    return false;
+  }
+  return true;
+}
 
 const memory = new Map<string, BridgeEntry>();
 const inflight = new Map<string, Promise<EdgeInvokeResult<any>>>();
@@ -264,22 +290,27 @@ async function refreshEdge<T>(input: {
   const existing = inflight.get(input.key);
   if (existing) return existing as Promise<EdgeInvokeResult<T>>;
 
+  const previous =
+    input.previous && isCacheableEdgeData(input.previous.data)
+      ? input.previous
+      : null;
+
   const promise = (async () => {
     const result = await input.originalInvoke<T>(input.functionName, input.options);
 
-    if (result.error || result.data == null) {
-      return input.previous?.data !== undefined
-        ? { data: input.previous.data as T, error: null }
+    if (result.error || !isCacheableEdgeData(result.data)) {
+      return previous?.data !== undefined
+        ? { data: previous.data as T, error: null }
         : result;
     }
 
     const sourceVersion = input.policy.version(result.data, input.body);
     const now = Date.now();
 
-    if (input.previous?.sourceVersion === sourceVersion) {
-      const same = { ...input.previous, savedAt: now };
+    if (previous?.sourceVersion === sourceVersion) {
+      const same = { ...previous, savedAt: now };
       await persist(same);
-      return { data: input.previous.data as T, error: null };
+      return { data: previous.data as T, error: null };
     }
 
     const entry: BridgeEntry = {
@@ -321,7 +352,16 @@ export function createEdgeFunctionDataBridge(input: {
     const scope = (await input.getScope()) || 'anon';
     const body = options?.body ?? null;
     const key = cacheKey(scope, functionName, body);
-    const cached = memory.get(key) ?? null;
+    const stored = memory.get(key) ?? null;
+    const cached =
+      stored && isCacheableEdgeData(stored.data)
+        ? stored
+        : null;
+
+    // Eski sürümde hata gövdeleri snapshot olarak kalmış olabilir. Bunları
+    // anında geçersiz say; sonraki başarılı çağrı aynı key'i üzerine yazar.
+    if (stored && !cached) memory.delete(key);
+
     const forceRefresh =
       options?.headers?.['x-tp-force-refresh'] === '1' ||
       (body && typeof body === 'object' && (body as any).__tpForceRefresh === true);
