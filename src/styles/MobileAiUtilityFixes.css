@@ -1,0 +1,223 @@
+/* Pusula AI + utility screen mobile stabilization. */
+
+/* Pusula AI ekranında konuşan büyük Pusula animasyonu içerik üzerine binmesin.
+   Harita/ana sayfadaki Pusula davranışına dokunulmaz. */
+body:has(.tp-ai-page) .pusula-guide {
+  display: none !important;
+}
+
+body:has(.tp-ai-page) {
+  overflow-x: hidden !important;
+}
+
+.tp-ai-page {
+  min-height: 100dvh !important;
+  overflow-x: hidden !important;
+  background: #f5f7f8 !important;
+  padding-bottom: 92px !important;
+}
+
+.tp-ai-page-header {
+  position: sticky !important;
+  z-index: 70 !important;
+  top: 0 !important;
+  min-height: 62px !important;
+  display: grid !important;
+  grid-template-columns: 42px minmax(0, 1fr) 42px !important;
+  gap: 10px !important;
+  align-items: center !important;
+  padding: 8px 12px !important;
+  box-sizing: border-box !important;
+  border-bottom: 1px solid #e0e6e2 !important;
+  background: rgba(255,255,255,.96) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+}
+
+.tp-ai-page-header > button {
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 0 !important;
+  border: 1px solid #dde5e0 !important;
+  border-radius: 12px !important;
+  background: #fff !important;
+  color: #1c2820 !important;
+  box-shadow: none !important;
+}
+
+.tp-ai-page-header > div {
+  min-width: 0 !important;
+}
+
+.tp-ai-page-header > div span {
+  display: block !important;
+  color: #4d7c58 !important;
+  font-size: 8px !important;
+  line-height: 1.1 !important;
+  font-weight: 900 !important;
+  letter-spacing: .08em !important;
+  text-transform: uppercase !important;
+}
+
+.tp-ai-page-header > div strong {
+  display: block !important;
+  margin-top: 3px !important;
+  overflow: hidden !important;
+  color: #172019 !important;
+  font-size: 15px !important;
+  line-height: 1.15 !important;
+  font-weight: 900 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.tp-ai-page-content {
+  width: min(100%, 760px) !important;
+  margin: 0 auto !important;
+  padding: 14px 12px 26px !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+}
+
+/* Pusula genel değerlendirmesi ilk kart olarak kompakt kalır. */
+.tp-ai-page-content .tp-pusula-synthesis {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 0 12px !important;
+  padding: 14px !important;
+  box-sizing: border-box !important;
+  border-radius: 18px !important;
+  overflow: hidden !important;
+}
+
+.tp-ai-page-content .tp-pusula-synthesis-head {
+  display: grid !important;
+  grid-template-columns: minmax(0,1fr) 48px !important;
+  gap: 10px !important;
+  align-items: center !important;
+}
+
+.tp-ai-page-content .tp-pusula-synthesis-copy {
+  min-width: 0 !important;
+}
+
+.tp-ai-page-content .tp-pusula-synthesis-kicker {
+  max-width: 100% !important;
+  margin-bottom: 4px !important;
+  color: #79a981 !important;
+  font-size: 7.5px !important;
+  line-height: 1.25 !important;
+  letter-spacing: .08em !important;
+  white-space: normal !important;
+}
+
+.tp-ai-page-content .tp-pusula-synthesis-copy h2 {
+  max-width: 100% !important;
+  margin: 0 !important;
+  font-size: 17px !important;
+  line-height: 1.18 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.tp-ai-page-content .tp-pusula-synthesis-copy p,
+.tp-ai-page-content .tp-pusula-main-summary,
+.tp-ai-page-content .tp-pusula-action p {
+  max-width: 100% !important;
+  font-size: 10px !important;
+  line-height: 1.5 !important;
+  overflow-wrap: anywhere !important;
+  white-space: normal !important;
+}
+
+.tp-ai-page-content .tp-pusula-synthesis-anchor {
+  width: 48px !important;
+  height: 48px !important;
+  min-width: 48px !important;
+}
+
+.tp-ai-page-content .tp-pusula-synthesis-status {
+  display: grid !important;
+  grid-template-columns: minmax(0,1fr) auto !important;
+  gap: 8px !important;
+}
+
+.tp-ai-page-content .tp-pusula-synthesis-status strong {
+  font-size: 13px !important;
+  line-height: 1.28 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.tp-ai-page-content .tp-pusula-causes {
+  grid-template-columns: 1fr !important;
+}
+
+.tp-ai-page-content .tp-pusula-evidence-row {
+  grid-template-columns: 70px minmax(0,1fr) !important;
+  gap: 8px !important;
+}
+
+/* Fotoğraf analizi bölümü kart içinde ve ekrana sığacak şekilde devam eder. */
+.tp-ai-page-content .tp-ai-hero,
+.tp-ai-page-content .tp-ai-main-card,
+.tp-ai-page-content .tp-ai-card,
+.tp-ai-page-content section,
+.tp-ai-page-content article {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.tp-ai-page-content h1,
+.tp-ai-page-content h2,
+.tp-ai-page-content h3,
+.tp-ai-page-content p,
+.tp-ai-page-content span,
+.tp-ai-page-content strong {
+  overflow-wrap: anywhere;
+}
+
+.tp-ai-page-content .tp-ai-main-photo {
+  grid-template-columns: 1fr !important;
+}
+
+.tp-ai-page-content .tp-ai-main-photo img {
+  width: 100% !important;
+  max-height: 280px !important;
+  object-fit: cover !important;
+}
+
+.tp-ai-page-content .tp-ai-main-picker {
+  width: 100% !important;
+  min-height: 150px !important;
+  box-sizing: border-box !important;
+}
+
+/* Alt navigasyon içerik üstüne binmesin. */
+.tp-ai-page .bottomNav {
+  z-index: 90 !important;
+}
+
+@media (max-width: 560px) {
+  .tp-ai-page-header {
+    min-height: 58px !important;
+    grid-template-columns: 38px minmax(0,1fr) 38px !important;
+    padding: 7px 9px !important;
+  }
+
+  .tp-ai-page-header > button {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+  }
+
+  .tp-ai-page-content {
+    padding: 10px 10px 24px !important;
+  }
+
+  .tp-ai-page-content .tp-pusula-synthesis {
+    padding: 12px !important;
+    border-radius: 16px !important;
+  }
+}
