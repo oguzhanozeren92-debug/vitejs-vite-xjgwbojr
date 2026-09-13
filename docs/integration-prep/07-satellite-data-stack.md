@@ -79,7 +79,7 @@ Repo: `sentinel-hub/eo-learn`
 
 ### TarlaPusula kararı
 
-**Durum: RESEARCH.**
+**Durum: RESEARCH / HOLD.**
 
 Tek başına kullanıcıya özellik değildir. Değer üretmesi gereken yerler:
 
@@ -125,19 +125,29 @@ Kopyalama yapılacaksa ilgili scriptin lisans şartı ayrıca kaydedilir.
 
 ## Aday 4 — OpenET
 
-### Amaç
+### Doğrulanan coğrafi uygunluk
 
-Gerçek evapotranspirasyon verisini mevcut FAO-56 / hava tabanlı su tüketimi hesabımıza bağımsız bir uzaktan algılama sinyali olarak eklemek.
+OpenET'in resmi yayınları platformu ve tarla düzeyi veri erişimini **Batı Amerika Birleşik Devletleri** bağlamında tanımlıyor; OpenET materyallerinde 17 batı eyaletindeki tarlalar ve Batı ABD su yönetimi temel kullanım alanı olarak yer alıyor.
+
+TarlaPusula'nın hedef sahaları Türkiye'de olduğu için OpenET'i bugün canlı ET sağlayıcısı olarak planlamak doğru değildir.
 
 ### TarlaPusula kararı
 
-**Durum: P1 RESEARCH / VALIDATION SOURCE.**
+**Durum: REFERENCE / DROP FROM ACTIVE IMPLEMENTATION QUEUE.**
 
-OpenET doğrudan sulama emri veren ana motor olmayacak. Önce şu rolü üstlenecek:
+OpenET:
+- ET metodolojisi,
+- ensemble yaklaşımı,
+- uydu tabanlı tüketim suyu ölçümü,
+- doğrulama/accuracy çalışma tasarımı
 
-`uzaktan algılama ET sinyali -> mevcut ETc / su dengesi ile karşılaştırma -> güven/uyumsuzluk göstergesi`
+için güçlü bir referans olabilir; fakat Türkiye tarlalarında kapsama doğrulanmadan adapter yazmak gereksizdir.
 
-### Önerilen standart çıktı
+### Yeniden açma şartı
+
+Yalnızca OpenET resmi olarak Türkiye/ilgili global kapsama sunarsa veya açıkça Türkiye'de kullanılabilir aynı veri/model servisi ortaya çıkarsa yeniden değerlendirilir.
+
+Bu durumda önerilen normalize çıktı:
 
 ```ts
 interface RemoteEtObservation {
@@ -145,19 +155,14 @@ interface RemoteEtObservation {
   startDate: string;
   endDate: string;
   etMm: number | null;
-  source: 'openet';
+  source: string;
   model?: string;
   coverage?: number;
   qualityFlags: string[];
 }
 ```
 
-### Canlıya geçiş şartı
-
-- Türkiye'deki pilot tarlalarda kapsama ve veri gecikmesi ölçülmeli.
-- Aynı dönem gerçek sulama/yağış kaydı olmalı.
-- Mevcut su bütçesi ile fark açıklanabilir olmalı.
-- Servis/API kullanım şartları ve ticari kullanım koşulları ayrıca teyit edilmeli.
+Ancak şimdilik `openet.adapter.ts` oluşturulmayacak ve `ENABLE_OPENET` uygulama backlog'unda aktif iş değildir.
 
 ---
 
@@ -193,8 +198,8 @@ Her metrik için aynı anda birden fazla 'ana gerçek' üretmeyeceğiz.
 Örnek:
 
 - NDVI ana kaynak: mevcut Copernicus pipeline.
-- OpenET: yardımcı ET gözlemi.
-- FAO-56/pyfao56: su dengesi model referansı.
+- ET/su dengesi: mevcut hava + Irrigation Engine + pyfao56 validation hattı.
+- OpenET: Türkiye için şu an canlı kaynak değil; metodoloji referansı.
 - Pusula AI: bunların sonuçlarını açıklar, sayıyı kendi üretmez.
 
 ## Ortak kalite şeması
@@ -219,12 +224,12 @@ interface SpatialQuality {
 - Bulutlu/az pikselli gözlemi Pusula önerisine güçlü kanıt olarak vermek.
 - Aynı NDVI için Copernicus + Sentinel Hub + GEE sonuçlarını kullanıcıya üç ayrı gerçek gibi göstermek.
 - Notebook prototipini üretim servisi sanmak.
+- Türkiye kapsamı olmayan veri sağlayıcısına sırf popüler diye adapter yazmak.
 
 ## Sınır kalkınca uygulanacak sıra
 
 1. Mevcut uydu hattına ortak `SpatialQuality` normalize alanlarını ekle.
-2. OpenET için salt-okuma pilot adapter'ı yap.
-3. Mevcut ETc ile OpenET'i yalnızca karşılaştır.
-4. eo-learn'i yalnızca zaman serisi/anomali benchmarkında dene.
-5. sentinelhub-py'yi ancak mevcut Copernicus hattının somut açığı oluşursa dene.
-6. geemap'i R&D notebook aracı olarak tut.
+2. eo-learn'i yalnızca zaman serisi/anomali benchmarkı gerçekten gerekirse dene.
+3. sentinelhub-py'yi ancak mevcut Copernicus hattının somut açığı oluşursa dene.
+4. geemap'i R&D notebook aracı olarak tut.
+5. OpenET'i yalnız metodoloji/accuracy referansı olarak izle; Türkiye resmi kapsaması ortaya çıkmadan entegrasyon işi açma.
