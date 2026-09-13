@@ -3,6 +3,8 @@ import type { Dispatch, FormEvent, SetStateAction } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { urlBase64ToUint8Array } from '../../../utils/fileUtils';
 import { calendarLocalDate } from '../services/weeklyFieldPlan';
+import { CALENDAR_UPDATED_EVENT } from '../services/calendarOperationCompletion.service';
+import { openFieldOperation } from '../../field-operations/services/openFieldOperation';
 import type { CalendarReminder, Field, Screen } from '../../../types';
 
 type UseCalendarControllerOptions = {
@@ -19,6 +21,26 @@ type CalendarSuggestionDetail = {
   time?: string | null;
   notes?: string | null;
 };
+
+const FIELD_OPERATION_REMINDER_TYPES = new Set([
+  'Sürme',
+  'Sürüm',
+  'Toprak İşleme',
+  'Toprak işleme',
+  'İkileme',
+  'Ekim / Dikim',
+  'Gübreleme',
+  'İlaçlama',
+  'Sulama',
+  'Çapalama',
+  'Budama',
+  'Hasat',
+  'Saha Kontrolü',
+]);
+
+function isFieldOperationReminder(reminder: CalendarReminder) {
+  return FIELD_OPERATION_REMINDER_TYPES.has(String(reminder.reminderType ?? '').trim());
+}
 
 export function useCalendarController({
   realFields,
@@ -298,6 +320,15 @@ export function useCalendarController({
     };
   }, [realFields, selectedField]);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleCalendarUpdated = () => {
+      void loadCalendarReminders();
+    };
+    window.addEventListener(CALENDAR_UPDATED_EVENT, handleCalendarUpdated);
+    return () => window.removeEventListener(CALENDAR_UPDATED_EVENT, handleCalendarUpdated);
+  }, []);
+
   const handleAddReminder = async (event: FormEvent) => {
     event.preventDefault();
     if (!reminderFieldId) {
@@ -342,6 +373,27 @@ export function useCalendarController({
   };
 
   const handleToggleReminder = async (reminder: CalendarReminder) => {
+    // Takvimde planlanan gerçek bir tarla işi ilk kez tamamlanıyorsa yalnızca
+    // tik atmayız. Aynı kanonik Tarla İşlemi formu açılır; işlem başarıyla
+    // kaydedilirse FieldOperationHost bu hatırlatmayı tamamlar.
+    if (!reminder.completed && isFieldOperationReminder(reminder)) {
+      openFieldOperation({
+        fieldId: String(reminder.fieldId),
+        fieldName: reminder.fieldName || 'Tarlan',
+        type: reminder.reminderType,
+        date: reminder.reminderDate,
+        source: 'calendar-completion',
+        completion: {
+          kind: 'calendar-reminder',
+          id: String(reminder.id),
+        },
+      });
+      return;
+    }
+
+    // Operasyon olmayan basit hatırlatmalar doğrudan tamamlanabilir. Daha önce
+    // tamamlanmış tarla işi geri açılıyorsa gerçek activity silinmez; yalnızca
+    // plan yeniden açık hale gelir. Gerçek saha kaydı bağımsız kanıttır.
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
