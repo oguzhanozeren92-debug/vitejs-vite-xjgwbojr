@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildHourlySprayPlan, formatForecastHour, localForecastDay, sprayWindowStartsSoon } from './hourlySprayForecast.ts';
+import { buildHourlySprayPlan, formatForecastHour, isHourlySprayForecastFresh, localForecastDay, sprayWindowStartsSoon } from './hourlySprayForecast.ts';
 
 const at = (hour) => Date.UTC(2026, 8, 12, hour - 3);
 const forecast = (overrides = () => ({})) => ({
@@ -34,7 +34,9 @@ test('sıcaklık eşiği aşılırsa sahte bir uygun saat üretmez ve nedeni gö
 });
 
 test('gündüz saatleri geçtiyse ilaçlama saati önermez', () => {
-  const plan = buildHourlySprayPlan(forecast(), at(19));
+  const data = forecast();
+  data.updatedAt = at(18);
+  const plan = buildHourlySprayPlan(data, at(19));
   assert.equal(plan.windows.length, 0);
   assert.match(plan.message, /gündüz aralığı kalmadı/);
 });
@@ -46,4 +48,18 @@ test('yalnızca önümüzdeki iki saat içinde başlayacak gerçek pencere bildi
   assert.equal(sprayWindowStartsSoon(window, at(8)), true);
   assert.equal(sprayWindowStartsSoon(window, at(9)), false);
   assert.equal(sprayWindowStartsSoon(null, at(8)), false);
+});
+
+test('iki saatten eski tahmin uygun saat veya risk bildirimi üretmez', () => {
+  const now = at(9);
+  const stale = forecast();
+  stale.updatedAt = now - 2 * 60 * 60 * 1000 - 1;
+  const plan = buildHourlySprayPlan(stale, now);
+  assert.equal(isHourlySprayForecastFresh(stale, now), false);
+  assert.deepEqual(plan.windows, []);
+  assert.equal(plan.nextRisk, null);
+  assert.match(plan.message, /eskidi.*yenile/);
+  stale.updatedAt = now - 30 * 60 * 1000;
+  assert.equal(isHourlySprayForecastFresh(stale, now), true);
+  assert.ok(buildHourlySprayPlan(stale, now).windows.length > 0);
 });

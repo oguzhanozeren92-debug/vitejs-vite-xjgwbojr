@@ -10,7 +10,7 @@ import HomeQuickSheets from '../../features/home/components/HomeQuickSheets';
 import { useHomeFieldSelection } from '../../features/fields/hooks/useHomeFieldSelection';
 import HomeFieldsSheet from '../../features/fields/components/HomeFieldsSheet';
 import { useHomeWeatherSignals } from '../../features/weather/hooks/useHomeWeatherSignals';
-import { buildHourlySprayPlan, formatForecastHour } from '../../features/weather/services/hourlySprayForecast';
+import { buildHourlySprayPlan, formatForecastHour, isHourlySprayForecastFresh } from '../../features/weather/services/hourlySprayForecast';
 import HomeFiveDayForecast from '../../features/weather/components/HomeFiveDayForecast';
 import { useNextCalendarItem } from '../../features/calendar/hooks/useNextCalendarItem';
 import { useHomeIrrigationDecision } from '../../features/irrigation/hooks/useHomeIrrigationDecision';
@@ -281,9 +281,13 @@ export default function HomeScreen(props: HomeScreenProps) {
     field: homeField,
   });
 
+  const hourlyForecastFresh = selectedHourlyWeather?.status === 'ready' &&
+    isHourlySprayForecastFresh(selectedHourlyWeather.data, hourlyClock);
   const nextHourlyWindow = hourlyPlan.windows[0];
   const sprayingQuick = homeField && !homeField.demo && selectedHourlyWeather?.status === 'ready'
-    ? nextHourlyWindow && selectedHourlyWeather.data
+    ? !hourlyForecastFresh
+      ? { tone: 'neutral', title: 'Saatlik tahmini yenile', detail: hourlyPlan.message }
+      : nextHourlyWindow && selectedHourlyWeather.data
       ? {
           tone: 'neutral',
           title: `Bugün ilaçlama havası uygun: ${formatForecastHour(nextHourlyWindow.from, selectedHourlyWeather.data.timezone)}–${formatForecastHour(nextHourlyWindow.to, selectedHourlyWeather.data.timezone)}`,
@@ -413,8 +417,8 @@ export default function HomeScreen(props: HomeScreenProps) {
           label: `${formatForecastHour(nextHourlyWindow.from, selectedHourlyWeather.data.timezone)}–${formatForecastHour(nextHourlyWindow.to, selectedHourlyWeather.data.timezone)}`,
         }
       : null,
-    hourlySprayForecastReady: selectedHourlyWeather?.status === 'ready',
-    hourlySprayRisk: selectedHourlyWeather?.status === 'ready' && hourlyPlan.nextRiskAt != null && hourlyPlan.nextRisk
+    hourlySprayForecastReady: hourlyForecastFresh,
+    hourlySprayRisk: hourlyForecastFresh && hourlyPlan.nextRiskAt != null && hourlyPlan.nextRisk
       ? { at: hourlyPlan.nextRiskAt, detail: hourlyPlan.nextRisk }
       : null,
     resolvedHomeSatelliteDate,

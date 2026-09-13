@@ -15,6 +15,13 @@ export type HourlySprayForecast = {
   hours: SprayHour[];
 };
 
+const MAX_SPRAY_FORECAST_AGE_MS = 2 * 60 * 60 * 1000;
+
+export function isHourlySprayForecastFresh(data: HourlySprayForecast | null | undefined, now = Date.now()): boolean {
+  return Boolean(data && Number.isFinite(data.updatedAt) &&
+    data.updatedAt <= now + 5 * 60 * 1000 && now - data.updatedAt <= MAX_SPRAY_FORECAST_AGE_MS);
+}
+
 export type HourlySprayState = {
   status: 'loading' | 'ready' | 'error';
   data?: HourlySprayForecast;
@@ -134,6 +141,9 @@ function blockingCondition(hour: SprayHour): string | null {
 
 export function buildHourlySprayPlan(data: HourlySprayForecast | null | undefined, now = Date.now()): SprayHourPlan {
   if (!data?.hours.length) return { windows: [], message: 'Saatlik tahmin henüz yok.', nextRisk: null, nextRiskAt: null };
+  if (!isHourlySprayForecastFresh(data, now)) return {
+    windows: [], message: 'Saatlik hava tahmini eskidi. İlaçlama saati seçmeden önce tahmini yenile.', nextRisk: null, nextRiskAt: null,
+  };
   const today = localForecastDay(now, data.timezone);
   const all = data.hours;
   const upcoming = all.filter((hour) => hour.time >= now && localForecastDay(hour.time, data.timezone) === today);
