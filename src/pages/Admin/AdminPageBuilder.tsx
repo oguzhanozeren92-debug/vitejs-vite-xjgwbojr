@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { supabase } from '../../supabaseClient';
 import type { CmsPageRow, CmsBlockRow, CmsMenuRow, CmsMediaRow } from '../../types';
+import AdminContentManager from '../../features/content/components/AdminContentManager';
 
 const CMS_DEFAULT_PAGES: Array<{ page_key:string; title:string; subtitle:string; icon:string; menu_order:number }> = [
   { page_key:'home', title:'Ana Sayfa', subtitle:'TarlaPusula ana ekranı ve günlük üretici özeti.', icon:'⌂', menu_order:1 },
@@ -70,7 +71,7 @@ const emitCmsUpdated = () => {
 };
 
 export default function AdminPageBuilder({ onBack }: { onBack: () => void }) {
-  const [tab, setTab] = useState<'pages' | 'menu' | 'media' | 'theme'>('pages');
+  const [tab, setTab] = useState<'content' | 'pages' | 'menu' | 'media' | 'theme'>('content');
   const [pages, setPages] = useState<CmsPageRow[]>([]);
   const [blocks, setBlocks] = useState<CmsBlockRow[]>([]);
   const [menus, setMenus] = useState<CmsMenuRow[]>([]);
@@ -293,10 +294,12 @@ export default function AdminPageBuilder({ onBack }: { onBack: () => void }) {
           <small style={{opacity:.72,fontWeight:900,letterSpacing:1}}>TARLAPUSULA CMS</small><h1 style={{margin:'6px 0 7px',fontSize:27}}>Uygulamayı panelden yönet</h1><p style={{margin:0,opacity:.8,maxWidth:760}}>Sayfalar, kartlar, ikonlar, sıralama, görünürlük, menüler, mobil/masaüstü yerleşimi, görseller ve genel ölçüler burada yönetilir.</p><div style={{marginTop:14,display:'flex',gap:8,flexWrap:'wrap'}}><button type="button" disabled={saving} onClick={importCurrentAppToCms} style={{...buttonStyle,background:'#fff',color:'#1f5a38',borderColor:'rgba(255,255,255,.75)'}}>↻ Mevcut Uygulamayı CMS’ye Aktar</button><span style={{fontSize:12,opacity:.78,alignSelf:'center'}}>İlk kurulumda bir kez çalıştırman yeterli.</span></div>
         </section>
         <div style={{display:'flex',gap:8,flexWrap:'wrap',margin:'14px 0'}}>
-          {([['pages','▦ Sayfa Tasarımcısı'],['menu','☰ Menü Yönetimi'],['media','🖼 Görseller'],['theme','⚙ Tema & Ölçüler']] as const).map(([key,label])=><button key={key} onClick={()=>setTab(key)} style={{...buttonStyle,background:tab===key?'#1f5a38':'#fff',color:tab===key?'#fff':'#294436',borderColor:tab===key?'#1f5a38':'#d8e2d9'}}>{label}</button>)}
+          {([['content','✎ İçerik Merkezi'],['pages','▦ Sayfa Tasarımcısı'],['menu','☰ Menü Yönetimi'],['media','🖼 Görseller'],['theme','⚙ Tema & Ölçüler']] as const).map(([key,label])=><button key={key} onClick={()=>setTab(key)} style={{...buttonStyle,background:tab===key?'#1f5a38':'#fff',color:tab===key?'#fff':'#294436',borderColor:tab===key?'#1f5a38':'#d8e2d9'}}>{label}</button>)}
         </div>
         {message && <div style={{...cardStyle,padding:'10px 13px',marginBottom:12,color:'#315a42'}}>{message}</div>}
-        {loading ? <div style={cardStyle}>Yönetim verileri yükleniyor...</div> : null}
+        {loading && tab!=='content' ? <div style={cardStyle}>Yönetim verileri yükleniyor...</div> : null}
+
+        {tab==='content' && <AdminContentManager />}
 
         {!loading && tab==='pages' && <div style={{display:'grid',gridTemplateColumns:'minmax(220px,310px) minmax(0,1fr)',gap:14,alignItems:'start'}}>
           <aside style={cardStyle}>
@@ -326,4 +329,3 @@ export default function AdminPageBuilder({ onBack }: { onBack: () => void }) {
     </div>
   );
 }
-
