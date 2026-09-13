@@ -11,8 +11,8 @@ Durumlar:
 - `PREP` — adapter/veri/test/uygulama planı hazır; çalışan üçüncü taraf model hattı henüz yok.
 - `RESEARCH` — değer/kapsama/teknik uygunluk ayrıca doğrulanacak.
 - `HOLD` — mevcut TarlaPusula sistemi aynı işi yaptığı için ölçülebilir üstünlük olmadan eklenmeyecek.
-- `REFERENCE` — kod bağımlılığı değil; veri modeli/mimari/formül referansı.
-- `REMOVED` — exact upstream veya somut katkı doğrulanmadığı için aktif kuyrukta değil.
+- `REFERENCE` — kod bağımlılığı değil; veri modeli/mimari/formül/metodoloji referansı.
+- `REMOVED` — exact upstream, coğrafi uygunluk veya somut katkı doğrulanmadığı için aktif kuyrukta değil.
 
 | Motor / Kaynak | Ürün amacı | Gerçek uygulama durumu | Hazırlık | Canlıya geçmeden ana kanıt |
 | --- | --- | --- | --- | --- |
@@ -23,8 +23,8 @@ Durumlar:
 | AquaCrop-OSPy | su-verim/sulama senaryosu | canlı model hattı yok | `PREP` | gerçek sezon + sulama kayıtları + ölçülen sonuç |
 | AutoGeoBound | otomatik parsel sınırı önerisi | entegrasyon yok | `PREP` | Türkiye örneklerinde IoU/area error + kullanıcı düzeltme UX'i |
 | OpenAgri Pest&Disease | GDD/risk index | entegrasyon yok | `PREP` | kendi hava girdimizle benchmark + GBIF/fotoğraf bağlamında güvenli yorum |
-| AgML / PlantVillage | hastalık görüntü modeli | eğitim/çıkarım hattı yok | `RESEARCH` | gerçek saha fotoğraflarında mevcut AI'dan daha iyi benchmark |
-| OpenET | bağımsız ET gözlemi | doğrudan entegrasyon yok | `RESEARCH` | Türkiye kapsaması + gecikme + mevcut ETc hattına ek değer |
+| AgML / PlantVillage | hastalık görüntü modeli | eğitim/çıkarım hattı yok | `RESEARCH` | gerçek saha fotoğraflarında mevcut AI'dan daha iyi benchmark + dataset/model lisansı |
+| OpenET | uydu tabanlı ET metodolojisi | Türkiye için canlı kaynak değil | `REFERENCE` | resmi Türkiye/global kapsama oluşmadan adapter yazma |
 | FarmVibes.AI | çok kaynaklı geospatial analiz | entegrasyon yok | `RESEARCH` | tekil modül mevcut motorlardan daha iyi sonuç göstermeli |
 | AgStack Asset Registry | dış GeoID/interoperability | entegrasyon yok | `RESEARCH` | gerçek dış sistem ihtiyacı + lisans/operasyon doğrulaması |
 | sentinelhub-py | uydu sağlayıcı istemcisi | kurulu değil | `HOLD` | mevcut Copernicus hattına kalite/operasyon üstünlüğü |
@@ -57,6 +57,12 @@ Durumlar:
 - `13-validation-test-matrix.md`
 - `14-feature-flags-and-env.md`
 - `15-data-readiness.md`
+- `16-upstream-pins.md`
+- `17-model-gateway-api.md`
+- `18-implementation-file-map.md`
+- `19-execution-backlog.md`
+- `20-pusula-evidence-policy.md`
+- `21-operations-cost-privacy.md`
 
 ## Uygulama sırası
 
@@ -71,13 +77,17 @@ Durumlar:
 
 ### P2
 6. AgML / hastalık modeli benchmarkı
-7. OpenET ET validation
-8. FarmVibes seçili modüller
+7. FarmVibes seçili modüller
 
 ### İhtiyaç doğarsa
-9. Asset Registry / GeoID
-10. eo-learn
-11. sentinelhub-py
+8. Asset Registry / GeoID
+9. eo-learn
+10. sentinelhub-py
+
+### Referans olarak izlenecek
+- OpenET — mevcut resmi kullanım kapsamı Batı ABD odaklı; Türkiye adapter'ı açılmaz.
+- farmOS — data model/audit fikirleri.
+- Sentinel Hub Custom Scripts — formül/görsel referansı ve lisans kontrollü kullanım.
 
 ## Hazırlık döneminde yapılmayacaklar
 
@@ -88,6 +98,7 @@ Durumlar:
 - eksik veriyi mock/fallback rakamla doldurmak
 - Pusula AI'ı sayısal hesap otoritesi yapmak
 - lisans/terms belirsiz kodu production'a almak
+- Türkiye kapsamı olmayan veri kaynağına sırf adı güçlü diye adapter yazmak
 
 ## Bir sonraki gerçek kodlama başlangıç noktası
 
