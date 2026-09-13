@@ -102,7 +102,11 @@ export function useHomeFieldSelection({
     const ownedFieldExists = fields.some(
       (item: any) => String(item?.id) === pending.fieldId,
     );
-    if (!ownedFieldExists) return;
+
+    if (!ownedFieldExists) {
+      clearHandledNdviDeepLink();
+      return;
+    }
 
     setFieldId(pending.fieldId);
     clearHandledNdviDeepLink();
