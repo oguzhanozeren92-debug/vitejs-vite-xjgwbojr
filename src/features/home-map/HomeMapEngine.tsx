@@ -5,6 +5,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarClock, Crosshair, History, Layers3, Minus, Plus, Satellite } from 'lucide-react';
 import * as maplibregl from 'maplibre-gl';
 import MapDataDate from '../map-data/components/MapDataDate';
+import SatelliteHistorySheet from '../map-data/components/SatelliteHistorySheet';
+import { useSatelliteHistory } from '../map-data/hooks/useSatelliteHistory';
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../../supabaseClient';
@@ -4779,7 +4781,7 @@ function makeSmoothClimateOverlay(
 export function HomeInlineLayerMap({
   layer,
   field,
-  satelliteData,
+  satelliteData: latestSatelliteData,
   soilProperty,
   soilDepth,
   climateLayer,
@@ -4799,6 +4801,8 @@ export function HomeInlineLayerMap({
     summary: HomeLayerSpatialSummary | null,
   ) => void;
 }) {
+  const history = useSatelliteHistory(field?.id ? String(field.id) : undefined, field?.parcelGeometry);
+  const satelliteData = history.data ?? latestSatelliteData;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const pusulaFocusMarkerRef = useRef<maplibregl.Marker | null>(null);
@@ -4919,6 +4923,7 @@ export function HomeInlineLayerMap({
   useEffect(() => {
     let cancelled = false;
 
+    setSmoothNdvi(null);
     if (!satelliteData?.ndviImage || !bbox) {
       setSmoothNdvi(null);
 
@@ -8093,6 +8098,13 @@ export function HomeInlineLayerMap({
           <Minus size={24} strokeWidth={2.1} />
         </button>
 
+        {layer === 'vegetation' && (
+          <button type="button" className="tp-map-control-btn tp-map-history-label"
+            onClick={() => void history.show()} aria-label="Geçmiş uydu ölçümlerini aç" title="Ölçüm tarihi seç">
+            <History size={21} /><span>Geçmiş</span>
+          </button>
+        )}
+
         <button
           type="button"
           className="tp-map-control-btn"
@@ -8107,6 +8119,13 @@ export function HomeInlineLayerMap({
           <Layers3 size={23} strokeWidth={1.9} />
         </button>
       </div>
+
+      <SatelliteHistorySheet
+        open={history.open} dates={history.dates} loading={history.loading} error={history.error}
+        fieldName={String(field?.name ?? 'Tarlan')}
+        selectedDate={history.data?.latestImageDate}
+        onSelect={date => void history.select(date)} onClose={history.close}
+      />
 
       <div className="tp-map-scale" aria-hidden="true">
         <div className="tp-map-scale-labels">
