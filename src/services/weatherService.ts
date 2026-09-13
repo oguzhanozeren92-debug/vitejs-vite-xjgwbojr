@@ -1,4 +1,5 @@
 import type { Field, WeatherForecastDay } from '../types';
+import { supabase } from '../supabaseClient';
 
 export type WeatherLocation = {
   latitude: number;
@@ -74,57 +75,37 @@ export const geocodeFieldLocation = async (
   return null;
 };
 
-const weatherCodeToCondition = (code: number) => {
-  if (code === 0) return 'Açık';
-  if ([1, 2].includes(code)) return 'Parçalı bulutlu';
-  if (code === 3) return 'Kapalı';
-  if ([45, 48].includes(code)) return 'Sisli';
-  if ([51, 53, 55, 56, 57].includes(code)) return 'Çisenti';
-  if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return 'Yağmurlu';
-  if ([71, 73, 75, 77, 85, 86].includes(code)) return 'Karlı';
-  if ([95, 96, 99].includes(code)) return 'Gök gürültülü';
-  return 'Değişken';
-};
-
-const forecastNumber = (value: unknown): number | null =>
-  value === null || value === undefined || value === '' ||
-  !Number.isFinite(Number(value)) ? null : Number(value);
-
+/**
+ * Eski isim geriye dönük importları kırmamak için korunuyor.
+ * Artık doğrudan tek bir Open-Meteo modelini çağırmaz; production
+ * `weather-compare` Edge Function'ının ECMWF + GFS + ICON consensus
+ * tahminini döndürür. Böylece Home ve Weather ekranı aynı sayıları kullanır.
+ */
 export const fetchOpenMeteoForecast = async (
   latitude: number,
   longitude: number,
 ): Promise<WeatherForecastDay[]> => {
-  const url = new URL('https://api.open-meteo.com/v1/forecast');
-  url.searchParams.set('latitude', String(latitude));
-  url.searchParams.set('longitude', String(longitude));
-  url.searchParams.set(
-    'daily',
-    'weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max',
-  );
-  url.searchParams.set('timezone', 'auto');
-  url.searchParams.set('forecast_days', '5');
-
-  const response = await fetch(url.toString());
-  if (!response.ok) {
-    throw new Error(`Hava servisi yanıt vermedi (${response.status}).`);
+  if (!supabase) {
+    throw new Error('Hava tahmini için Supabase bağlantısı hazır değil.');
   }
 
-  const data = await response.json();
-  const daily = data?.daily;
-  if (!Array.isArray(daily?.time) || daily.time.length === 0) {
-    throw new Error('Hava tahmini alınamadı.');
+  const { data, error } = await supabase.functions.invoke('weather-compare', {
+    body: { latitude, longitude },
+  });
+
+  if (error) {
+    throw new Error(`Hava karşılaştırma servisi yanıt vermedi: ${error.message}`);
   }
 
-  return daily.time.slice(0, 5).map((date: string, index: number) => ({
-    date,
-    tempMin: forecastNumber(daily.temperature_2m_min?.[index]),
-    tempMax: forecastNumber(daily.temperature_2m_max?.[index]),
-    humidity: null,
-    precipitation: forecastNumber(daily.precipitation_sum?.[index]),
-    precipitationProbability: forecastNumber(daily.precipitation_probability_max?.[index]),
-    windSpeed: forecastNumber(daily.wind_speed_10m_max?.[index]),
-    condition: weatherCodeToCondition(Number(daily.weather_code?.[index] ?? -1)),
-  }));
+  const forecast = Array.isArray(data?.forecast)
+    ? (data.forecast as WeatherForecastDay[]).slice(0, 5)
+    : [];
+
+  if (!forecast.length) {
+    throw new Error(data?.message ?? 'Hava tahmini alınamadı.');
+  }
+
+  return forecast;
 };
 
 const getDeviceWeatherLocation = () =>
