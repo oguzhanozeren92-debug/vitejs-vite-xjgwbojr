@@ -58,7 +58,6 @@ const POLICIES: Record<string, CachePolicy> = {
       ),
   },
   'satellite-historical-analysis': {
-    // Tarih sabit olduğu için geçmiş görüntü pratikte immutable kabul edilir.
     refreshAfterMs: 60 * DAY,
     version: (data, body) =>
       String(data?.latestImageDate ?? body?.imageDate ?? 'historical'),
@@ -81,7 +80,6 @@ const POLICIES: Record<string, CachePolicy> = {
       ),
   },
   soilgrids: {
-    // SoilGrids model yüzeyi sık değişmez. Aynı koordinat için tek snapshot.
     refreshAfterMs: 30 * DAY,
     version: (data, body) =>
       [
@@ -124,6 +122,7 @@ const MAX_PERSISTED_ENTRIES = 96;
 
 const memory = new Map<string, BridgeEntry>();
 const inflight = new Map<string, Promise<EdgeInvokeResult<any>>>();
+const publicJsonInflight = new Map<string, Promise<unknown>>();
 const refreshAttemptAt = new Map<string, number>();
 let dbPromise: Promise<IDBDatabase | null> | null = null;
 let hydrationPromise: Promise<void> | null = null;
@@ -244,7 +243,6 @@ async function persist(entry: BridgeEntry) {
     }
   });
 
-  // Basit LRU benzeri temizlik: en yeni 96 snapshot kalsın.
   try {
     const all = [...memory.values()].sort((a, b) => b.savedAt - a.savedAt);
     const overflow = all.slice(MAX_PERSISTED_ENTRIES);
@@ -288,14 +286,10 @@ async function refresh<T>(input: {
   if (existing) return existing as Promise<EdgeInvokeResult<T>>;
 
   const promise = (async () => {
-    const result = await input.originalInvoke<T>(
-      input.functionName,
-      input.options,
-    );
+    const result = await input.originalInvoke<T>(input.functionName, input.options);
 
     if (result.error || result.data == null) {
       if (input.previous?.data !== undefined) {
-        // Ağ/servis hatasında doğru son snapshot ekranda kalır.
         return { data: input.previous.data as T, error: null };
       }
       return result;
@@ -309,8 +303,6 @@ async function refresh<T>(input: {
       input.previous.sourceVersion &&
       sourceVersion === input.previous.sourceVersion
     ) {
-      // Kaynak aynıysa görseli/state'i gereksiz yere değiştirme; yalnız kontrol
-      // zamanını ilerlet ki ekran geçişi tekrar sorgu tetiklemesin.
       const same: BridgeEntry = {
         ...input.previous,
         savedAt: now,
@@ -344,16 +336,6 @@ export async function warmEdgeFunctionDataBridge() {
   await hydrate();
 }
 
-/**
- * Supabase functions.invoke için tek okuma köprüsü.
- *
- * Davranış:
- * - Cache varsa ANINDA son doğru snapshot döner.
- * - Ekran/katman geçişi yeni ağ isteği başlatmaz.
- * - Snapshot belirlenen süreden eskiyse arka planda tek bir refresh yapılır.
- * - Kaynak versiyonu değişmediyse UI verisi değiştirilmez.
- * - Ağ hatasında eski doğru snapshot silinmez.
- */
 export function createEdgeFunctionDataBridge(input: {
   originalInvoke: EdgeInvoker;
   getScope: () => Promise<string>;
@@ -384,7 +366,6 @@ export function createEdgeFunctionDataBridge(input: {
       if (age >= policy.refreshAfterMs) {
         const lastAttempt = refreshAttemptAt.get(key) ?? 0;
 
-        // Aynı stale snapshot için her ekran geçişinde refresh başlatma.
         if (Date.now() - lastAttempt >= Math.min(policy.refreshAfterMs, 30 * 60 * 1000)) {
           refreshAttemptAt.set(key, Date.now());
           void refresh({
@@ -415,4 +396,93 @@ export function createEdgeFunctionDataBridge(input: {
       previous: cached,
     });
   };
+}
+
+function jsonResponseFromSnapshot(data: unknown) {
+  return new Response(JSON.stringify(data), {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-TarlaPusula-Cache': 'snapshot',
+    },
+  });
+}
+
+/**
+ * HomeMap'te halen URL tabanlı olan salt-okuma tarımsal grid isteklerini de
+ * aynı IndexedDB snapshot deposundan geçirir. Bu özellikle ET₀ / 30 günlük
+ * yağış / yüzey sıcaklığı içindir.
+ */
+export async function fetchPublicJsonThroughDataBridge(input: {
+  namespace: string;
+  url: string;
+  nativeFetch: typeof window.fetch;
+  refreshAfterMs?: number;
+}): Promise<Response> {
+  await hydrate();
+
+  const scope = 'public-map';
+  const key = cacheKey(scope, input.namespace, input.url);
+  const cached = memory.get(key) ?? null;
+  const refreshAfterMs = input.refreshAfterMs ?? 6 * HOUR;
+
+  const loadFresh = async () => {
+    const existing = publicJsonInflight.get(key);
+    if (existing) return existing;
+
+    const promise = (async () => {
+      const response = await input.nativeFetch(input.url);
+      if (!response.ok) {
+        throw new Error(`Public map source ${response.status} hatası verdi.`);
+      }
+
+      const data = await response.clone().json();
+      const parsedUrl = new URL(input.url);
+      const sourceVersion = [
+        parsedUrl.searchParams.get('models') ?? 'fixed-model',
+        parsedUrl.searchParams.get('end_date') ?? 'no-date',
+        parsedUrl.searchParams.get('hourly') ?? parsedUrl.searchParams.get('daily') ?? input.namespace,
+      ].join(':');
+
+      const entry: BridgeEntry = {
+        key,
+        scope,
+        functionName: input.namespace,
+        body: input.url,
+        savedAt: Date.now(),
+        sourceVersion,
+        data,
+      };
+
+      await persist(entry);
+      emitSnapshotUpdate(entry);
+      return data;
+    })().finally(() => publicJsonInflight.delete(key));
+
+    publicJsonInflight.set(key, promise);
+    return promise;
+  };
+
+  if (cached) {
+    const age = Date.now() - cached.savedAt;
+    if (age >= refreshAfterMs) {
+      const lastAttempt = refreshAttemptAt.get(key) ?? 0;
+      if (Date.now() - lastAttempt >= Math.min(refreshAfterMs, 30 * 60 * 1000)) {
+        refreshAttemptAt.set(key, Date.now());
+        void loadFresh().catch(() => undefined);
+      }
+    }
+
+    return jsonResponseFromSnapshot(cached.data);
+  }
+
+  try {
+    const data = await loadFresh();
+    return jsonResponseFromSnapshot(data);
+  } catch (error) {
+    if (cached?.data !== undefined) {
+      return jsonResponseFromSnapshot(cached.data);
+    }
+    throw error;
+  }
 }
