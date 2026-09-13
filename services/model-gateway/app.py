@@ -171,6 +171,7 @@ def run_pyfao56_shadow(
             "mode": "shadow",
             "shadow_scope": "reference_et_and_single_kc",
             "engine": "pyfao56",
+            "engine_version": getattr(fao, "__version__", None),
             "field_id": payload.field_id,
             "production_authority": False,
             "full_water_balance_ready": False,
