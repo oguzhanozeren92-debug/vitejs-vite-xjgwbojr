@@ -1,5 +1,7 @@
 import type { Map } from 'maplibre-gl';
 
+const MAP_ANIMATION_STORAGE_KEY = 'tp_settings_map_opening_animation_v1';
+
 function reducedMotionPreferred() {
   return (
     typeof window !== 'undefined' &&
@@ -7,14 +9,22 @@ function reducedMotionPreferred() {
   );
 }
 
+function mapAnimationEnabled() {
+  if (typeof window === 'undefined') return true;
+  try {
+    return window.localStorage.getItem(MAP_ANIMATION_STORAGE_KEY) !== 'off';
+  } catch {
+    return true;
+  }
+}
+
 /**
  * Ana harita her yeni oluşturulduğunda sinematik dünya -> tarla geçişi oynar.
- * Önceki sürüm sessionStorage ile aynı oturumda tekrarını engelliyordu; bu da
- * uygulamayı yeniden açınca veya tarla değiştirince animasyonun kaybolmasına
- * neden oluyordu.
+ * Kullanıcı Ayarlar'dan bu davranışı kapatabilir; işletim sisteminin azaltılmış
+ * hareket tercihi de her zaman önceliklidir.
  */
 export function shouldPlayMapOpening(): boolean {
-  return !reducedMotionPreferred();
+  return mapAnimationEnabled() && !reducedMotionPreferred();
 }
 
 export function openMapAtField(
@@ -45,7 +55,7 @@ export function openMapAtField(
     bearing: 0,
   };
 
-  if (animate && !reducedMotionPreferred()) {
+  if (animate && mapAnimationEnabled() && !reducedMotionPreferred()) {
     map.flyTo({
       ...target,
       duration: 2600,
