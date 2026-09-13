@@ -19,6 +19,7 @@ export type Screen =
   | 'marketHub'
   | 'supportHub'
   | 'agendaHub'
+  | 'knowledgeHub'
   | 'nutritionHub'
   | 'pestGuideHub'
   | 'producerMarketHub'
