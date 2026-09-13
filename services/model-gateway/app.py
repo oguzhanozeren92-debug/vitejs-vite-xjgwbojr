@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date
 import importlib
 import math
 import os
@@ -11,31 +11,30 @@ from pydantic import BaseModel, Field
 
 from engine_registry import ENGINE_REGISTRY
 
-app = FastAPI(title="TarlaPusula Model Gateway", version="0.1.0")
+app = FastAPI(title="TarlaPusula Model Gateway", version="0.2.0")
 
 
 class WeatherDay(BaseModel):
     date: date
-    solar_radiation_mj_m2: float
+    solar_radiation_mj_m2: float = Field(ge=0)
     tmax_c: float
     tmin_c: float
-    rhmax_pct: float
-    rhmin_pct: float
-    wind_m_s: float
-    rain_mm: float = 0.0
+    dew_point_c: float
+    wind_m_s: float = Field(ge=0)
+    rain_mm: float = Field(default=0.0, ge=0)
+    kc: float = Field(gt=0, le=3)
 
 
 class StationInput(BaseModel):
     latitude: float = Field(ge=-90, le=90)
     elevation_m: float
-    wind_height_m: float = Field(gt=0)
+    wind_height_m: float = Field(default=2.0, gt=0)
 
 
 class PyFao56Request(BaseModel):
     field_id: str = Field(min_length=1)
     station: StationInput
-    parameters: dict[str, Any]
-    days: list[WeatherDay] = Field(min_length=2)
+    days: list[WeatherDay] = Field(min_length=1)
 
 
 class EngineReadinessRequest(BaseModel):
@@ -105,77 +104,87 @@ def run_pyfao56_shadow(
     payload: PyFao56Request,
     x_model_gateway_key: str | None = Header(default=None),
 ) -> dict[str, Any]:
+    """Compare pyfao56 reference ET with TarlaPusula's validated daily Kc.
+
+    This first shadow scope intentionally does NOT execute pyfao56.Model. The
+    upstream model has crop/soil defaults that would create synthetic farm
+    assumptions when Kcb, evaporation layer and current soil water are missing.
+    Full root-zone water balance stays blocked until those explicit inputs exist.
+    """
     _authorize(x_model_gateway_key)
 
     if ENGINE_REGISTRY["pyfao56"]["rollout"] not in {"shadow", "pilot", "production"}:
         raise HTTPException(status_code=409, detail="pyfao56 rollout is disabled")
 
-    if "theta0" not in payload.parameters:
-        raise HTTPException(
-            status_code=422,
-            detail="theta0 is required; TarlaPusula will not invent initial soil water content",
-        )
-
     try:
         import pyfao56 as fao
 
         ordered_days = sorted(payload.days, key=lambda item: item.date)
-        weather = fao.Weather(comment="TarlaPusula shadow input")
+        weather = fao.Weather(comment="TarlaPusula ET0 shadow input")
         weather.rfcrp = "S"
         weather.z = payload.station.elevation_m
         weather.lat = payload.station.latitude
         weather.wndht = payload.station.wind_height_m
 
-        keys: list[tuple[str, date]] = []
+        results: list[dict[str, Any]] = []
         for item in ordered_days:
+            if item.tmax_c < item.tmin_c:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Invalid temperature range for {item.date.isoformat()}",
+                )
+
             key = f"{item.date.year}-{item.date.timetuple().tm_yday:03d}"
             weather.wdata.loc[key] = [
                 item.solar_radiation_mj_m2,
                 item.tmax_c,
                 item.tmin_c,
                 math.nan,
+                item.dew_point_c,
                 math.nan,
-                item.rhmax_pct,
-                item.rhmin_pct,
+                math.nan,
                 item.wind_m_s,
                 item.rain_mm,
                 math.nan,
-                "P",
+                "M",
             ]
-            weather.wdata.loc[key, "ETref"] = weather.compute_etref(key)
-            keys.append((key, item.date))
 
-        parameters = fao.Parameters(**payload.parameters)
-        model = fao.Model(keys[0][0], keys[-1][0], parameters, weather)
-        model.run()
+            et0 = float(weather.compute_etref(key))
+            if not math.isfinite(et0):
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"pyfao56 could not compute ET0 for {item.date.isoformat()}",
+                )
 
-        days = []
-        for key, iso_day in keys:
-            row = model.odata.loc[key]
-            days.append(
+            results.append(
                 {
-                    "date": iso_day.isoformat(),
-                    "reference_et_mm": round(float(row["ETref"]), 3),
-                    "crop_et_mm": round(float(row["ETc"]), 3),
-                    "actual_et_mm": round(float(row["ETa"]), 3),
-                    "rain_mm": round(float(row["Rain"]), 3),
-                    "root_zone_depletion_mm": round(float(row["Dr"]), 3),
-                    "readily_available_water_mm": round(float(row["RAW"]), 3),
+                    "date": item.date.isoformat(),
+                    "reference_et_mm": round(et0, 3),
+                    "kc": round(float(item.kc), 4),
+                    "crop_et_mm": round(et0 * float(item.kc), 3),
+                    "rain_mm": round(float(item.rain_mm), 3),
                 }
             )
 
         return {
             "ok": True,
             "mode": "shadow",
+            "shadow_scope": "reference_et_and_single_kc",
             "engine": "pyfao56",
             "field_id": payload.field_id,
             "production_authority": False,
-            "days": days,
+            "full_water_balance_ready": False,
+            "blocked_full_water_balance_inputs": [
+                "validated_basal_kcb",
+                "surface_evaporation_layer",
+                "current_soil_water_state",
+            ],
+            "days": results,
         }
     except HTTPException:
         raise
     except Exception as exc:
-        raise HTTPException(status_code=422, detail=f"pyfao56 run failed: {exc}") from exc
+        raise HTTPException(status_code=422, detail=f"pyfao56 ET0 shadow failed: {exc}") from exc
 
 
 def _readiness(
