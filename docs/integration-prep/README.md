@@ -1,6 +1,6 @@
 # TarlaPusula Entegrasyon Hazırlık Merkezi
 
-Bu klasör, açık kaynak ve harici tarım motorlarını **çalışan uygulamaya dokunmadan** entegrasyona hazır hale getirmek için kullanılır.
+Bu klasör, açık kaynak ve harici tarım motorlarını **çalışan uygulamaya dokunmadan** entegrasyona hazır hale getirmek için kullanılır. Aynı hazırlık alanı, bu motorların ihtiyaç duyduğu gerçek kullanıcı verisini güvenli ve sade biçimde toplayacak harita/Görevlerim UX planlarını da tutar.
 
 ## Ana kural
 
@@ -40,9 +40,13 @@ Bir proje doğrudan `main` uygulama akışına alınmaz. Önce şu kapılardan g
 | `16-upstream-pins.md` | 2026-09-13 exact upstream commit snapshot'ları ve pin güncelleme prosedürü |
 | `17-model-gateway-api.md` | private model gateway HTTP/auth/version/idempotency sözleşmesi |
 | `18-implementation-file-map.md` | sınır kalkınca oluşturulacak/değiştirilecek dosyaların motor bazlı haritası |
-| `19-execution-backlog.md` | uygulanabilir iş kartları, bağımlılıklar ve bitti tanımları |
+| `19-execution-backlog.md` | uygulanabilir motor iş kartları, bağımlılıklar ve bitti tanımları |
 | `20-pusula-evidence-policy.md` | Pusula'nın model/ölçüm/uydu/GBIF kanıtlarını nasıl tartacağı |
 | `21-operations-cost-privacy.md` | compute/API maliyeti, cache, privacy, retention ve failure fallback kapıları |
+| `22-map-fullscreen-history-ux.md` | map-tap tam ekran, ikon temizliği, görünür veri tarihi ve önizlemeli uydu geçmişi |
+| `23-field-tasks-and-pusula-points.md` | Görevlerim domain modeli, eksik veri görevleri ve idempotent Pusula puanı mekanizması |
+| `24-notification-vs-task-routing.md` | actionable işlerin Görevlerim'e, bilgi/uyarıların Bildirimler/Pusula'ya yönlendirilmesi |
+| `25-map-tasks-implementation-plan.md` | exact PR sırası, dosya haritası, migration/reward/test ve non-regression planı |
 | `STATUS.md` | tek bakışta hazırlık ve canlılık durumu |
 
 ## Ortak mimari
@@ -60,6 +64,23 @@ TarlaPusula gerçek verisi
 ```
 
 **Pusula AI hesap motoru değildir.** Sayısal/teknik motorların doğrulanmış sonucunu kullanıcıya açıklar ve birden fazla kanıtı bağlama göre birleştirir.
+
+## Eksik veri -> Görevlerim bağlantısı
+
+Model entegrasyonları için gereken gerçek veri kullanıcıya dağınık popuplar/bildirimler halinde sorulmayacak. Yeni hedef:
+
+```text
+engine/data readiness
+   -> deterministic TaskCandidate
+   -> Görevlerim
+   -> kullanıcı mevcut feature akışında veriyi kaydeder
+   -> server completion doğrulaması
+   -> bir kez Pusula puanı
+   -> task active listeden kalkar
+   -> yeni veri engine/Pusula tarafından kullanılabilir
+```
+
+Dış API arızası veya kullanıcının çözemeyeceği veri eksikliği task yapılmaz.
 
 ## Python motorların sınırı
 
@@ -152,6 +173,8 @@ Bunların server-side uygulanması tercih edilir. **Secret/API credential için 
 - frontend secret görmez.
 - her motor tek hareketle kapatılabilir olmalıdır.
 - yeni motor fail olursa mevcut çalışan TarlaPusula motoru/manuel akış devam eder.
+- task ödülü client'ın gönderdiği puan değerine güvenmez; server rule/completion ile doğrulanır.
+- aynı task/olay için puan dedupe/idempotent olmalıdır.
 
 ## Pusula kanıt kuralı
 
@@ -163,6 +186,30 @@ Pusula şu ayrımı korur:
 - dış/bölgesel gözlem
 
 PCSE tahmini saha gözlemi gibi, GBIF kaydı tarlada varlık gibi, AquaCrop senaryosu garanti verim gibi sunulmaz. Ayrıntı `20-pusula-evidence-policy.md` içinde.
+
+## Bildirim / Görev ayrımı
+
+- **Görev:** kullanıcı bir şey yapacak ve completion kriteri var.
+- **Bildirim:** kullanıcı bir olay/değişiklikten haberdar olacak.
+- **Pusula insight:** kanıtlardan üretilen yorum/öneri.
+
+Eksik veriler varsayılan olarak Bildirimler'e atılmaz; `Görevlerim`de yaşar. Ayrıntı `24-notification-vs-task-routing.md`.
+
+## Harita UX epic'i
+
+Sınır kalkınca önerilen sıra:
+
+```text
+PR-1 map tap fullscreen + fullscreen icon -> Görevlerim
+PR-2 satellite history preview gallery + archive bug
+PR-3 Task Engine core
+PR-4 server persistence + atomic reward
+PR-5 missing-data tasks
+PR-6 notification/task routing
+PR-7 Pusula task context
+```
+
+Exact dosya ve kabul kriterleri `25-map-tasks-implementation-plan.md` içinde.
 
 ## Lisans özeti
 
@@ -184,7 +231,7 @@ Tam matris `10-license-matrix.md` içinde.
 
 ## İlk implementation işleri
 
-`19-execution-backlog.md` kartları kullanılacak:
+Motor işleri `19-execution-backlog.md` kartlarını kullanır:
 
 ```text
 TP-INT-001 common contracts
@@ -198,7 +245,7 @@ TP-INT-060 Disease benchmark
 TP-INT-080 FarmVibes research
 ```
 
-Veri işleri (`TP-DATA-*`) bunlara paralel yürür.
+UX/Görev epic'i `25-map-tasks-implementation-plan.md` sırasını kullanır. Veri işleri (`TP-DATA-*`) Görevlerim üzerinden kullanıcıya dönüştürülebilir.
 
 ## `READY_FOR_IMPLEMENTATION` tanımı
 
@@ -219,4 +266,12 @@ Bir entegrasyon ancak şu maddeler hazırsa uygulama PR'ına geçebilir:
 - [ ] Pusula evidence formatı
 - [ ] privacy ve authorization sınırı
 
-Detaylı durum için `STATUS.md`, uygulama sırası için `11-execution-runbook.md`, exact iş kartları için `19-execution-backlog.md` kullanılır.
+Harita/Görev epic'i için ayrıca:
+- [ ] map fullscreen non-regression planı
+- [ ] satellite history archive + preview contract
+- [ ] task completion condition
+- [ ] server-authoritative reward rule
+- [ ] task/notification routing
+- [ ] duplicate/idempotency test
+
+Detaylı motor durumu için `STATUS.md`, motor sırası için `11-execution-runbook.md`, motor iş kartları için `19-execution-backlog.md`, harita/Görevlerim için `22`–`25` dosyaları kullanılır.
