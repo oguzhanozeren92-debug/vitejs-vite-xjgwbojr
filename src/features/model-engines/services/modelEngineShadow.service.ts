@@ -20,16 +20,15 @@ function mapPyFao56Input(input: PyFao56ShadowInput) {
       elevation_m: input.station.elevationM,
       wind_height_m: input.station.windHeightM,
     },
-    parameters: input.parameters,
     days: input.days.map((day) => ({
       date: day.date,
       solar_radiation_mj_m2: day.solarRadiationMjM2,
       tmax_c: day.tmaxC,
       tmin_c: day.tminC,
-      rhmax_pct: day.rhmaxPct,
-      rhmin_pct: day.rhminPct,
+      dew_point_c: day.dewPointC,
       wind_m_s: day.windMS,
       rain_mm: day.rainMm,
+      kc: day.kc,
     })),
   };
 }
@@ -53,21 +52,30 @@ export async function runPyFao56Shadow(
     throw new Error(data?.error || 'pyfao56 shadow sonucu alınamadı.');
   }
 
+  if (data.shadow_scope !== 'reference_et_and_single_kc') {
+    throw new Error('Beklenmeyen pyfao56 shadow kapsamı döndü.');
+  }
+
   return {
     ok: true,
     mode: 'shadow',
+    shadowScope: 'reference_et_and_single_kc',
     engine: 'pyfao56',
     fieldId: String(data.field_id ?? input.fieldId),
     productionAuthority: false,
+    fullWaterBalanceReady: false,
+    blockedFullWaterBalanceInputs: Array.isArray(
+      data.blocked_full_water_balance_inputs,
+    )
+      ? data.blocked_full_water_balance_inputs.map(String)
+      : [],
     days: Array.isArray(data.days)
       ? data.days.map((day: any) => ({
           date: String(day.date),
           referenceEtMm: Number(day.reference_et_mm),
+          kc: Number(day.kc),
           cropEtMm: Number(day.crop_et_mm),
-          actualEtMm: Number(day.actual_et_mm),
           rainMm: Number(day.rain_mm),
-          rootZoneDepletionMm: Number(day.root_zone_depletion_mm),
-          readilyAvailableWaterMm: Number(day.readily_available_water_mm),
         }))
       : [],
   };
