@@ -1,48 +1,94 @@
 # Entegrasyon Hazırlık Durumu
 
-Bu tablo **uygulamada çalışıyor mu?** değil, **entegrasyona ne kadar hazırız?** sorusunu izler.
+Bu tablo iki şeyi ayırır:
+
+1. **Uygulamada gerçekten çalışıyor mu?**
+2. **Entegrasyona ne kadar hazırız?**
 
 Durumlar:
 - `LIVE` — TarlaPusula akışında gerçekten kullanılıyor.
-- `PILOT_READY` — Çalışan bağımsız PoC var, canlı akışa bağlı değil.
-- `PREP` — Entegrasyon tasarımı/veri hazırlığı var, çalışan üçüncü taraf model yok.
-- `HOLD` — Mevcut sistem aynı işi yaptığı için şimdilik eklenmeyecek.
-- `RESEARCH` — Değer ve lisans/teknik uygunluk araştırılacak.
+- `PILOT_READY` — bağımsız çalışan PoC var; canlı karara bağlı değil.
+- `PREP` — adapter/veri/test/uygulama planı hazır; çalışan üçüncü taraf model hattı henüz yok.
+- `RESEARCH` — değer/kapsama/teknik uygunluk ayrıca doğrulanacak.
+- `HOLD` — mevcut TarlaPusula sistemi aynı işi yaptığı için ölçülebilir üstünlük olmadan eklenmeyecek.
+- `REFERENCE` — kod bağımlılığı değil; veri modeli/mimari/formül referansı.
+- `REMOVED` — exact upstream veya somut katkı doğrulanmadığı için aktif kuyrukta değil.
 
-| Motor / Kaynak | Ürün amacı | Bugünkü gerçek durum | Hazırlık durumu | Canlıya geçmeden gereken ana kanıt |
-|---|---|---|---|---|
-| GBIF Occurrence API | Yakındaki geçmiş zararlı/tür gözlemleri | `field-biodiversity-context` üzerinden canlı kullanım var | LIVE | Veri yaşı/mesafe/koordinat belirsizliğini kullanıcıya doğru aktarmaya devam et |
-| pyfao56 | Referans ET ve su dengesi karşılaştırması | Bağımsız PoC var | PILOT_READY | Aynı gün/konum/hava/Kc ile uygulama ET₀ karşılaştırması + gerçek sulama geçmişi |
-| PCSE / WOFOST | Fenoloji, büyüme ve sezon modelleme | Resmi demo veriyle çalışan PoC var | PILOT_READY | Aynı yıllık ürün için tam sezon hava + toprak/site + agromanagement + saha evre gözlemleri |
-| AquaCrop-OSPy | Su-verim / sulama senaryosu | Çalışan model hattı yok | PREP | Yıllık ürün tam sezon veri seti + en az iki sulama senaryosu + ölçülmüş sezon sonucu |
-| Copernicus Data Space Sentinel-2 | NDVI/zaman serisi | Kendi Edge akışımız canlı | LIVE | Bulut maskesi, tarih tazeliği, parsel piksel yeterliliği izlenmeli |
-| sentinelhub-py | Uydu istemci kütüphanesi | Kurulu değil | HOLD | Mevcut Copernicus akışına ölçülebilir kalite/operasyon avantajı göstermeli |
-| eo-learn | EO zaman serisi/ML pipeline | Kurulu değil | HOLD | Mevcut TS/Edge zaman serisine karşı ölçülebilir üstünlük göstermeli |
-| OpenAgri Irrigation | Sulama karar altyapısı | Paket bağlı değil; kendi motorumuz var | HOLD | Kendi Irrigation Engine'e karşı benchmark üstünlüğü göstermeli |
-| OpenAgri Weather | Hava altyapısı | Paket bağlı değil; kendi hava katmanımız var | HOLD | Mevcut sağlayıcılara göre veri/kararlılık üstünlüğü göstermeli |
-| OpenAgri FarmCalendar | Operasyon/takvim | Paket bağlı değil; kendi takvim/plan yapımız var | HOLD | Gerçek eksikliği çözmeli; yalnızca benzerlik yetmez |
-| AgStack Asset Registry | Tarla kimliği/interoperability | Entegrasyon yok | RESEARCH | Dış sistemlerle kalıcı kimlik ihtiyacı ve lisans/operasyon faydası |
-| AutoGeoBound benzeri sınır modeli | Otomatik parsel sınırı önerisi | Entegrasyon yok | PREP | Türkiye örneklerinde IoU/Boundary-F1 + kullanıcı onaylı düzeltme akışı |
-| AgML | Tarımsal ML veri/model araçları | Eğitim/çıkarım hattı yok | RESEARCH | Hastalık teşhisinde mevcut AI akışından daha iyi doğrulanmış benchmark |
-| PlantVillage | Hastalık veri seti | Repo/model entegrasyonu yok | RESEARCH | Kullanım lisansı + Türkiye bitki/hastalık kapsaması + domain-shift testi |
-| FarmVibes.AI | Çok kaynaklı tarımsal analiz | Entegrasyon yok | RESEARCH | Tekil modüllerin mevcut motorlara ek değer göstermesi |
-| OpenET | ET veri kaynağı | Doğrudan entegrasyon yok | RESEARCH | Türkiye kapsaması, veri gecikmesi ve mevcut ET hattına fayda |
-| geemap | EO/GEE yardımcı araçları | Entegrasyon yok | HOLD | Üretim hattında gerçekten gerekli kullanım alanı çıkmalı |
-| farmOS | Veri modeli/farm management referansı | Kod entegrasyonu yok | HOLD | Sadece ihtiyaç duyulan şema fikirleri alınabilir; komple sistem gerekmez |
-| agro-gis | GIS referansı | Entegrasyon izi yok | RESEARCH | Somut modül ve lisans doğrulaması |
-| YieldStack | Verim modelleme adayı | Entegrasyon izi yok | RESEARCH | Repo kimliği, bakım durumu, lisans ve benchmark |
-| AgriGuard | Hastalık/risk adayı | Entegrasyon izi yok | RESEARCH | Repo kimliği, bakım durumu, lisans ve benchmark |
+| Motor / Kaynak | Ürün amacı | Gerçek uygulama durumu | Hazırlık | Canlıya geçmeden ana kanıt |
+| --- | --- | --- | --- | --- |
+| GBIF Occurrence API | geçmiş zararlı/tür gözlemleri | canlı | `LIVE` | veri yaşı/mesafe/koordinat belirsizliğini doğru taşımaya devam et |
+| Copernicus Sentinel-2 | NDVI/zaman serisi | kendi Edge hattımız canlı | `LIVE` | tarih, bulut/valid pixel ve tazelik kalite kontrolünü koru |
+| pyfao56 | FAO-56 ET/su dengesi doğrulaması | bağımsız PoC var | `PILOT_READY` | aynı input ile shadow benchmark + gerçek sulama kaydı |
+| PCSE/WOFOST | fenoloji/büyüme/sezon modeli | resmi demo ile PoC var | `PILOT_READY` | gerçek yıllık ürün: tam sezon hava + toprak/site + saha evreleri |
+| AquaCrop-OSPy | su-verim/sulama senaryosu | canlı model hattı yok | `PREP` | gerçek sezon + sulama kayıtları + ölçülen sonuç |
+| AutoGeoBound | otomatik parsel sınırı önerisi | entegrasyon yok | `PREP` | Türkiye örneklerinde IoU/area error + kullanıcı düzeltme UX'i |
+| OpenAgri Pest&Disease | GDD/risk index | entegrasyon yok | `PREP` | kendi hava girdimizle benchmark + GBIF/fotoğraf bağlamında güvenli yorum |
+| AgML / PlantVillage | hastalık görüntü modeli | eğitim/çıkarım hattı yok | `RESEARCH` | gerçek saha fotoğraflarında mevcut AI'dan daha iyi benchmark |
+| OpenET | bağımsız ET gözlemi | doğrudan entegrasyon yok | `RESEARCH` | Türkiye kapsaması + gecikme + mevcut ETc hattına ek değer |
+| FarmVibes.AI | çok kaynaklı geospatial analiz | entegrasyon yok | `RESEARCH` | tekil modül mevcut motorlardan daha iyi sonuç göstermeli |
+| AgStack Asset Registry | dış GeoID/interoperability | entegrasyon yok | `RESEARCH` | gerçek dış sistem ihtiyacı + lisans/operasyon doğrulaması |
+| sentinelhub-py | uydu sağlayıcı istemcisi | kurulu değil | `HOLD` | mevcut Copernicus hattına kalite/operasyon üstünlüğü |
+| eo-learn | EO zaman serisi/ML pipeline | kurulu değil | `HOLD` | anomali/multi-sensor işinde ölçülebilir üstünlük |
+| Sentinel Hub custom-scripts | indeks/görselleştirme referansı | kurulu değil | `REFERENCE` | doğrudan kopyalanırsa CC-BY-SA-4.0 etkisi ayrıca incelenir |
+| OpenAgri WeatherService | hava/ilaçlama/THI | bağlı değil; kendi hava sistemimiz var | `HOLD` | mevcut sistemde çözülemeyen somut yetenek |
+| OpenAgri IrrigationManagement | ETo/toprak nemi | bağlı değil; kendi Irrigation Engine var | `REFERENCE` | kendi motorumuza karşı benchmark faydası |
+| OpenAgri FarmCalendar | operasyon/takvim modeli | bağlı değil; kendi calendar/operations var | `REFERENCE` | sadece şema/event fikirleri gerekirse alınır |
+| geemap | GEE/EO araştırma aracı | production'da yok | `REFERENCE` | notebook/R&D için; mobil runtime'a eklenmez |
+| farmOS | farm record/data model | kod entegrasyonu yok | `REFERENCE` | yalnızca veri modeli/audit fikirleri |
+| agro-gis | belirsiz GIS adayı | exact hedef repo net değil | `REMOVED` | exact URL + yeni yetenek + lisans olmadan geri gelmez |
+| YieldStack | verim modeli adayı | güvenilir tekil upstream doğrulanmadı | `REMOVED` | exact repo olmadan aktif kuyruk yok |
+| AgriGuard | risk/hastalık adayı | aynı isimde çok sayıda bağımsız demo var | `REMOVED` | exact upstream olmadan aktif kuyruk yok |
+| Crop AI / CropGuard-like demos | UX/model fikirleri | production dependency değil | `REFERENCE` | sadece fikir/benchmark; lisansı belirsiz kod/model alınmaz |
+
+## Hazır dokümanlar
+
+- `01-pyfao56.md`
+- `02-pcse.md`
+- `03-aquacrop.md`
+- `04-autogeobound.md`
+- `05-disease-models.md`
+- `06-farmvibes-agstack.md`
+- `07-satellite-data-stack.md`
+- `08-openagri-services.md`
+- `09-remaining-candidates.md`
+- `10-license-matrix.md`
+- `11-execution-runbook.md`
+- `12-common-contracts-and-schema.md`
+- `13-validation-test-matrix.md`
+- `14-feature-flags-and-env.md`
+- `15-data-readiness.md`
 
 ## Uygulama sırası
 
-1. pyfao56 doğrulaması
-2. PCSE gerçek tarla pilotu
-3. AquaCrop yıllık ürün pilotu
-4. Otomatik tarla sınırı benchmarkı
-5. Hastalık modeli benchmarkı (AgML/PlantVillage veya daha uygun model)
-6. FarmVibes modül bazlı değerlendirme
-7. AgStack yalnızca interoperability ihtiyacı doğarsa
+### P0
+1. pyfao56 shadow doğrulaması
+2. PCSE gerçek tarla/yıllık ürün pilotu
 
-## HOLD listesini neden koruyoruz?
+### P1
+3. AquaCrop sezon/sulama senaryosu
+4. AutoGeoBound öneri/düzeltme pilotu
+5. OpenAgri Pest&Disease GDD/risk benchmarkı
 
-`HOLD` başarısız demek değildir. TarlaPusula'nın zaten çalışan bir sistemi varsa yeni bağımlılık eklemek bakım, lisans, maliyet ve hata yüzeyini artırır. Yeni araç yalnızca ölçülebilir fayda sağlıyorsa alınır.
+### P2
+6. AgML / hastalık modeli benchmarkı
+7. OpenET ET validation
+8. FarmVibes seçili modüller
+
+### İhtiyaç doğarsa
+9. Asset Registry / GeoID
+10. eo-learn
+11. sentinelhub-py
+
+## Hazırlık döneminde yapılmayacaklar
+
+- çalışan `main` ürün akışına üçüncü taraf motor bağlamak
+- sırf repo popüler diye mevcut çalışan servisi değiştirmek
+- model sonuçlarını doğrudan React component'te hesaplamak/çağırmak
+- gerçek kullanıcı verisini fixture olarak commit etmek
+- eksik veriyi mock/fallback rakamla doldurmak
+- Pusula AI'ı sayısal hesap otoritesi yapmak
+- lisans/terms belirsiz kodu production'a almak
+
+## Bir sonraki gerçek kodlama başlangıç noktası
+
+Sınır kalktığında ilk uygulama PR'ı `feat/pyfao56-shadow` olmalıdır. Bu PR canlı sulama kararını değiştirmeden yalnızca aynı veride karşılaştırmalı run, kalite kaydı ve telemetry üretmelidir.
