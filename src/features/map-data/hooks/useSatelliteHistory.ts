@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { SatelliteHealthResult } from '../../../lib/satelliteService';
 import {
+  clearSatelliteHistoryPreviewCache,
   fetchHistoricalSatellite,
   listSatelliteDates,
 } from '../services/satelliteHistory';
@@ -34,6 +35,7 @@ export function useSatelliteHistory(
     setLoading(false);
     setPreviewLoading(false);
     cache.current.clear();
+    clearSatelliteHistoryPreviewCache();
     return () => {
       request.current++;
     };
@@ -48,9 +50,6 @@ export function useSatelliteHistory(
     setPreviewLoading(true);
 
     try {
-      // Full historical result is cached. The same payload is reused if the
-      // user taps the card, so preview warming does not duplicate that date's
-      // later request. Sequential fetch also avoids hammering Copernicus.
       for (const date of previewDates.slice(0, PREVIEW_LIMIT)) {
         if (requestId !== request.current) return;
         if (cache.current.has(date)) {
