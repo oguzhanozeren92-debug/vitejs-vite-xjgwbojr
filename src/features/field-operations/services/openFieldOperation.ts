@@ -5,12 +5,20 @@ import {
 
 export const FIELD_OPERATION_OPEN_EVENT = 'tp:open-field-operation';
 
+export type FieldOperationCompletionLink =
+  | {
+      kind: 'calendar-reminder';
+      id: string;
+    }
+  | null;
+
 export type OpenFieldOperationRequest = {
   fieldId: string;
   fieldName: string;
   type?: FieldOperationType | string;
   date?: string;
   source?: string;
+  completion?: FieldOperationCompletionLink;
 };
 
 /**
@@ -31,6 +39,10 @@ export function openFieldOperation(input: OpenFieldOperationRequest) {
         type: normalizeFieldOperationType(input.type ?? 'Diğer'),
         date: input.date,
         source: String(input.source ?? 'unknown'),
+        completion:
+          input.completion?.kind === 'calendar-reminder' && input.completion.id
+            ? { kind: 'calendar-reminder', id: String(input.completion.id) }
+            : null,
       },
     }),
   );
