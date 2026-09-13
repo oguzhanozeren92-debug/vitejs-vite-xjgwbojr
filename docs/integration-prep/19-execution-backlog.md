@@ -7,6 +7,7 @@ Bu backlog sınır/uygulama zamanı geldiğinde sırayla yürütülecek işlerdi
 - `BLOCKED`: veri/altyapı eksik, başlamamalı.
 - `READY`: hazırlık dokümanları yeterli, implementation başlayabilir.
 - `SHADOW FIRST`: canlı kullanıcı kararına dokunmadan kıyas yapılır.
+- `REFERENCE`: aktif implementation işi değildir.
 
 ---
 
@@ -204,6 +205,7 @@ Tek bir yıllık ürün tarlası için:
 
 ### Kapsam
 - dataset/model shortlist
+- PlantVillage dahil her dataset/model ağırlığı için ayrı lisans kaydı
 - public benchmark + real-field holdout
 - confusion matrix
 - high-confidence wrong rate
@@ -214,26 +216,18 @@ Mevcut teşhis akışından ölçülebilir fayda göstermeden production modeli 
 
 ---
 
-## TP-INT-070 — OpenET validation
+## TP-INT-070 — OpenET
 
-**Durum:** RESEARCH
+**Durum:** REFERENCE — ACTIVE BACKLOG'DAN ÇIKARILDI
 
-### Ön araştırma
-- Türkiye coverage
-- data latency
-- API/terms
-- spatial/temporal resolution
+OpenET resmi materyalleri tarla düzeyi ET platformunu Batı ABD / 17 batı eyaleti bağlamında tanımlıyor. TarlaPusula Türkiye'de çalıştığı için şu anda adapter/API implementasyonu yapılmayacak.
 
-### Kapsam
-Aynı dönem:
-- OpenET
-- app ET0/ETc
-- rain
-- irrigation record
-- soil moisture if available
+### Yeniden açma şartı
+- resmi Türkiye/global kapsama,
+- veya Türkiye'de aynı metodoloji/kalitede kullanılabilir açık servis bulunması.
 
-### Kabul
-Yalnız yardımcı ET evidence olarak başlar.
+### Korunan değer
+OpenET doğrulama raporları ve çoklu ET model/ensemble yaklaşımı metodoloji referansı olarak incelenebilir.
 
 ---
 
@@ -356,7 +350,9 @@ TP-INT-040 AutoGeoBound
         |
 TP-INT-050 Pest Risk
         |
-P2 araştırmalar
+TP-INT-060 disease benchmark
+        |
+TP-INT-080 FarmVibes research
 ```
 
 AutoGeoBound ve Pest Risk, veri/kapasite uygunsa PCSE/AquaCrop'tan bağımsız paralel yürütülebilir; fakat aynı anda çok motoru live akışa sokmayacağız.
