@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import * as maplibregl from 'maplibre-gl';
+import { mapRuntime } from '../../lib/mapRuntime';
 import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { Field } from '../../types';
@@ -1008,7 +1009,7 @@ function SoilGeoMap({
       longitude: 35.2433,
     };
 
-    const map = new maplibregl.Map({
+    const map = new mapRuntime.Map({
       container,
       center: [fallback.longitude, fallback.latitude],
       zoom: parcelBounds ? 16 : 8,
@@ -1041,7 +1042,7 @@ function SoilGeoMap({
 
     addTarlaCompass(map, 'top-right');
     map.addControl(
-      new maplibregl.NavigationControl({
+      new mapRuntime.NavigationControl({
         showCompass: false,
         visualizePitch: false,
       }),
@@ -1219,7 +1220,7 @@ function VegetationGeoMap({
       longitude: 35.2433,
     };
 
-    const map = new maplibregl.Map({
+    const map = new mapRuntime.Map({
       container,
       center: [fallback.longitude, fallback.latitude],
       zoom: parcelBounds ? 16 : 8,
@@ -1252,7 +1253,7 @@ function VegetationGeoMap({
 
     addTarlaCompass(map, 'top-right');
     map.addControl(
-      new maplibregl.NavigationControl({
+      new mapRuntime.NavigationControl({
         showCompass: false,
         visualizePitch: false,
       }),
@@ -1446,7 +1447,7 @@ function RadarGeoMap({
       longitude: 35.2433,
     };
 
-    const map = new maplibregl.Map({
+    const map = new mapRuntime.Map({
       container,
       center: [fallback.longitude, fallback.latitude],
       zoom: parcelBounds ? 15.5 : 8,
@@ -1477,7 +1478,7 @@ function RadarGeoMap({
 
     addTarlaCompass(map, 'top-right');
     map.addControl(
-      new maplibregl.NavigationControl({
+      new mapRuntime.NavigationControl({
         showCompass: false,
         visualizePitch: false,
       }),
@@ -1882,7 +1883,7 @@ function ClimateGeoMap({
       longitude: 35.2433,
     };
 
-    const map = new maplibregl.Map({
+    const map = new mapRuntime.Map({
       container,
       center: [fallback.longitude, fallback.latitude],
       zoom: parcelBounds ? 16 : 8,
@@ -1915,7 +1916,7 @@ function ClimateGeoMap({
 
     addTarlaCompass(map, 'top-right');
     map.addControl(
-      new maplibregl.NavigationControl({
+      new mapRuntime.NavigationControl({
         showCompass: false,
         visualizePitch: false,
       }),

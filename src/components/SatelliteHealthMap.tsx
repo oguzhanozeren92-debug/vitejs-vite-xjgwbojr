@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
+import { mapRuntime } from '../lib/mapRuntime';
 import type { GeoJSONSource, Map as MapLibreMap } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { SatelliteHealthResult } from '../lib/satelliteService';
@@ -104,7 +105,7 @@ export default function SatelliteHealthMap({
     let map: MapLibreMap;
 
     try {
-      map = new maplibregl.Map({
+      map = new mapRuntime.Map({
         container: mapContainerRef.current,
         style: SATELLITE_STYLE,
         center,
@@ -124,7 +125,7 @@ export default function SatelliteHealthMap({
     mapRef.current = map;
 
     map.addControl(
-      new maplibregl.NavigationControl({
+      new mapRuntime.NavigationControl({
         showCompass: false,
         visualizePitch: false,
       }),
@@ -132,7 +133,7 @@ export default function SatelliteHealthMap({
     );
 
     map.addControl(
-      new maplibregl.AttributionControl({ compact: true }),
+      new mapRuntime.AttributionControl({ compact: true }),
       'bottom-right',
     );
 

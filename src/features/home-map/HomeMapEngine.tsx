@@ -1,3 +1,5 @@
+import { shouldPlayMapOpening, openMapAtField } from '../map-opening/mapOpening';
+import { mapRuntime } from '../../lib/mapRuntime';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CalendarClock, Crosshair, History, Layers3, Minus, Plus, Satellite } from 'lucide-react';
 import * as maplibregl from 'maplibre-gl';
@@ -2277,7 +2279,7 @@ function InteractiveHomeHealthMap({
       ? [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2]
       : [35.2433, 38.9637];
 
-    const map = new maplibregl.Map({
+    const map = new mapRuntime.Map({
       container,
       style: HOME_SATELLITE_STYLE,
       center,
@@ -2296,7 +2298,7 @@ function InteractiveHomeHealthMap({
     mapRef.current = map;
 
     map.addControl(
-      new maplibregl.NavigationControl({
+      new mapRuntime.NavigationControl({
         showCompass: false,
         visualizePitch: false,
       }),
@@ -5497,11 +5499,13 @@ export function HomeInlineLayerMap({
     const container = containerRef.current;
     if (!container) return;
 
-    const map = new maplibregl.Map({
+    const playOpening = shouldPlayMapOpening();
+    let userInteracted = false;
+    const map = new mapRuntime.Map({
       container,
       style: HOME_SATELLITE_STYLE,
-      center: [fieldCenter.longitude, fieldCenter.latitude],
-      zoom: bbox ? 14.2 : 10,
+      center: playOpening ? [20, 25] : [fieldCenter.longitude, fieldCenter.latitude],
+      zoom: playOpening ? 2 : bbox ? 14.2 : 10,
       pitch: 0,
       bearing: 0,
       minZoom: 2,
@@ -5514,7 +5518,15 @@ export function HomeInlineLayerMap({
     });
 
     mapRef.current = map;
-
+    const stopOpening = (event: { originalEvent?: unknown }) => {
+      if (event.originalEvent) {
+        userInteracted = true;
+        map.stop();
+      }
+    };
+    map.on('mousedown', stopOpening);
+    map.on('touchstart', stopOpening);
+    map.on('wheel', stopOpening);
 
     addTarlaCompass(map, 'bottom-right');
 
@@ -5567,20 +5579,8 @@ export function HomeInlineLayerMap({
         });
       }
 
-      if (bbox) {
-        map.fitBounds(
-          [
-            [bbox[0], bbox[1]],
-            [bbox[2], bbox[3]],
-          ],
-          {
-            padding: { top: 18, right: 18, bottom: 30, left: 18 },
-            maxZoom: 18.35,
-            pitch: 0,
-            bearing: 0,
-            duration: 0,
-          }
-        );
+      if (!userInteracted) {
+        openMapAtField(map, [fieldCenter.longitude, fieldCenter.latitude], bbox, playOpening);
       }
     });
 
@@ -5734,7 +5734,7 @@ export function HomeInlineLayerMap({
           });
         });
 
-        const marker = new maplibregl.Marker({
+        const marker = new mapRuntime.Marker({
           element: button,
           anchor: 'center',
         })
@@ -6500,7 +6500,7 @@ export function HomeInlineLayerMap({
 
           try {
             pusulaFocusMarkerRef.current =
-              new maplibregl.Marker({
+              new mapRuntime.Marker({
                 element: label,
                 anchor: 'bottom',
                 offset: [0, -7],

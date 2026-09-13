@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
+import { mapRuntime } from '../lib/mapRuntime';
 import type { GeoJSONSource, Map } from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -146,7 +147,7 @@ export default function FieldMap({
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
-    const map = new maplibregl.Map({
+    const map = new mapRuntime.Map({
       container: mapContainerRef.current,
 
       center: initialCenter,
@@ -354,14 +355,14 @@ export default function FieldMap({
     mapRef.current = map;
 
     map.addControl(
-      new maplibregl.NavigationControl({
+      new mapRuntime.NavigationControl({
         visualizePitch: true,
       }),
       'bottom-right',
     );
 
     map.addControl(
-      new maplibregl.ScaleControl({
+      new mapRuntime.ScaleControl({
         maxWidth: 120,
 
         unit: 'metric',

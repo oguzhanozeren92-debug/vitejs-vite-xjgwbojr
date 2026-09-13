@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
+import { mapRuntime } from '../../lib/mapRuntime';
 import type { GeoJSONSource, Map } from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -341,7 +342,7 @@ export default function DemMapScreen({
         longitude: 35,
       };
 
-    const map = new maplibregl.Map({
+    const map = new mapRuntime.Map({
       container: mapContainer.current,
       center: [
         start.longitude,
@@ -373,7 +374,7 @@ export default function DemMapScreen({
     });
 
     map.addControl(
-      new maplibregl.NavigationControl(),
+      new mapRuntime.NavigationControl(),
       'top-right',
     );
 
@@ -441,7 +442,7 @@ export default function DemMapScreen({
 
           if (!properties) return;
 
-          new maplibregl.Popup({
+          new mapRuntime.Popup({
             closeButton: false,
             offset: 8,
           })

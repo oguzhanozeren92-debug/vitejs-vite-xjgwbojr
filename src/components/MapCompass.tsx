@@ -20,7 +20,7 @@ class TarlaCompassControl implements IControl {
 
     const container = document.createElement('div');
     container.className =
-      'maplibregl-ctrl maplibregl-ctrl-group tp-map-compass';
+      'maplibregl-ctrl maplibregl-ctrl-group mapboxgl-ctrl mapboxgl-ctrl-group tp-map-compass';
 
     const button = document.createElement('button');
     button.type = 'button';

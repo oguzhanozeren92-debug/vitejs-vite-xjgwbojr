@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
+import { mapRuntime } from '../../lib/mapRuntime';
 import type { GeoJSONSource, Map } from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -192,7 +193,7 @@ export default function Era5MapScreen({
       ? [coords.longitude, coords.latitude]
       : [35.2433, 38.9637];
 
-    const map = new maplibregl.Map({
+    const map = new mapRuntime.Map({
       container: mapContainerRef.current,
       center,
       zoom: coords ? 9.2 : 5.2,
@@ -252,7 +253,7 @@ export default function Era5MapScreen({
       },
     });
 
-    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+    map.addControl(new mapRuntime.NavigationControl({ visualizePitch: true }), 'top-right');
 
     map.on('click', 'era5-fill', (event) => {
       const feature = event.features?.[0];
@@ -260,7 +261,7 @@ export default function Era5MapScreen({
       const value = finite(feature.properties?.value);
       const unit = String(feature.properties?.unit ?? '');
       const model = String(feature.properties?.model ?? 'ERA5');
-      new maplibregl.Popup({ closeButton: true, closeOnClick: true })
+      new mapRuntime.Popup({ closeButton: true, closeOnClick: true })
         .setLngLat(event.lngLat)
         .setHTML(
           `<div style="font:12px system-ui;color:#122018"><strong>${selectedVariable.short}</strong><br/>${value === null ? 'Veri yok' : `${value.toFixed(variable.includes('moisture') ? 3 : 1)} ${unit}`}<br/><span style="opacity:.7">${model}</span></div>`,

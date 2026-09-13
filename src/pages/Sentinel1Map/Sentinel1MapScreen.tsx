@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as maplibregl from 'maplibre-gl';
+import { mapRuntime } from '../../lib/mapRuntime';
 import type { GeoJSONSource, ImageSource, Map } from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -200,7 +201,7 @@ export default function Sentinel1MapScreen({
       longitude: 35,
     };
 
-    const map = new maplibregl.Map({
+    const map = new mapRuntime.Map({
       container: mapContainer.current,
       center: [start.longitude, start.latitude],
       zoom: coords ? 13.5 : 5.2,
@@ -227,7 +228,7 @@ export default function Sentinel1MapScreen({
       },
     });
 
-    map.addControl(new maplibregl.NavigationControl(), 'top-right');
+    map.addControl(new mapRuntime.NavigationControl(), 'top-right');
 
     map.on('load', () => {
       map.addSource('s1-parcel', {
