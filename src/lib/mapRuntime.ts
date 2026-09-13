@@ -56,10 +56,7 @@ const PATCH_FLAG = Symbol.for('tarlapusula.stable-image-source-patch.v2');
 const PENDING_SOURCE_REMOVALS = Symbol.for('tarlapusula.pending-image-source-removals');
 const PENDING_LAYER_REMOVALS = Symbol.for('tarlapusula.pending-image-layer-removals');
 
-type StableMap = any & {
-  [PENDING_SOURCE_REMOVALS]?: Set<string>;
-  [PENDING_LAYER_REMOVALS]?: Set<string>;
-};
+type StableMap = any;
 
 function pendingSources(map: StableMap) {
   if (!map[PENDING_SOURCE_REMOVALS]) {
