@@ -2,6 +2,7 @@ import MobileWheelPicker from '../components/MobileWheelPicker';
 import PcsePilotReadiness from '../features/field-detail/components/PcsePilotReadiness';
 import FieldGrowthObservations from '../features/field-detail/components/FieldGrowthObservations';
 import SeasonModelInputs from '../features/field-detail/components/SeasonModelInputs';
+import FieldCostSummary from '../features/field-detail/components/FieldCostSummary';
 import { useEffect, useState } from 'react';
 import './FieldDetailLayout.css';
 import { getEntitlementSnapshot } from '../entitlements/useEntitlementStore';
@@ -248,7 +249,7 @@ export default function FieldDetailScreen(props: FieldDetailScreenProps) {
                   <span aria-hidden="true">›</span>
                 </button>
                 <button type="button" onClick={() => setActiveDetailTab('history')}>
-                  <span><strong>Yapılan işlemler</strong><small>{activitiesLoading ? 'Kayıtlar yükleniyor…' : `${activities.length} işlem kayıtlı`}</small></span>
+                  <span><strong>İşlemler ve masraflar</strong><small>{activitiesLoading ? 'Kayıtlar yükleniyor…' : `${activities.length} işlem · masraf özetini gör`}</small></span>
                   <span aria-hidden="true">›</span>
                 </button>
                 {!selectedField.demo && (
@@ -1006,6 +1007,13 @@ export default function FieldDetailScreen(props: FieldDetailScreenProps) {
                   </button>
                 )}
               </div>
+
+              {!selectedField.demo && <FieldCostSummary
+                activities={activities}
+                area={selectedField.area}
+                loading={activitiesLoading}
+                onAdd={() => openActivityForm('Diğer')}
+              />}
 
               {activitiesLoading ? (
                 <div className="tp-section-loading">İşlemler yükleniyor...</div>
