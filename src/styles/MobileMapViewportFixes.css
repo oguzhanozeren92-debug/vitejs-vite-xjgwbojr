@@ -1,3 +1,5 @@
+@import './TarlaPusulaProfessionalSystem.css';
+
 /* Mobile map viewport fixes — especially iOS Safari dynamic browser chrome. */
 
 .tp-map-first-shell .tp-map-stage.tp-map-portrait-fullscreen {
