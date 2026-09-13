@@ -37,6 +37,12 @@ Bir proje doğrudan `main` uygulama akışına alınmaz. Önce şu kapılardan g
 | `13-validation-test-matrix.md` | motor bazlı fixture, benchmark ve kabul testleri |
 | `14-feature-flags-and-env.md` | feature flag, secrets, timeout, cache, kill switch |
 | `15-data-readiness.md` | model bazlı minimum gerçek veri gereksinimleri |
+| `16-upstream-pins.md` | 2026-09-13 exact upstream commit snapshot'ları ve pin güncelleme prosedürü |
+| `17-model-gateway-api.md` | private model gateway HTTP/auth/version/idempotency sözleşmesi |
+| `18-implementation-file-map.md` | sınır kalkınca oluşturulacak/değiştirilecek dosyaların motor bazlı haritası |
+| `19-execution-backlog.md` | uygulanabilir iş kartları, bağımlılıklar ve bitti tanımları |
+| `20-pusula-evidence-policy.md` | Pusula'nın model/ölçüm/uydu/GBIF kanıtlarını nasıl tartacağı |
+| `21-operations-cost-privacy.md` | compute/API maliyeti, cache, privacy, retention ve failure fallback kapıları |
 | `STATUS.md` | tek bakışta hazırlık ve canlılık durumu |
 
 ## Ortak mimari
@@ -93,6 +99,22 @@ Deployment sağlayıcısı daha sonra seçilebilir; uygulama sözleşmesi sağla
 | HOLD | geemap | R&D/notebook aracı, production dependency değil |
 | REFERENCE | farmOS | veri modeli/işlem günlüğü fikirleri; full sistem değil |
 
+## 2026-09-13 upstream snapshot'ları
+
+Implementation başlangıç pinleri `16-upstream-pins.md` içinde tutulur. Öne çıkanlar:
+
+```text
+pyfao56       1d242ee985be0edbc4946f06e7e94a487d4bc0c9
+PCSE           67a28e56b0e34655f8d60b0b4a254a7c81efbb2f
+AquaCrop       36cc20e44644ed1704398889312435c85e04a2f3
+AutoGeoBound   7087b59e51438ec370b698186805751be9296ec2
+Pest&Disease   3aa67a9ad3de6ff8a772dc635db041ec53845aa4
+AgML           c3343fc3b3f8abd89983927da3fc8319cb019d49
+FarmVibes.AI   d10670e18742d05aec50f73e4695d47978908994
+```
+
+Bunlar “sonsuza kadar kullan” sürümleri değildir; reproducible başlangıç snapshot'larıdır. Implementasyon PR'ında upstream tekrar kontrol edilip bilinçli biçimde pinlenir.
+
 ## Aktif kuyruktan çıkarılan belirsiz isimler
 
 - `YieldStack` — güvenilir tekil upstream doğrulanmadı.
@@ -131,6 +153,18 @@ Bunların server-side uygulanması tercih edilir. **Secret/API credential için 
 - dış motor doğrudan React component'ten çağrılmaz.
 - frontend secret görmez.
 - her motor tek hareketle kapatılabilir olmalıdır.
+- yeni motor fail olursa mevcut çalışan TarlaPusula motoru/manuel akış devam eder.
+
+## Pusula kanıt kuralı
+
+Pusula şu ayrımı korur:
+- ölçüm
+- kullanıcı kaydı
+- uzaktan algılama
+- model sonucu
+- dış/bölgesel gözlem
+
+PCSE tahmini saha gözlemi gibi, GBIF kaydı tarlada varlık gibi, AquaCrop senaryosu garanti verim gibi sunulmaz. Ayrıntı `20-pusula-evidence-policy.md` içinde.
 
 ## Lisans özeti
 
@@ -148,6 +182,22 @@ Tam matris `10-license-matrix.md` içinde.
 - OpenAgri Irrigation/Pest&Disease: EUPL-1.2.
 - farmOS: GPL-2.0.
 - AgStack Asset Registry: GitHub metadata'sında lisans görünmüyor; production öncesi manuel doğrulama zorunlu.
+
+## İlk implementation işleri
+
+`19-execution-backlog.md` kartları kullanılacak. İlk sıra:
+
+```text
+TP-INT-001 common contracts
+TP-INT-002 model gateway minimum contract
+TP-INT-010 pyfao56 shadow
+TP-INT-020 PCSE pilot
+TP-INT-030 AquaCrop scenarios
+TP-INT-040 AutoGeoBound
+TP-INT-050 Pest Risk
+```
+
+Veri işleri (`TP-DATA-*`) bunlara paralel yürür.
 
 ## `READY_FOR_IMPLEMENTATION` tanımı
 
@@ -168,4 +218,4 @@ Bir entegrasyon ancak şu maddeler hazırsa uygulama PR'ına geçebilir:
 - [ ] Pusula evidence formatı
 - [ ] privacy ve authorization sınırı
 
-Detaylı durum için `STATUS.md`, uygulama sırası için `11-execution-runbook.md` kullanılır.
+Detaylı durum için `STATUS.md`, uygulama sırası için `11-execution-runbook.md`, exact iş kartları için `19-execution-backlog.md` kullanılır.
