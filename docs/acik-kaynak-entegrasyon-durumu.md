@@ -2,6 +2,8 @@
 
 Bu belge, planlanan açık kaynak projeler ile TarlaPusula reposunda çalışan kodu birbirinden ayırır. Bir yöntemi kendi kodumuzda kullanmamız, ilgili Python paketinin kurulduğu anlamına gelmez. Vercel'de çalışan uygulama Vite/React ön yüzüdür.
 
+> Not: Entegrasyon hazırlıkları artık ayrı bir hazırlık dalında ve `docs/integration-prep/` altında tutulacaktır. Çalışan uygulama koduna doğrudan dokunulmadan önce her aday için lisans, girdi/çıktı, adapter, veri gereksinimi, test ve kabul kriteri hazırlanacaktır.
+
 | Planlanan araç | Amaç | Bu repodaki durum |
 | --- | --- | --- |
 | [pyfao56](https://github.com/kthorp/pyfao56) | FAO-56 referans ET ve günlük su dengesi karşılaştırması | `tools/pyfao56-poc` içinde sentetik verili, bağımsız çalıştırılabilir pilot. Uygulama akışına bağlı değil. Ön yüzde mevcut `cropWaterUse.service.ts` ve `rootZoneWater.service.ts` kendi hesabını yapıyor. |
