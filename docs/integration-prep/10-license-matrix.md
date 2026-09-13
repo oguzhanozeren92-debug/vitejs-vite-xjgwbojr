@@ -5,16 +5,17 @@ Bu dosya hukuki görüş değildir; entegrasyon öncesi teknik lisans envanterid
 ## Durum anahtarı
 
 - **LOW FRICTION**: permissive/public-domain karakterli; yine notice/attribution ve bağımlılık lisansları kontrol edilir.
-- **REVIEW**: copyleft/share-alike veya özel koşul nedeniyle kaynak kod kopyalama/dağıtım biçimi ayrıca incelenir.
-- **UNKNOWN**: repo metadata'sı yeterli değil; kesin lisans bulunmadan production kullanımı yok.
+- **REVIEW**: copyleft/share-alike veya özel koşul nedeniyle kaynak kod, dataset, model türevi veya dağıtım biçimi ayrıca incelenir.
+- **UNKNOWN**: metadata yeterli değil; kesin lisans bulunmadan production kullanımı yok.
 
-| Proje | Doğrulanan lisans | Teknik karar | Lisans riski |
+| Proje / veri | Doğrulanan lisans | Teknik karar | Lisans riski |
 | --- | --- | --- | --- |
 | `kthorp/pyfao56` | CC0 1.0 / public-domain dedication | P0 pilot ve gerektiğinde backend model | LOW FRICTION |
 | `ajwdewit/pcse` | EUPL 1.1 veya sonraki onaylı EUPL sürümleri (repo LICENSE) | ayrı model servisi/pilot | REVIEW |
 | `aquacropos/aquacrop` | Apache-2.0 | P1 sezon/sulama senaryosu | LOW FRICTION |
 | `agstack/autogeobound` | Apache-2.0 | P1 sınır öneri benchmarkı | LOW FRICTION |
 | `Project-AgML/AgML` | Apache-2.0 | benchmark/R&D | LOW FRICTION |
+| PlantVillage dataset (`spMohanty/PlantVillage-Dataset` HF metadata) | CC BY-SA 3.0 | benchmark dataset adayı | REVIEW |
 | `microsoft/farmvibes-ai` | MIT | modül bazlı R&D | LOW FRICTION |
 | `sentinel-hub/sentinelhub-py` | MIT | HOLD/research | LOW FRICTION |
 | `sentinel-hub/eo-learn` | MIT | zaman serisi benchmarkı | LOW FRICTION |
@@ -56,6 +57,21 @@ Karar:
 
 ---
 
+## PlantVillage özel notu
+
+`spMohanty/PlantVillage-Dataset` kök dizininde bağımsız LICENSE dosyası görünmüyor; ancak repository'nin Hugging Face dataset metadata'sı `license: cc-by-sa-3.0` olarak yayınlanmış.
+
+Bu nedenle production öncesi:
+- attribution metni hazırlanır,
+- kullanılan exact dataset dağıtımı/version'u kayıt altına alınır,
+- dataset ile **model ağırlığının** lisansı ayrı incelenir,
+- share-alike şartının eğitilmiş model/dağıtım biçimine etkisi ayrıca değerlendirilir,
+- farklı mirror/repack veri setlerinin lisansı otomatik olarak bu lisans sayılmaz.
+
+TarlaPusula için ilk kullanım `benchmark_only` olmalıdır.
+
+---
+
 ## CC-BY-SA Custom Scripts notu
 
 Sentinel Hub custom-scripts arşivi CC-BY-SA-4.0.
@@ -91,10 +107,12 @@ Kod lisansı uygun olsa bile veri ve hizmet koşulları farklı olabilir.
 Örnek kontrol listesi:
 - uydu sağlayıcısı kullanım şartları,
 - Google Earth Engine hesap/kota/terms,
-- OpenET veri/API terms,
 - hava sağlayıcısı redistribüsyon şartları,
 - GBIF occurrence veri seti bazlı lisans/attribution,
+- PlantVillage gibi eğitim datasetleri,
 - model ağırlıklarının datasetten farklı lisansa sahip olması.
+
+OpenET metodoloji referansı olarak izlenebilir; mevcut resmi kapsam Türkiye uygulama entegrasyonu için uygun görünmediğinden aktif API lisans işi açılmaz.
 
 Bu nedenle her production adapter için şu metadata tutulmalı:
 
@@ -120,7 +138,7 @@ Bir entegrasyon `LIVE` olmadan önce:
 - [ ] model/dataset lisansı kaydedildi
 - [ ] harici API terms kontrol edildi
 - [ ] gerekiyorsa NOTICE/attribution hazır
-- [ ] copyleft etkisi değerlendirilmiş
+- [ ] copyleft/share-alike etkisi değerlendirilmiş
 - [ ] secrets/credentials dağıtıma girmiyor
 - [ ] bağımlılıkların lisans listesi alınmış
 
