@@ -14,9 +14,15 @@ Resmi repo: `kthorp/pyfao56`
 - `prepare_open_meteo.py` önceden kaydedilmiş Open-Meteo yanıtını çevrimdışı dönüştürüyor.
 - Canlı karar hattı şu an `src/features/irrigation/services/*` üzerinden kendi TypeScript motorumuzu kullanıyor.
 
-## Lisans kapısı
+## Lisans
 
-GitHub repo metadata'sı lisansı `NOASSERTION / Other` olarak raporluyor. Bu yüzden **üretim bağımlılığına alınmadan önce repository içindeki gerçek lisans/dağıtım şartları manuel doğrulanacak.** Lisans netleşmeden package'ı canlı backend imajına gömmeyiz.
+GitHub repo metadata'sı lisansı otomatik olarak `NOASSERTION / Other` diye raporlasa da repository içindeki `LICENSE.md` açıkça şunu belirtir:
+
+- ABD Hükümeti eseri olarak ABD içinde public domain,
+- dünya çapında **CC0 1.0 Universal public-domain dedication**,
+- ticari kullanım dahil kopyalama, değiştirme ve dağıtma serbest.
+
+Bu nedenle pyfao56 kod lisansı P0 pilot için düşük sürtünmelidir. Yine de üçüncü taraf bağımlılıkların, hava/veri sağlayıcılarının ve kullanılan datasetlerin şartları ayrıca kontrol edilir.
 
 ## Girdi sözleşmesi
 
@@ -109,15 +115,13 @@ Ham özel koordinat ve meteorolojik fixture repo içinde saklanmaz.
 
 ## Feature flag
 
-```text
-VITE_ENABLE_ENGINE_PYFAO56=false
-```
-
-Backend:
+Tercih edilen server-side master flag:
 
 ```text
-ENABLE_ENGINE_PYFAO56=false
+ENABLE_PYFAO56=false
 ```
+
+Frontend'e secret veya model kontrol credential'ı `VITE_*` ile verilmez. Gerekirse istemci yalnızca backend'den güvenli rollout durumunu öğrenir.
 
 ## Test senaryoları
 
@@ -156,7 +160,7 @@ Not: iki farklı referans ET metodolojisi karşılaştırılıyor
 
 ## Sınır kalkınca ilk iş
 
-1. Lisans dosyasını kesinleştir.
+1. Kullanılacak pyfao56 version/commit'i pinle ve CC0 lisans kaydını model registry'ye yaz.
 2. Tek bir izinli test tarlasında aynı tarih/meteoroloji/Kc setini hazırla.
 3. `compare.py` sonucunu mevcut Irrigation Engine çıktısıyla karşılaştır.
 4. Farkın kaynağını belgelemeyen hiçbir sonucu canlı karara bağlama.
