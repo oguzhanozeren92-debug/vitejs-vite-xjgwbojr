@@ -22,13 +22,23 @@ export const geocodeFieldLocation = async (
   const rawLongitude = field.parcelCentroidLng ?? field.longitude;
   const latitude = Number(rawLatitude);
   const longitude = Number(rawLongitude);
-  if (rawLatitude != null && rawLongitude != null &&
-      Number.isFinite(latitude) && Number.isFinite(longitude) &&
-      latitude >= -90 && latitude <= 90 && longitude >= -180 && longitude <= 180) {
+  if (
+    rawLatitude != null &&
+    rawLongitude != null &&
+    Number.isFinite(latitude) &&
+    Number.isFinite(longitude) &&
+    latitude >= -90 &&
+    latitude <= 90 &&
+    longitude >= -180 &&
+    longitude <= 180
+  ) {
     return {
       latitude,
       longitude,
-      label: [field.village, field.district, field.city].filter(Boolean).join(' / ') || field.name || 'Tarla konumu',
+      label:
+        [field.village, field.district, field.city].filter(Boolean).join(' / ') ||
+        field.name ||
+        'Tarla konumu',
     };
   }
 
@@ -77,9 +87,8 @@ export const geocodeFieldLocation = async (
 
 /**
  * Eski isim geriye dönük importları kırmamak için korunuyor.
- * Artık doğrudan tek bir Open-Meteo modelini çağırmaz; production
- * `weather-compare` Edge Function'ının ECMWF + GFS + ICON consensus
- * tahminini döndürür. Böylece Home ve Weather ekranı aynı sayıları kullanır.
+ * Artık tek bir hava sağlayıcısı çağırmaz; weather-compare Edge Function'ın
+ * ECMWF + GFS + ICON çok kaynaklı kanonik tahminini döndürür.
  */
 export const fetchOpenMeteoForecast = async (
   latitude: number,
@@ -164,9 +173,7 @@ export const resolveHomeWeatherLocation = async (
     if (geocoded) return geocoded;
   }
 
-  return {
-    latitude: 38.6743,
-    longitude: 39.2232,
-    label: 'Elazığ',
-  };
+  throw new Error(
+    'Hava tahmini için konum gerekli. Konum izni ver veya seçili tarlanın konumunu tamamla.',
+  );
 };
