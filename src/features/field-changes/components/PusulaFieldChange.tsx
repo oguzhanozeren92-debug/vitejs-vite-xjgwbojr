@@ -2,15 +2,22 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowDown, ArrowRight, X } from 'lucide-react';
 import type { HomeDecisionEvent } from '../../decision/types/homeDecision';
 import { buildFieldChangePresentation } from '../services/fieldChangePresentation';
+import { buildOperationSatelliteFollowUp } from '../services/operationSatelliteFollowUp';
+import type { FieldOperation } from '../../field-operations/types/fieldOperation';
+import type { NdviTimeSeriesPoint } from '../../satellite/types/ndviTimeSeries';
 import './PusulaFieldChange.css';
 
 const STORAGE_KEY = 'tp_pusula_dismissed_changes_v1';
 
-export default function PusulaFieldChange({ events, fieldId, fieldName, latestDate, paused, onMap }: {
+export default function PusulaFieldChange({ events, fieldId, fieldName, latestDate, paused, onMap, operations, points, quality, phenology }: {
   events: HomeDecisionEvent[]; fieldId: string; fieldName: string;
   latestDate: string | null; paused: boolean; onMap: () => void;
+  operations: FieldOperation[]; points: NdviTimeSeriesPoint[]; quality: string | undefined;
+  phenology: { stage: string; dataStatus: string } | null | undefined;
 }) {
-  const change = buildFieldChangePresentation(events, fieldId, latestDate);
+  const satelliteChange = buildFieldChangePresentation(events, fieldId, latestDate);
+  const operationChange = buildOperationSatelliteFollowUp({ fieldId, operations, points, quality, phenology });
+  const change = satelliteChange ?? operationChange;
   const key = change?.key ?? '';
   const [dismissed, setDismissed] = useState<string[]>(() => {
     try {
@@ -50,6 +57,7 @@ export default function PusulaFieldChange({ events, fieldId, fieldName, latestDa
         <h3>Neden söylüyorum?</h3>
         <ul>{change.evidence.map((item) => <li key={item}>{item}</li>)}</ul>
         <p>{change.detail}</p>
+        {satelliteChange && operationChange && <section aria-label="Son işlem sonrası takip"><h3>Son işlemden sonra</h3><ul>{operationChange.evidence.map((item) => <li key={item}>{item}</li>)}</ul><p>{operationChange.detail}</p></section>}
         <button className="tp-field-change-map" type="button" onClick={() => { setDetailOpen(false); onMap(); }}>Haritada göster <ArrowRight size={18} /></button>
         <button className="tp-field-change-later" type="button" onClick={dismiss}>Şimdi değil</button>
       </dialog>

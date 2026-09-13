@@ -504,6 +504,7 @@ export function useHomePhenologyInsight(
     climateShiftDays,
 
     ndviTrend,
+    timeSeriesPoints: seriesState?.status === 'ready' ? seriesState.data?.points ?? [] : [],
     trendUsable,
 
     timeSeriesStatus:

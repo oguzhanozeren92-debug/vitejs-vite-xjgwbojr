@@ -190,5 +190,6 @@ export function useHomeDecisionEngine(input: HomeDecisionEngineInput) {
     notifications,
     primaryDecision,
     pusulaDecision,
+    recentFieldOperations: recentOperations.operations,
   };
 }

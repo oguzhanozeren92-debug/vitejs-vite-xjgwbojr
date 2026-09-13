@@ -379,6 +379,7 @@ export default function HomeScreen(props: HomeScreenProps) {
     notifications: homeSystemNotifications,
     pusulaDecision,
     events: homeDecisionEvents,
+    recentFieldOperations,
   } = useHomeDecisionEngine({
     fieldKey,
     activeHomeLayer,
@@ -723,6 +724,10 @@ export default function HomeScreen(props: HomeScreenProps) {
           fieldId={fieldKey}
           fieldName={String(homeField?.name ?? 'Tarlan')}
           latestDate={homePhenology.timeSeriesLatestDate}
+          operations={homeField?.demo ? [] : recentFieldOperations}
+          points={homePhenology.timeSeriesPoints}
+          quality={homePhenology.ndviTrend?.quality}
+          phenology={decisionPhenology}
           paused={pusulaGuideAway || Boolean(quickSheet) || sideMenuOpen}
           onMap={() => openHomeInsightTarget('map_vegetation')}
         />
