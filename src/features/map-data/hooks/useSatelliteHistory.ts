@@ -3,6 +3,7 @@ import type { SatelliteHealthResult } from '../../../lib/satelliteService';
 import {
   clearSatelliteHistoryPreviewCache,
   fetchHistoricalSatellite,
+  fetchHistoricalSatellitePreview,
   listSatelliteDates,
 } from '../services/satelliteHistory';
 
@@ -52,27 +53,23 @@ export function useSatelliteHistory(
     try {
       for (const date of previewDates.slice(0, PREVIEW_LIMIT)) {
         if (requestId !== request.current) return;
-        if (cache.current.has(date)) {
-          const cached = cache.current.get(date);
-          if (cached?.ndviImage) {
-            setPreviews((current) => ({
-              ...current,
-              [date]: cached.ndviImage,
-            }));
-          }
+
+        const fullResult = cache.current.get(date);
+        if (fullResult?.ndviImage) {
+          setPreviews((current) => ({
+            ...current,
+            [date]: fullResult.ndviImage,
+          }));
           continue;
         }
 
         try {
-          const result = await fetchHistoricalSatellite(geometry, date);
+          const image = await fetchHistoricalSatellitePreview(geometry, date);
           if (requestId !== request.current) return;
-          cache.current.set(date, result);
-          if (result.ndviImage) {
-            setPreviews((current) => ({
-              ...current,
-              [date]: result.ndviImage,
-            }));
-          }
+          setPreviews((current) => ({
+            ...current,
+            [date]: image,
+          }));
         } catch {
           // Tek bir sahne preview üretmezse bütün arşiv galerisi bozulmaz.
         }
