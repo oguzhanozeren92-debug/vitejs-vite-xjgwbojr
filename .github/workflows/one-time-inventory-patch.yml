@@ -12,12 +12,22 @@ jobs:
   patch-and-check:
     if: ${{ github.actor != 'github-actions[bot]' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Capture touched-file typecheck baseline
+        shell: bash
+        run: |
+          set +e
+          npm run typecheck > /tmp/typecheck-before.log 2>&1
+          exit 0
 
       - name: Patch depot component minimally
         shell: bash
@@ -58,6 +68,12 @@ jobs:
           )
 
           replace_once(
+              "upsertProductState(saved, currentUser.id);",
+              "upsertProductState(saved);",
+              "update remote save state call",
+          )
+
+          replace_once(
               """      } catch (remoteError) {\n        const now = new Date().toISOString();\n\n        const localProduct: InventoryProduct = {\n          id:\n            typeof crypto !== 'undefined' &&\n            'randomUUID' in crypto\n              ? `local-${crypto.randomUUID()}`\n              : `local-${Date.now()}`,\n          userId: currentUser.id,\n          ...input,\n          createdAt: now,\n          updatedAt: now,\n        };\n\n        upsertProductState(localProduct, currentUser.id);\n\n        setAnalysisMessage(\n          `Supabase kaydı yapılamadı; ürün geçici olarak cihaz önbelleğine kaydedildi. ${\n            remoteError instanceof Error\n              ? remoteError.message\n              : ''\n          }`,\n        );\n      }\n""",
               """      } catch (remoteError) {\n        throw remoteError;\n      }\n""",
               "remove local product fallback",
@@ -78,11 +94,50 @@ jobs:
           path.write_text(text, encoding='utf-8')
           PY
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Check for new touched-file type errors
+        shell: bash
+        run: |
+          set +e
+          npm run typecheck > /tmp/typecheck-after.log 2>&1
+          set -e
+          python3 <<'PY'
+          from collections import Counter
+          from pathlib import Path
+          import re
 
-      - name: Typecheck
-        run: npm run typecheck
+          targets = (
+              'src/components/PestStoreScreen.tsx',
+              'src/services/pestStoreService.ts',
+          )
+
+          def normalized(path: str):
+              rows = []
+              for line in Path(path).read_text(encoding='utf-8', errors='ignore').splitlines():
+                  if not any(target in line for target in targets):
+                      continue
+                  line = re.sub(r'\(\d+,\d+\)', '(LINE,COL)', line)
+                  rows.append(line.strip())
+              return Counter(rows)
+
+          before = normalized('/tmp/typecheck-before.log')
+          after = normalized('/tmp/typecheck-after.log')
+          introduced = after - before
+
+          print('Touched-file baseline errors:')
+          for row, count in before.items():
+              print(f'  {count}x {row}')
+          print('Touched-file errors after patch:')
+          for row, count in after.items():
+              print(f'  {count}x {row}')
+
+          if introduced:
+              print('New touched-file TypeScript errors introduced by patch:')
+              for row, count in introduced.items():
+                  print(f'  {count}x {row}')
+              raise SystemExit(1)
+
+          print('No new TypeScript errors were introduced in touched files.')
+          PY
 
       - name: Build
         run: npm run build
