@@ -285,11 +285,11 @@
 
 /* NDVI takip noktaları geçmiş değildir. Aynı History SVG'sini gizleyip
    harita pini sembolü göstererek iki kontrolün anlamını ayırıyoruz. */
-.tp-map-first-shell .tp-map-control-rail .tp-map-control-btn[aria-label='Takip noktalarını göster'] > svg {
+.tp-map-first-shell .tp-map-control-rail .tp-map-control-btn[aria-label^='Takip noktalarını'] > svg {
   display: none !important;
 }
 
-.tp-map-first-shell .tp-map-control-rail .tp-map-control-btn[aria-label='Takip noktalarını göster']::before {
+.tp-map-first-shell .tp-map-control-rail .tp-map-control-btn[aria-label^='Takip noktalarını']::before {
   content: '';
   width: 20px;
   height: 20px;
