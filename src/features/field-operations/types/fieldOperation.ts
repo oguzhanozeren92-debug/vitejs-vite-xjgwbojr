@@ -20,6 +20,9 @@ export type FieldOperationCreateInput = {
   unit?: string | null;
   cost?: number | null;
   notes?: string | null;
+  photoPath?: string | null;
+  aiAnalysis?: unknown | null;
+  aiAnalyzedAt?: string | null;
 };
 
 export type FieldOperation = {
@@ -34,6 +37,9 @@ export type FieldOperation = {
   unit: string | null;
   cost: number | null;
   notes: string | null;
+  photoPath: string | null;
+  aiAnalysis: unknown | null;
+  aiAnalyzedAt: string | null;
   createdAt: string;
 };
 
@@ -54,3 +60,25 @@ export const FIELD_OPERATION_OPTIONS: Array<{
   { type: 'Saha Kontrolü', icon: '👁️', shortLabel: 'Kontrol' },
   { type: 'Diğer', icon: '＋', shortLabel: 'Diğer' },
 ];
+
+const FIELD_OPERATION_TYPES = new Set<FieldOperationType>(
+  FIELD_OPERATION_OPTIONS.map((item) => item.type),
+);
+
+/**
+ * Eski ekranlarda kalan farklı adları tek TarlaPusula işlem sözlüğüne çevirir.
+ * Aynı tarımsal işlem farklı ekranlarda farklı kayıt tipi üretmemelidir.
+ */
+export function normalizeFieldOperationType(value: unknown): FieldOperationType {
+  const raw = String(value ?? '').trim();
+
+  if (raw === 'Toprak İşleme' || raw === 'Toprak işleme' || raw === 'Sürüm') {
+    return 'Sürme';
+  }
+
+  if (FIELD_OPERATION_TYPES.has(raw as FieldOperationType)) {
+    return raw as FieldOperationType;
+  }
+
+  return 'Diğer';
+}
