@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
+import hmac
 import importlib
 import math
 import os
@@ -11,7 +12,7 @@ from pydantic import BaseModel, Field
 
 from engine_registry import ENGINE_REGISTRY
 
-app = FastAPI(title="TarlaPusula Model Gateway", version="0.2.0")
+app = FastAPI(title="TarlaPusula Model Gateway", version="0.2.1")
 
 
 class WeatherDay(BaseModel):
@@ -39,7 +40,7 @@ class PyFao56Request(BaseModel):
 
 class EngineReadinessRequest(BaseModel):
     field_id: str = Field(min_length=1)
-    available_inputs: list[str] = []
+    available_inputs: list[str] = Field(default_factory=list)
 
 
 REQUIRED_PCSE_INPUTS = {
@@ -60,12 +61,24 @@ REQUIRED_AQUACROP_INPUTS = {
 }
 
 
+def _auth_required() -> bool:
+    expected = os.getenv("MODEL_GATEWAY_SHARED_KEY", "").strip()
+    environment = os.getenv("MODEL_GATEWAY_ENV", "production").strip().lower()
+    return not (environment == "development" and not expected)
+
+
 def _authorize(shared_key: str | None) -> None:
     expected = os.getenv("MODEL_GATEWAY_SHARED_KEY", "").strip()
-    environment = os.getenv("MODEL_GATEWAY_ENV", "development").strip().lower()
+    environment = os.getenv("MODEL_GATEWAY_ENV", "production").strip().lower()
+
+    # Auth'suz kullanım yalnız bilinçli olarak development seçildiğinde ve
+    # shared key tanımlanmadığında mümkündür. Deploy ortamı yanlış yapılandırılsa
+    # bile varsayılan davranış kapalı/güvenlidir.
     if environment == "development" and not expected:
         return
-    if not expected or shared_key != expected:
+
+    supplied = (shared_key or "").strip()
+    if not expected or not hmac.compare_digest(supplied, expected):
         raise HTTPException(status_code=401, detail="Model gateway authorization failed")
 
 
@@ -85,6 +98,8 @@ def health() -> dict[str, Any]:
     return {
         "ok": True,
         "service": "tarlapusula-model-gateway",
+        "version": app.version,
+        "auth_required": _auth_required(),
         "engines": {
             "pyfao56": _module_status("pyfao56"),
             "pcse": _module_status("pcse"),
