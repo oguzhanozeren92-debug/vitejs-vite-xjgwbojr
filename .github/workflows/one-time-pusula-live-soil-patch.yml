@@ -1,0 +1,119 @@
+name: One-time Pusula live soil synthesis patch
+
+on:
+  push:
+    branches:
+      - fix/mobile-shell-map-ui-20260913
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-build:
+    if: ${{ !contains(github.event.head_commit.message, '[skip-pusula-soil]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/mobile-shell-map-ui-20260913
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Patch live SoilGrids synthesis
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('src/services/unifiedMapAiService.ts')
+          text = path.read_text()
+
+          marker = "function sourceEvidence(source: LiveSourceAnalysis): FieldSynthesisEvidence {"
+          helper = r'''function soilProfileAnalysis(soil: any): LiveSourceAnalysis | null {
+            if (!soil || typeof soil !== 'object') return null;
+
+            const numberOrNull = (value: unknown) => {
+              const parsed = Number(value);
+              return Number.isFinite(parsed) ? parsed : null;
+            };
+
+            const ph = numberOrNull(soil.ph);
+            const organicCarbon = numberOrNull(soil.organicCarbon);
+            const clay = numberOrNull(soil.clay);
+            const sand = numberOrNull(soil.sand);
+            const silt = numberOrNull(soil.silt);
+            const resolutionMeters = numberOrNull(soil.resolutionMeters);
+
+            const facts: string[] = [];
+            if (ph !== null) facts.push(`pH ${ph.toFixed(1)}`);
+            if (organicCarbon !== null) {
+              facts.push(`organik karbon ${organicCarbon.toFixed(1)}`);
+            }
+
+            const texture: string[] = [];
+            if (clay !== null) texture.push(`kil %${clay.toFixed(0)}`);
+            if (sand !== null) texture.push(`kum %${sand.toFixed(0)}`);
+            if (silt !== null) texture.push(`silt %${silt.toFixed(0)}`);
+            if (texture.length) facts.push(texture.join(', '));
+
+            if (!facts.length) return null;
+
+            return {
+              layer: 'soil',
+              label: 'Toprak · SoilGrids',
+              result: {
+                status: 'normal',
+                headline: 'Toprak model profili bağlama eklendi',
+                summary: `${facts.join(' · ')}.${
+                  resolutionMeters !== null
+                    ? ` Yaklaşık ${resolutionMeters.toFixed(0)} m mekânsal çözünürlük.`
+                    : ''
+                }`,
+                reasons: facts.slice(0, 3),
+                action:
+                  'Gübreleme, kireçleme veya toprak düzenleme kararı için gerçek laboratuvar analizini önceliklendir.',
+                confidence: 'orta',
+                caution:
+                  'SoilGrids model tabanlı toprak tahminidir; laboratuvar analizi varsa gerçek analiz daha yüksek otoritedir.',
+                importantArea: null,
+                model: 'soilgrids-profile-evidence-v1',
+              },
+            };
+          }
+
+          '''
+
+          if 'function soilProfileAnalysis(' not in text:
+            if marker not in text:
+              raise SystemExit('sourceEvidence marker not found')
+            text = text.replace(marker, helper + marker, 1)
+
+          soil_job_start = """  if (input.context.soil) {\n    jobs.push(\n      interpretSingleLayer({\n        ...input,\n        activeLayer: 'soil',\n        activeLayerLabel: 'Toprak',\n        context: { soil: input.context.soil },\n      }).then((result) => ({\n        layer: 'soil' as const,\n        label: 'Toprak',\n        result,\n      })),\n    );\n  }\n\n"""
+
+          if soil_job_start in text:
+            text = text.replace(soil_job_start, '', 1)
+
+          radar_marker = """  const radar = radarVisionAnalysis(input.context.radar);\n  if (radar) sources.push(radar);\n"""
+          soil_insert = """  const soil = soilProfileAnalysis(input.context.soil);\n  if (soil) sources.push(soil);\n\n  const radar = radarVisionAnalysis(input.context.radar);\n  if (radar) sources.push(radar);\n"""
+
+          if 'const soil = soilProfileAnalysis(input.context.soil);' not in text:
+            if radar_marker not in text:
+              raise SystemExit('radar marker not found')
+            text = text.replace(radar_marker, soil_insert, 1)
+
+          path.write_text(text)
+      - run: npm ci
+      - run: npm run build
+      - name: Commit verified patch
+        run: |
+          if git diff --quiet -- src/services/unifiedMapAiService.ts; then
+            echo "No patch needed"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/services/unifiedMapAiService.ts
+          git commit -m "fix(pusula): use live SoilGrids profile in synthesis [skip-pusula-soil]"
+          git push origin HEAD:fix/mobile-shell-map-ui-20260913
