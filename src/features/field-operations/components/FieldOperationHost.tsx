@@ -11,6 +11,7 @@ import {
   setPendingFieldOperationInventory,
 } from '../services/fieldOperation.service';
 import { normalizeFieldOperationType } from '../types/fieldOperation';
+import { completeCalendarReminderAfterOperation } from '../../calendar/services/calendarOperationCompletion.service';
 
 export default function FieldOperationHost() {
   const [request, setRequest] = useState<OpenFieldOperationRequest | null>(null);
@@ -52,6 +53,16 @@ export default function FieldOperationHost() {
     setRequest(null);
   };
 
+  const finishFlowAfterSave = () => {
+    const completion = request?.completion;
+    if (completion?.kind === 'calendar-reminder') {
+      void completeCalendarReminderAfterOperation(completion.id).catch((error) => {
+        console.error('Takvim planı işlem sonrasında tamamlanamadı:', error);
+      });
+    }
+    closeFlow();
+  };
+
   return (
     <>
       <FieldOperationInventoryPreselector
@@ -81,7 +92,7 @@ export default function FieldOperationHost() {
         initialType={operationType}
         initialDate={request?.date}
         onClose={closeFlow}
-        onSaved={closeFlow}
+        onSaved={finishFlowAfterSave}
       />
     </>
   );
