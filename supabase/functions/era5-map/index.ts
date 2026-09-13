@@ -60,6 +60,17 @@ function variableLabel(variable: Variable) {
   }
 }
 
+function hourlyVariableFor(variable: Variable) {
+  switch (variable) {
+    case 'soil_temperature_0_to_7cm':
+      return 'soil_temperature_0cm';
+    case 'soil_temperature_7_to_28cm':
+      return 'soil_temperature_6cm';
+    default:
+      return variable;
+  }
+}
+
 function unitFor(variable: Variable) {
   if (variable.startsWith('soil_moisture')) return 'm³/m³';
   if (variable.includes('temperature')) return '°C';
@@ -123,6 +134,7 @@ Deno.serve(async (req: Request) => {
     const days = clamp(Math.round(Number(body.days ?? 7)), 1, 45);
     const gridRadius = clamp(Math.round(Number(body.gridRadius ?? 2)), 0, 3);
     const model = modelFor(variable);
+    const hourlyVariable = hourlyVariableFor(variable);
     const sampleStep = model.resolutionDegrees;
     const points: Array<{ latitude: number; longitude: number }> = [];
 
@@ -147,7 +159,7 @@ Deno.serve(async (req: Request) => {
       longitude: points.map((point) => point.longitude.toFixed(5)).join(','),
       start_date: isoDate(start),
       end_date: isoDate(end),
-      hourly: variable,
+      hourly: hourlyVariable,
       timezone: 'UTC',
       models: model.api,
       cell_selection: 'land',
@@ -169,8 +181,8 @@ Deno.serve(async (req: Request) => {
 
     const cells = entries
       .map((entry: any, index: number) => {
-        const values = Array.isArray(entry?.hourly?.[variable])
-          ? entry.hourly[variable]
+        const values = Array.isArray(entry?.hourly?.[hourlyVariable])
+          ? entry.hourly[hourlyVariable]
           : [];
         const value = aggregate(values, variable);
         if (value === null) return null;
