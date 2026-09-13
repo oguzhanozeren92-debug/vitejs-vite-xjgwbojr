@@ -11,10 +11,8 @@ import {
   analyzePesticideLabel,
   createInventoryProduct,
   fetchInventoryProducts,
-  loadInventoryCache,
   removeInventoryProduct,
   resolveInventoryUser,
-  saveInventoryCache,
   updateInventoryProduct,
   uploadPesticideLabelPhoto,
   type InventoryCategory,
@@ -383,9 +381,6 @@ export default function PestStoreScreen({
     let active = true;
 
     const load = async () => {
-      const cached = loadInventoryCache(resolvedUser.id);
-      if (active && cached.length) setProducts(cached);
-
       try {
         setLoadingProducts(true);
         const remote = await fetchInventoryProducts(resolvedUser.id);
@@ -397,12 +392,9 @@ export default function PestStoreScreen({
       } catch (error) {
         if (!active) return;
 
+        setProducts([]);
         setInventoryMessage(
-          `Supabase depo verisi alınamadı. ${
-            cached.length
-              ? 'Önbellekteki ürünler gösteriliyor.'
-              : 'SQL kurulumunu yaptıktan sonra tekrar dene.'
-          } ${
+          `Depo verisi alınamadı; yerel stok gösterilmiyor. ${
             error instanceof Error ? `(${error.message})` : ''
           }`,
         );
@@ -656,22 +648,11 @@ export default function PestStoreScreen({
     );
   };
 
-  const upsertProductState = (
-    product: InventoryProduct,
-    cacheUserId: string | null = resolvedUser?.id ?? null,
-  ) => {
-    setProducts((current) => {
-      const next = [
-        product,
-        ...current.filter((item) => item.id !== product.id),
-      ];
-
-      if (cacheUserId) {
-        saveInventoryCache(cacheUserId, next);
-      }
-
-      return next;
-    });
+  const upsertProductState = (product: InventoryProduct) => {
+    setProducts((current) => [
+      product,
+      ...current.filter((item) => item.id !== product.id),
+    ]);
   };
 
   const handleSaveAnalyzed = async () => {
@@ -775,7 +756,7 @@ export default function PestStoreScreen({
           input,
         );
 
-        upsertProductState(saved, currentUser.id);
+        upsertProductState(saved);
 
         let pointMessage = '';
 
@@ -804,29 +785,7 @@ export default function PestStoreScreen({
           `Ürün Supabase deposuna kaydedildi ve stok listesine eklendi.${pointMessage}`,
         );
       } catch (remoteError) {
-        const now = new Date().toISOString();
-
-        const localProduct: InventoryProduct = {
-          id:
-            typeof crypto !== 'undefined' &&
-            'randomUUID' in crypto
-              ? `local-${crypto.randomUUID()}`
-              : `local-${Date.now()}`,
-          userId: currentUser.id,
-          ...input,
-          createdAt: now,
-          updatedAt: now,
-        };
-
-        upsertProductState(localProduct, currentUser.id);
-
-        setAnalysisMessage(
-          `Supabase kaydı yapılamadı; ürün geçici olarak cihaz önbelleğine kaydedildi. ${
-            remoteError instanceof Error
-              ? remoteError.message
-              : ''
-          }`,
-        );
+        throw remoteError;
       }
     } catch (error) {
       setAnalysisMessage(
@@ -879,21 +838,12 @@ export default function PestStoreScreen({
     try {
       setEditSaving(true);
 
-      if (editingProduct.id.startsWith('local-')) {
-        const updated: InventoryProduct = {
-          ...editingProduct,
-          ...editDraft,
-          updatedAt: new Date().toISOString(),
-        };
-        upsertProductState(updated);
-      } else {
-        const updated = await updateInventoryProduct(
-          resolvedUser.id,
-          editingProduct.id,
-          editDraft,
-        );
-        upsertProductState(updated);
-      }
+      const updated = await updateInventoryProduct(
+        resolvedUser.id,
+        editingProduct.id,
+        editDraft,
+      );
+      upsertProductState(updated);
 
       setInventoryMessage('Ürün bilgileri güncellendi.');
       closeEdit();
@@ -916,15 +866,11 @@ export default function PestStoreScreen({
     }
 
     try {
-      if (!product.id.startsWith('local-')) {
-        await removeInventoryProduct(resolvedUser.id, product.id);
-      }
+      await removeInventoryProduct(resolvedUser.id, product.id);
 
-      setProducts((current) => {
-        const next = current.filter((item) => item.id !== product.id);
-        saveInventoryCache(resolvedUser.id, next);
-        return next;
-      });
+      setProducts((current) =>
+        current.filter((item) => item.id !== product.id),
+      );
 
       setInventoryMessage('Ürün depodan silindi.');
     } catch (error) {
