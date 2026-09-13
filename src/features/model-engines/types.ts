@@ -3,10 +3,10 @@ export type PyFao56WeatherDay = {
   solarRadiationMjM2: number;
   tmaxC: number;
   tminC: number;
-  rhmaxPct: number;
-  rhminPct: number;
+  dewPointC: number;
   windMS: number;
   rainMm: number;
+  kc: number;
 };
 
 export type PyFao56ShadowInput = {
@@ -16,26 +16,26 @@ export type PyFao56ShadowInput = {
     elevationM: number;
     windHeightM: number;
   };
-  parameters: Record<string, number | string | boolean>;
   days: PyFao56WeatherDay[];
 };
 
 export type PyFao56ShadowDay = {
   date: string;
   referenceEtMm: number;
+  kc: number;
   cropEtMm: number;
-  actualEtMm: number;
   rainMm: number;
-  rootZoneDepletionMm: number;
-  readilyAvailableWaterMm: number;
 };
 
 export type PyFao56ShadowResult = {
   ok: true;
   mode: 'shadow';
+  shadowScope: 'reference_et_and_single_kc';
   engine: 'pyfao56';
   fieldId: string;
   productionAuthority: false;
+  fullWaterBalanceReady: false;
+  blockedFullWaterBalanceInputs: string[];
   days: PyFao56ShadowDay[];
 };
 
