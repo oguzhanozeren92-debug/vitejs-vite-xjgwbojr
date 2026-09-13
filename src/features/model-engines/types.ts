@@ -39,6 +39,59 @@ export type PyFao56ShadowResult = {
   days: PyFao56ShadowDay[];
 };
 
+export type PyFao56ShadowComparisonDay = {
+  date: string;
+  kc: number;
+  tarlapusulaReferenceEtMm: number;
+  pyfao56ReferenceEtMm: number;
+  referenceEtDeltaMm: number;
+  referenceEtDeltaPct: number | null;
+  tarlapusulaCropEtMm: number;
+  pyfao56CropEtMm: number;
+  cropEtDeltaMm: number;
+  cropEtDeltaPct: number | null;
+  tarlapusulaPrecipitationMm: number | null;
+  pyfao56InputRainMm: number | null;
+};
+
+export type PyFao56ShadowComparison = {
+  basis: {
+    note: string;
+    tarlapusula: string;
+    pyfao56: string;
+  };
+  comparedDayCount: number;
+  days: PyFao56ShadowComparisonDay[];
+  summary: {
+    meanAbsoluteReferenceEtDeltaMm: number | null;
+    meanAbsoluteReferenceEtDeltaPct: number | null;
+    meanAbsoluteCropEtDeltaMm: number | null;
+    meanAbsoluteCropEtDeltaPct: number | null;
+  };
+};
+
+export type PyFao56FieldShadowResult = {
+  ok: true;
+  engine: 'pyfao56';
+  mode: 'shadow';
+  shadowScope: 'reference_et_and_single_kc';
+  fieldId: string;
+  runId: string;
+  inputFingerprint: string;
+  ready: boolean;
+  dayCount: number;
+  dates: string[];
+  missingInputs: string[];
+  excludedDays: Array<{ date: string; reason: string }>;
+  sourceVersions: Record<string, unknown>;
+  productionAuthority: false;
+  fullWaterBalanceReady: false;
+  blockedFullWaterBalanceInputs: string[];
+  cached: boolean;
+  output: PyFao56ShadowResult | null;
+  comparison: PyFao56ShadowComparison | null;
+};
+
 export type ModelReadinessResult = {
   ok: true;
   engine: 'pcse' | 'aquacrop';
