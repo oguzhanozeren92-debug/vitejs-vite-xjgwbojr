@@ -1,0 +1,330 @@
+/* =========================================================
+   TARLAPUSULA PROFESSIONAL ROUTES
+   Route-level companion to TarlaPusulaProfessionalSystem.css.
+   Loaded after legacy WhiteAppTheme / MonochromeUI.
+   ========================================================= */
+
+/* One dark technological canvas across product routes. Actual map canvases,
+   satellite rasters and scientific legends keep their own data colours. */
+html body :is(
+  .tp-field-detail-page,
+  .tp-calendar-page,
+  .tp-ai-page,
+  .tp-wxr-page,
+  .tp-wxv2-page,
+  .soil-page,
+  .pt-page,
+  .tp-authv2,
+  .tp-chat-shell,
+  .tp-peststore-page,
+  .tp-market-ref-page,
+  .tp-support-page,
+  .tp-agri-news-page,
+  .tp-nutrition-page,
+  .tp-producer-market-page,
+  .tp-pest-guide-page,
+  .tp-placeholder-page,
+  .tp-era5-page,
+  .tp-unified-map-page,
+  .tp-theme-page
+) {
+  color-scheme: dark !important;
+  color: var(--tp-pro-text) !important;
+  background-color: var(--tp-pro-bg) !important;
+  background-image:
+    radial-gradient(circle at 14% 1%, rgba(53,212,125,.055), transparent 24%),
+    radial-gradient(circle at 91% 14%, rgba(99,215,232,.035), transparent 21%),
+    linear-gradient(114deg, transparent 0 22%, rgba(244,251,247,.035) 22.08% 22.16%, transparent 22.25% 61%, rgba(244,251,247,.023) 61.08% 61.16%, transparent 61.25%),
+    repeating-linear-gradient(90deg, transparent 0 119px, rgba(255,255,255,.014) 120px, transparent 121px),
+    linear-gradient(180deg, #050b08 0%, #020605 55%, #010302 100%) !important;
+}
+
+/* Structural elements stop owning random legacy colours. */
+html body :is(
+  .tp-field-detail-page,
+  .tp-calendar-page,
+  .tp-ai-page,
+  .tp-wxr-page,
+  .tp-wxv2-page,
+  .soil-page,
+  .pt-page,
+  .tp-authv2,
+  .tp-chat-shell,
+  .tp-peststore-page,
+  .tp-market-ref-page,
+  .tp-support-page,
+  .tp-agri-news-page,
+  .tp-nutrition-page,
+  .tp-producer-market-page,
+  .tp-pest-guide-page,
+  .tp-placeholder-page
+) :is(section, article, aside, nav, header, footer):not(.maplibregl-map):not(.maplibregl-popup) {
+  border-color: var(--tp-pro-line-soft) !important;
+  box-shadow: none;
+}
+
+/* Shared card language. */
+html body :is(
+  .tp-v1,
+  .tp-field-detail-page,
+  .tp-calendar-page,
+  .tp-ai-page,
+  .tp-wxr-page,
+  .tp-wxv2-page,
+  .soil-page,
+  .pt-page,
+  .tp-authv2,
+  .tp-chat-shell,
+  .tp-peststore-page,
+  .tp-market-ref-page,
+  .tp-support-page,
+  .tp-agri-news-page,
+  .tp-nutrition-page,
+  .tp-producer-market-page,
+  .tp-pest-guide-page,
+  .tp-placeholder-page
+) :is(
+  [class$='-card'],
+  [class*='-card '],
+  [class$='-panel'],
+  [class*='-panel '],
+  [class$='-tile'],
+  [class*='-tile '],
+  [class$='-surface'],
+  [class*='-surface '],
+  .tp-card,
+  .tp-panel,
+  .tp-surface
+):not(.maplibregl-map):not(.tp-map-stage):not(.tp-real-home-map) {
+  color: var(--tp-pro-text) !important;
+  background: var(--tp-pro-surface) !important;
+  border-color: var(--tp-pro-line) !important;
+  box-shadow:
+    inset 0 1px rgba(255,255,255,.022),
+    0 16px 38px rgba(0,0,0,.25) !important;
+}
+
+/* One text hierarchy. */
+html body :is(
+  .tp-v1,
+  .tp-field-detail-page,
+  .tp-calendar-page,
+  .tp-ai-page,
+  .tp-wxr-page,
+  .tp-wxv2-page,
+  .soil-page,
+  .pt-page,
+  .tp-authv2,
+  .tp-chat-shell,
+  .tp-peststore-page,
+  .tp-market-ref-page,
+  .tp-support-page,
+  .tp-agri-news-page,
+  .tp-nutrition-page,
+  .tp-producer-market-page,
+  .tp-pest-guide-page,
+  .tp-placeholder-page
+) :is(h1,h2,h3,h4,h5,h6,strong,b,dt,label) {
+  color: var(--tp-pro-text) !important;
+  text-shadow: none !important;
+}
+
+html body :is(
+  .tp-v1,
+  .tp-field-detail-page,
+  .tp-calendar-page,
+  .tp-ai-page,
+  .tp-wxr-page,
+  .tp-wxv2-page,
+  .soil-page,
+  .pt-page,
+  .tp-authv2,
+  .tp-chat-shell,
+  .tp-peststore-page,
+  .tp-market-ref-page,
+  .tp-support-page,
+  .tp-agri-news-page,
+  .tp-nutrition-page,
+  .tp-producer-market-page,
+  .tp-pest-guide-page,
+  .tp-placeholder-page
+) :is(p,small,em,li,dd,summary) {
+  color: var(--tp-pro-text-soft) !important;
+  text-shadow: none !important;
+}
+
+/* Shared page headers. */
+html body :is(
+  .tp-v1 .tp-v1-header,
+  .tp-global-page-header,
+  .tp-field-detail-page .tp-field-detail-header,
+  .tp-calendar-page header,
+  .soil-page .soil-topbar,
+  .tp-ai-page .tp-ai-page-header,
+  .topbar
+) {
+  color: var(--tp-pro-text) !important;
+  background: rgba(3,8,6,.86) !important;
+  border-color: var(--tp-pro-line-soft) !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.04) !important;
+  backdrop-filter: blur(22px) saturate(1.04) !important;
+}
+
+/* Forms: neutral, technical, no page-specific palette. */
+html body :is(
+  .tp-v1,
+  .tp-field-detail-page,
+  .tp-calendar-page,
+  .tp-ai-page,
+  .tp-wxr-page,
+  .tp-wxv2-page,
+  .soil-page,
+  .pt-page,
+  .tp-authv2,
+  .tp-chat-shell,
+  .tp-peststore-page,
+  .tp-market-ref-page,
+  .tp-support-page,
+  .tp-agri-news-page,
+  .tp-nutrition-page,
+  .tp-producer-market-page,
+  .tp-pest-guide-page,
+  .tp-placeholder-page
+) :is(input, textarea, select) {
+  color: var(--tp-pro-text) !important;
+  background: rgba(0,0,0,.22) !important;
+  border-color: var(--tp-pro-line) !important;
+  box-shadow: none !important;
+}
+
+html body :is(
+  .tp-v1,
+  .tp-field-detail-page,
+  .tp-calendar-page,
+  .tp-ai-page,
+  .tp-wxr-page,
+  .tp-wxv2-page,
+  .soil-page,
+  .pt-page,
+  .tp-authv2,
+  .tp-chat-shell,
+  .tp-peststore-page,
+  .tp-market-ref-page,
+  .tp-support-page,
+  .tp-agri-news-page,
+  .tp-nutrition-page,
+  .tp-producer-market-page,
+  .tp-pest-guide-page,
+  .tp-placeholder-page
+) :is(input, textarea, select)::placeholder {
+  color: #65766d !important;
+}
+
+/* Neutral controls. Explicit primary/success/danger components remain free to
+   define their semantic state above this baseline. */
+html body :is(
+  .tp-field-detail-page,
+  .tp-calendar-page,
+  .tp-ai-page,
+  .tp-wxr-page,
+  .tp-wxv2-page,
+  .soil-page,
+  .pt-page,
+  .tp-authv2,
+  .tp-chat-shell,
+  .tp-peststore-page,
+  .tp-market-ref-page,
+  .tp-support-page,
+  .tp-agri-news-page,
+  .tp-nutrition-page,
+  .tp-producer-market-page,
+  .tp-pest-guide-page,
+  .tp-placeholder-page
+) :is(button,[role='button']):not([class*='danger']):not([class*='delete']):not(.maplibregl-ctrl-icon) {
+  color: var(--tp-pro-text-soft) !important;
+  border-color: var(--tp-pro-line) !important;
+  background-color: rgba(255,255,255,.035) !important;
+  text-shadow: none !important;
+  box-shadow: none;
+}
+
+/* Modal / sheet baseline. */
+html body :is(
+  .tp-irrigation-detail-modal,
+  .tp-home-quick-sheet,
+  .tp-market-ref-modal,
+  .tp-support-news-modal,
+  .tp-agri-news-modal,
+  .tp-field-gate-modal,
+  .tp-modal-card,
+  .tp-fields-sheet,
+  .tp-field-delete-dialog
+) {
+  color: var(--tp-pro-text) !important;
+  background: var(--tp-pro-surface-strong) !important;
+  border-color: var(--tp-pro-line) !important;
+  box-shadow: 0 24px 70px rgba(0,0,0,.50) !important;
+}
+
+/* Bottom navigation belongs to the same shell, not a white website footer. */
+html body #root .tp-v1 .tp-bottom,
+html body .tp-field-detail-page .tp-field-detail-bottom,
+html body .bottomNav {
+  color: var(--tp-pro-text-soft) !important;
+  background: rgba(3,8,6,.94) !important;
+  border-color: var(--tp-pro-line-soft) !important;
+  box-shadow: 0 -12px 32px rgba(0,0,0,.30) !important;
+  -webkit-backdrop-filter: blur(22px) !important;
+  backdrop-filter: blur(22px) !important;
+}
+
+html body #root .tp-v1 .tp-bottom button,
+html body .tp-field-detail-page .tp-field-detail-bottom button,
+html body .bottomNav button {
+  color: var(--tp-pro-muted) !important;
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
+html body #root .tp-v1 .tp-bottom button.active,
+html body .tp-field-detail-page .tp-field-detail-bottom button.active,
+html body .bottomNav button.active {
+  color: var(--tp-pro-text) !important;
+}
+
+html body #root .tp-v1 .tp-bottom :is(.tp-bottom-icon-shell,.tp-bottom-ai-shell) {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
+html body #root .tp-v1 .tp-bottom button.active .tp-bottom-icon-shell,
+html body #root .tp-v1 .tp-bottom button:focus-visible :is(.tp-bottom-icon-shell,.tp-bottom-ai-shell) {
+  background: rgba(255,255,255,.055) !important;
+  border-color: var(--tp-pro-line) !important;
+}
+
+html body #root .tp-v1 .tp-bottom .tp-bottom-line-icon {
+  color: currentColor !important;
+}
+
+/* Remove the old global forced grayscale treatment. Icons may keep their
+   authored colour, slightly toned so they still belong to one product. */
+html body :is(.tp-v1,.tp-field-detail-page,.tp-premium-drawer,.tp-home-quick-sheet)
+  img[src*='/ui-icons/'] {
+  filter: saturate(.72) contrast(1.03) brightness(.96) !important;
+}
+
+/* Compass / actual map imagery are not UI chrome. */
+html body .tp-v1 .tp-brand-pusula-anchor img,
+html body .tp-global-pusula-anchor img,
+html body .maplibregl-canvas,
+html body .tp-real-home-map img {
+  filter: none !important;
+}
+
+/* Focus has one product-wide signature. */
+html body :is(button,input,textarea,select):focus-visible {
+  outline: 2px solid rgba(99,215,232,.68) !important;
+  outline-offset: 2px !important;
+}
