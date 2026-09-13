@@ -18,6 +18,19 @@ export const FIELD_DATA_AUTHORITY = {
     provider: 'ISRIC',
     product: 'SoilGrids250m 2.0',
   },
+  weatherDecision: {
+    functionName: 'weather-compare',
+    providers: ['ECMWF', 'GFS', 'DWD ICON'],
+    product: 'TarlaPusula MultiSource Weather',
+    rule:
+      'Kullanıcı üç modeli görebilir; Home/Pusula/ilaçlama tek canonical karar snapshotını kullanır.',
+  },
+  climateHistoryFusion: {
+    providers: ['ERA5-Land / ERA5', 'NASA POWER'],
+    product: 'TarlaPusula Historical Climate Fusion',
+    rule:
+      'Metric-specific fusion: ERA5 ana reanalysis, NASA POWER bağımsız referans. Ciddi ayrışmada yapay ortalama üretilmez.',
+  },
   climateLand: {
     functionName: 'era5-map',
     provider: 'ECMWF via Open-Meteo',
@@ -40,8 +53,12 @@ export const FIELD_DATA_AUTHORITY = {
 } as const;
 
 /**
- * Bu dosya TarlaPusula'nın "aynı metrik = tek otorite" sözleşmesidir.
- * Ekranlar provider seçmez; sadece service/repository katmanını kullanır.
+ * Bu dosya TarlaPusula'nın veri otoritesi sözleşmesidir.
+ *
+ * Aynı kullanıcı gerçeği tek canonical kayıt noktasında yaşar.
+ * Dış dünyadan ise birden fazla güvenilir kaynak gelebilir; ekranlar provider
+ * seçmez, service/fusion/repository katmanının ürettiği tek tutarlı sonucu
+ * kullanır. Kaynak/provenance ve güven bilgisi içeride korunur.
  *
  * NOT: Kullanıcının açıkça farklı dönem seçmesi (örn. radar 7 gün / 30 gün)
  * farklı bir sorgudur. Sadece ekran değiştirmek yeni sorgu değildir.
