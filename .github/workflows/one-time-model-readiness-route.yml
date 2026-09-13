@@ -1,0 +1,107 @@
+name: One-time model readiness route patch
+
+on:
+  push:
+    branches:
+      - feat/open-source-engines-20260913
+
+jobs:
+  patch-and-build:
+    if: ${{ !contains(github.event.head_commit.message, 'wire model readiness routes') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/open-source-engines-20260913
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Patch canonical season routing
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          app = Path('src/App.tsx')
+          text = app.read_text()
+          marker = "  useEffect(() => {\n    if (screen !== 'fieldDetail' || !selectedField) return;"
+          if 'tp:open-field-season' not in text:
+              block = """  useEffect(() => {
+    const handleOpenFieldSeason = (event: Event) => {
+      const detail = (event as CustomEvent<{ fieldId?: string }>).detail ?? {};
+      const requestedFieldId = String(detail.fieldId ?? '').trim();
+      if (!requestedFieldId) return;
+
+      const field = realFields.find(
+        (item) => String(item.id) === requestedFieldId,
+      );
+      if (!field) return;
+
+      openFieldDetail(field);
+      setAnnualYear(String(field.season ?? new Date().getFullYear()));
+      setAnnualCrop(field.crop ?? '');
+      setAnnualPlantingDate('');
+      setAnnualHarvestDate('');
+      setAnnualNotes('');
+      setHistoryMessage('');
+      setAnnualFormOpen(true);
+    };
+
+    window.addEventListener(
+      'tp:open-field-season',
+      handleOpenFieldSeason as EventListener,
+    );
+    return () => {
+      window.removeEventListener(
+        'tp:open-field-season',
+        handleOpenFieldSeason as EventListener,
+      );
+    };
+  }, [realFields]);
+
+"""
+              if marker not in text:
+                  raise SystemExit('App.tsx field-detail effect marker not found')
+              text = text.replace(marker, block + marker, 1)
+              app.write_text(text)
+
+          hook = Path('src/features/field-detail/hooks/useFieldProductionHistory.ts')
+          text = hook.read_text()
+          old = """      resetAnnualForm();
+      setAnnualFormOpen(false);
+      await loadProductionHistory(selectedField);
+"""
+          new = """      resetAnnualForm();
+      setAnnualFormOpen(false);
+      await loadProductionHistory(selectedField);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('tp:field-context-updated', {
+            detail: {
+              fieldId: String(selectedField.id),
+              changedFields: ['field_seasons', 'planting_date'],
+              source: 'field-season-saved',
+            },
+          }),
+        );
+      }
+"""
+          if 'source: \'field-season-saved\'' not in text:
+              if old not in text:
+                  raise SystemExit('useFieldProductionHistory season-save marker not found')
+              text = text.replace(old, new, 1)
+              hook.write_text(text)
+          PY
+      - run: npm ci
+      - run: npm run build
+      - name: Commit verified patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/App.tsx src/features/field-detail/hooks/useFieldProductionHistory.ts
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "feat(model-engines): wire model readiness routes"
+          git push origin HEAD:feat/open-source-engines-20260913
