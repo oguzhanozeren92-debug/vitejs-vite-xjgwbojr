@@ -1,0 +1,507 @@
+/* =========================================================
+   TARLAPUSULA PROFESSIONAL SYSTEM
+   Single visual authority loaded after all legacy styles.
+
+   Principle:
+   - one typography family
+   - one surface language
+   - one agricultural / satellite-tech atmosphere
+   - white technical layers instead of desaturated stock imagery
+   - category colours only where they carry meaning
+   ========================================================= */
+
+:root {
+  --tp-font-sans: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --tp-font-ui: var(--tp-font-sans);
+  --tp-font-display: var(--tp-font-sans);
+
+  --tp-pro-bg: #020605;
+  --tp-pro-bg-deep: #010302;
+  --tp-pro-surface: rgba(7, 15, 12, 0.88);
+  --tp-pro-surface-strong: rgba(8, 18, 14, 0.96);
+  --tp-pro-surface-soft: rgba(255, 255, 255, 0.035);
+  --tp-pro-line: rgba(255, 255, 255, 0.10);
+  --tp-pro-line-soft: rgba(255, 255, 255, 0.055);
+  --tp-pro-line-tech: rgba(232, 246, 239, 0.13);
+  --tp-pro-text: #f4f7f5;
+  --tp-pro-text-soft: #bac5bf;
+  --tp-pro-muted: #7f9087;
+  --tp-pro-emerald: #35d47d;
+  --tp-pro-cyan: #63d7e8;
+  --tp-pro-danger: #ef6473;
+  --tp-pro-warning: #efa84d;
+  --tp-pro-radius-sm: 12px;
+  --tp-pro-radius-md: 16px;
+  --tp-pro-radius-lg: 22px;
+  --tp-pro-radius-xl: 28px;
+  --tp-pro-shadow: 0 22px 58px rgba(0, 0, 0, 0.42);
+}
+
+/* ---------------------------------------------------------
+   TYPOGRAPHY AUTHORITY
+   --------------------------------------------------------- */
+html,
+body,
+button,
+input,
+select,
+textarea {
+  font-family: var(--tp-font-sans) !important;
+}
+
+body [class^="tp-"],
+body [class*=" tp-"] {
+  font-family: var(--tp-font-sans) !important;
+}
+
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6,
+body strong,
+body b {
+  font-family: var(--tp-font-sans) !important;
+}
+
+body h1,
+body h2,
+body h3 {
+  letter-spacing: -0.025em;
+}
+
+/* ---------------------------------------------------------
+   SHARED SATELLITE / AGRI-TECH ATMOSPHERE
+   Purpose-built CSS layers: no grayscale-photo treatment.
+   --------------------------------------------------------- */
+.tp-v1,
+.tp-onboarding-page,
+.tp-intro-backdrop {
+  background-color: var(--tp-pro-bg) !important;
+  background-image:
+    radial-gradient(circle at 18% 3%, rgba(53, 212, 125, 0.075), transparent 25%),
+    radial-gradient(circle at 92% 18%, rgba(99, 215, 232, 0.045), transparent 22%),
+    linear-gradient(114deg, transparent 0 19%, rgba(239, 249, 244, 0.045) 19.08% 19.18%, transparent 19.26% 46%, rgba(239, 249, 244, 0.028) 46.08% 46.18%, transparent 46.26%),
+    linear-gradient(24deg, transparent 0 28%, rgba(239, 249, 244, 0.038) 28.08% 28.18%, transparent 28.26% 67%, rgba(239, 249, 244, 0.025) 67.08% 67.18%, transparent 67.26%),
+    repeating-linear-gradient(90deg, transparent 0 119px, rgba(255, 255, 255, 0.018) 120px, transparent 121px),
+    repeating-linear-gradient(0deg, transparent 0 119px, rgba(255, 255, 255, 0.016) 120px, transparent 121px),
+    linear-gradient(180deg, #050b08 0%, #020605 52%, #010302 100%) !important;
+}
+
+/* =========================================================
+   HOME
+   ========================================================= */
+body .tp-v1 {
+  position: relative;
+  isolation: isolate;
+  min-height: 100dvh;
+  color: var(--tp-pro-text) !important;
+  overflow-x: clip;
+}
+
+body .tp-v1::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.76;
+  background:
+    radial-gradient(ellipse at 72% 31%, transparent 0 17%, rgba(245, 252, 248, 0.055) 17.2% 17.45%, transparent 17.7% 29%, rgba(245, 252, 248, 0.027) 29.2% 29.4%, transparent 29.6%),
+    linear-gradient(154deg, transparent 0 31%, rgba(245, 252, 248, 0.055) 31.08% 31.2%, transparent 31.3% 55%, rgba(245, 252, 248, 0.035) 55.08% 55.18%, transparent 55.3%),
+    linear-gradient(72deg, transparent 0 43%, rgba(99, 215, 232, 0.035) 43.08% 43.18%, transparent 43.3%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, .72) 54%, transparent 96%);
+  mask-image: linear-gradient(180deg, #000 0%, rgba(0, 0, 0, .72) 54%, transparent 96%);
+}
+
+body .tp-v1 .tp-main {
+  position: relative;
+  z-index: 1;
+  background: transparent !important;
+}
+
+body .tp-v1 .tp-v1-header {
+  background: rgba(3, 8, 6, 0.82) !important;
+  border-bottom: 1px solid var(--tp-pro-line-soft) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(1.05);
+  backdrop-filter: blur(24px) saturate(1.05);
+}
+
+/* Remove the "colour photo made monochrome" feel from home reference art. */
+body .tp-v1 .tp-home-today-bg,
+body .tp-v1 .tp-home-notifications-bg {
+  opacity: 0 !important;
+  filter: none !important;
+}
+
+body .tp-v1 .tp-home-today-reference,
+body .tp-v1 .tp-home-notifications-reference {
+  overflow: hidden;
+  border: 1px solid var(--tp-pro-line) !important;
+  background:
+    radial-gradient(circle at 88% 10%, rgba(255,255,255,.045), transparent 28%),
+    linear-gradient(135deg, rgba(255,255,255,.025), transparent 42%),
+    var(--tp-pro-surface) !important;
+  box-shadow: var(--tp-pro-shadow) !important;
+}
+
+body .tp-v1 .tp-home-today-reference::after,
+body .tp-v1 .tp-home-notifications-reference::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(118deg, transparent 0 32%, rgba(246, 252, 249, .06) 32.1% 32.3%, transparent 32.4% 69%, rgba(246, 252, 249, .035) 69.1% 69.25%, transparent 69.4%),
+    repeating-linear-gradient(0deg, transparent 0 34px, rgba(246,252,249,.018) 35px, transparent 36px);
+  opacity: .9;
+}
+
+/* =========================================================
+   DRAWER
+   ========================================================= */
+.tp-premium-drawer {
+  color: var(--tp-pro-text) !important;
+  border-color: rgba(255, 255, 255, 0.13) !important;
+  background:
+    radial-gradient(circle at 12% 6%, rgba(53, 212, 125, 0.08), transparent 24%),
+    radial-gradient(circle at 93% 62%, rgba(99, 215, 232, 0.04), transparent 26%),
+    linear-gradient(112deg, transparent 0 23%, rgba(245,252,248,.07) 23.08% 23.22%, transparent 23.32% 63%, rgba(245,252,248,.04) 63.08% 63.18%, transparent 63.3%),
+    linear-gradient(24deg, transparent 0 38%, rgba(245,252,248,.05) 38.08% 38.2%, transparent 38.3%),
+    repeating-linear-gradient(90deg, transparent 0 72px, rgba(255,255,255,.018) 73px, transparent 74px),
+    linear-gradient(180deg, rgba(5, 13, 9, .985), rgba(1, 5, 3, .995)) !important;
+  box-shadow:
+    24px 0 72px rgba(0,0,0,.62),
+    inset -1px 0 rgba(255,255,255,.07) !important;
+}
+
+.tp-premium-drawer::before {
+  background:
+    radial-gradient(ellipse at 38% 64%, transparent 0 18%, rgba(245,252,248,.055) 18.2% 18.45%, transparent 18.7% 28%, rgba(245,252,248,.024) 28.2% 28.4%, transparent 28.7%),
+    linear-gradient(152deg, transparent 0 44%, rgba(245,252,248,.045) 44.08% 44.2%, transparent 44.35%) !important;
+}
+
+.tp-premium-drawer-atmosphere::before {
+  opacity: 0 !important;
+  background: none !important;
+  filter: none !important;
+}
+
+.tp-premium-drawer-atmosphere::after {
+  opacity: 1 !important;
+  mix-blend-mode: normal !important;
+  background:
+    linear-gradient(123deg, transparent 0 17%, rgba(255,255,255,.065) 17.1% 17.25%, transparent 17.35% 51%, rgba(255,255,255,.038) 51.1% 51.2%, transparent 51.35%),
+    linear-gradient(36deg, transparent 0 46%, rgba(255,255,255,.05) 46.1% 46.25%, transparent 46.4%),
+    radial-gradient(circle at 73% 27%, rgba(255,255,255,.22) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 21% 71%, rgba(255,255,255,.15) 0 1px, transparent 1.5px) !important;
+  background-size: auto, auto, 143px 167px, 179px 137px !important;
+}
+
+.tp-premium-drawer::after {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.06), rgba(99,215,232,.52), rgba(255,255,255,.06), transparent) !important;
+  box-shadow: 0 0 18px rgba(99,215,232,.14) !important;
+}
+
+.tp-premium-drawer-brand-name,
+.tp-premium-drawer-welcome strong {
+  color: var(--tp-pro-text) !important;
+  font-family: var(--tp-font-sans) !important;
+}
+
+.tp-premium-drawer-brand-name em {
+  color: var(--tp-pro-text-soft) !important;
+}
+
+.tp-premium-points {
+  border-color: rgba(255,255,255,.13) !important;
+  background: rgba(255,255,255,.035) !important;
+  color: #dfe9e4 !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.035) !important;
+}
+
+/* =========================================================
+   ONBOARDING QUESTIONNAIRE + READY
+   Same family as Pusula trailer.
+   ========================================================= */
+.tp-onboarding-page {
+  min-height: 100dvh !important;
+  color: var(--tp-pro-text) !important;
+}
+
+.tp-onboarding-page .tp-question-shell,
+.tp-onboarding-page .tp-ready-shell {
+  position: relative;
+  isolation: isolate;
+  color: var(--tp-pro-text) !important;
+  border: 1px solid var(--tp-pro-line) !important;
+  background:
+    radial-gradient(circle at 85% 7%, rgba(53,212,125,.07), transparent 24%),
+    linear-gradient(145deg, rgba(255,255,255,.026), transparent 36%),
+    rgba(5, 12, 9, .95) !important;
+  box-shadow: 0 30px 80px rgba(0,0,0,.48) !important;
+}
+
+.tp-onboarding-page .tp-question-shell::before,
+.tp-onboarding-page .tp-ready-shell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(118deg, transparent 0 29%, rgba(245,252,248,.055) 29.08% 29.2%, transparent 29.3% 66%, rgba(245,252,248,.035) 66.08% 66.18%, transparent 66.3%),
+    repeating-linear-gradient(0deg, transparent 0 52px, rgba(255,255,255,.018) 53px, transparent 54px);
+  opacity: .86;
+}
+
+.tp-onboarding-page .tp-question-top strong,
+.tp-onboarding-page .tp-question-copy > p:last-child,
+.tp-onboarding-page .tp-ready-shell > p,
+.tp-onboarding-page .tp-skip-button,
+.tp-onboarding-page .tp-other-product-box small,
+.tp-onboarding-page .tp-profile-progress-card span,
+.tp-onboarding-page .tp-ready-benefits p {
+  color: var(--tp-pro-muted) !important;
+}
+
+.tp-onboarding-page .tp-question-copy h1,
+.tp-onboarding-page .tp-ready-shell h1,
+.tp-onboarding-page .tp-other-product-box label,
+.tp-onboarding-page .tp-ready-benefits p {
+  color: var(--tp-pro-text) !important;
+}
+
+.tp-onboarding-page .tp-question-label {
+  color: var(--tp-pro-cyan) !important;
+  letter-spacing: .16em !important;
+}
+
+.tp-onboarding-page .tp-progress span {
+  background: rgba(255,255,255,.08) !important;
+}
+
+.tp-onboarding-page .tp-progress span.tp-progress-active {
+  background: linear-gradient(90deg, var(--tp-pro-cyan), var(--tp-pro-emerald)) !important;
+  box-shadow: 0 0 14px rgba(99,215,232,.18);
+}
+
+.tp-onboarding-page .tp-back-button {
+  color: var(--tp-pro-text-soft) !important;
+}
+
+.tp-onboarding-page .tp-option {
+  color: var(--tp-pro-text-soft) !important;
+  border: 1px solid var(--tp-pro-line-soft) !important;
+  background: rgba(255,255,255,.028) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.018);
+}
+
+.tp-onboarding-page .tp-option:hover {
+  border-color: rgba(99,215,232,.24) !important;
+  background: rgba(255,255,255,.042) !important;
+}
+
+.tp-onboarding-page .tp-option.selected {
+  color: var(--tp-pro-text) !important;
+  border-color: rgba(53,212,125,.48) !important;
+  background: rgba(53,212,125,.075) !important;
+  box-shadow: 0 0 22px rgba(53,212,125,.07), inset 0 1px rgba(255,255,255,.025);
+}
+
+.tp-onboarding-page .tp-option-check {
+  color: var(--tp-pro-emerald) !important;
+  background: rgba(53,212,125,.10) !important;
+}
+
+.tp-onboarding-page .tp-other-product-box,
+.tp-onboarding-page .tp-profile-progress-card,
+.tp-onboarding-page .tp-ready-benefits > div {
+  border: 1px solid var(--tp-pro-line-soft) !important;
+  background: rgba(255,255,255,.027) !important;
+}
+
+.tp-onboarding-page .tp-other-product-box input {
+  color: var(--tp-pro-text) !important;
+  border-color: var(--tp-pro-line) !important;
+  background: rgba(0,0,0,.22) !important;
+}
+
+.tp-onboarding-page .tp-main-button,
+.tp-onboarding-page .tp-next-button {
+  color: #031008 !important;
+  border: 1px solid rgba(102,232,155,.65) !important;
+  background: linear-gradient(135deg, #a7f3d0, #59dd91) !important;
+  box-shadow: 0 14px 34px rgba(0,0,0,.28), 0 0 20px rgba(53,212,125,.09) !important;
+}
+
+.tp-onboarding-page .tp-ready-circle {
+  background:
+    radial-gradient(circle, rgba(53,212,125,.15), rgba(53,212,125,.035) 54%, transparent 72%) !important;
+  border: 1px solid rgba(53,212,125,.16);
+}
+
+.tp-onboarding-page .tp-ready-circle span {
+  background: rgba(53,212,125,.12) !important;
+  color: #a7f3d0 !important;
+  border: 1px solid rgba(53,212,125,.32);
+}
+
+.tp-onboarding-page .tp-profile-bar {
+  background: rgba(255,255,255,.07) !important;
+}
+
+.tp-onboarding-page .tp-profile-bar span {
+  background: linear-gradient(90deg, var(--tp-pro-cyan), var(--tp-pro-emerald)) !important;
+}
+
+/* =========================================================
+   INTRO TRAILER
+   Same visual language as questionnaire.
+   ========================================================= */
+.tp-intro-shell {
+  --tp-bg: var(--tp-pro-bg) !important;
+  --tp-card: var(--tp-pro-surface) !important;
+  --tp-inner: rgba(5,12,9,.92) !important;
+  --tp-border: var(--tp-pro-line) !important;
+  --tp-sage: #dbe8e1 !important;
+  --tp-heading: var(--tp-pro-text) !important;
+  --tp-secondary: var(--tp-pro-text-soft) !important;
+  --tp-muted: var(--tp-pro-muted) !important;
+  --tp-success: var(--tp-pro-emerald) !important;
+  font-family: var(--tp-font-sans) !important;
+}
+
+.tp-intro-backdrop {
+  background-color: rgba(1,4,3,.94) !important;
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+}
+
+.tp-intro-stage {
+  border-color: var(--tp-pro-line) !important;
+  background:
+    radial-gradient(circle at 84% 5%, rgba(53,212,125,.055), transparent 24%),
+    linear-gradient(145deg, rgba(255,255,255,.024), transparent 32%),
+    rgba(4,10,7,.97) !important;
+  box-shadow: 0 36px 100px rgba(0,0,0,.62) !important;
+}
+
+.tp-intro-stage::before {
+  background-image:
+    linear-gradient(118deg, transparent 0 28%, rgba(245,252,248,.05) 28.08% 28.18%, transparent 28.28% 68%, rgba(245,252,248,.028) 68.08% 68.18%, transparent 68.28%),
+    repeating-linear-gradient(90deg, transparent 0 55px, rgba(255,255,255,.014) 56px, transparent 57px),
+    repeating-linear-gradient(0deg, transparent 0 55px, rgba(255,255,255,.014) 56px, transparent 57px) !important;
+}
+
+.tp-intro-brand strong,
+.tp-intro-copy h1 {
+  font-family: var(--tp-font-sans) !important;
+  color: var(--tp-pro-text) !important;
+}
+
+.tp-intro-copy h1 {
+  font-weight: 650 !important;
+  letter-spacing: -.04em !important;
+}
+
+.tp-intro-eyebrow {
+  color: var(--tp-pro-cyan) !important;
+}
+
+.tp-intro-eyebrow::before,
+.tp-intro-progress i {
+  background: linear-gradient(90deg, var(--tp-pro-cyan), var(--tp-pro-emerald)) !important;
+}
+
+.tp-intro-copy > p,
+.tp-intro-brand small,
+.tp-intro-secondary,
+.tp-intro-skip {
+  color: var(--tp-pro-muted) !important;
+}
+
+.tp-intro-visual,
+.tp-intro-inline-explain,
+.tp-intro-node,
+.tp-intro-mission-card,
+.tp-intro-unlock-track article {
+  border-color: var(--tp-pro-line-soft) !important;
+  background-color: rgba(255,255,255,.025) !important;
+}
+
+.tp-intro-visual {
+  background-image:
+    radial-gradient(circle at 50% 45%, rgba(53,212,125,.06), transparent 33%),
+    linear-gradient(135deg, rgba(255,255,255,.018), transparent 42%) !important;
+}
+
+.tp-intro-primary {
+  color: #031008 !important;
+  border-color: rgba(102,232,155,.65) !important;
+  background: linear-gradient(135deg, #a7f3d0, #59dd91) !important;
+  box-shadow: 0 14px 34px rgba(0,0,0,.28), 0 0 18px rgba(53,212,125,.08) !important;
+}
+
+.tp-intro-compass-ring {
+  stroke: rgba(226,242,234,.28) !important;
+}
+
+.tp-intro-compass-needle {
+  fill: #dfece5 !important;
+}
+
+.tp-intro-compass-core {
+  fill: var(--tp-pro-emerald) !important;
+}
+
+/* ---------------------------------------------------------
+   GLOBAL CONTROL RHYTHM
+   --------------------------------------------------------- */
+body button {
+  letter-spacing: -0.005em;
+}
+
+body button,
+body input,
+body select,
+body textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 640px) {
+  .tp-onboarding-page {
+    padding: 0 !important;
+    align-items: stretch !important;
+  }
+
+  .tp-onboarding-page .tp-question-shell,
+  .tp-onboarding-page .tp-ready-shell {
+    width: 100% !important;
+    min-height: 100dvh !important;
+    max-height: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    padding: max(24px, env(safe-area-inset-top)) 22px max(24px, env(safe-area-inset-bottom)) !important;
+  }
+
+  .tp-intro-shell {
+    padding: 0 !important;
+  }
+
+  .tp-intro-stage {
+    min-height: 100dvh !important;
+    max-height: 100dvh !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tp-intro-visual-wrap,
+  .tp-premium-drawer {
+    animation: none !important;
+  }
+}
