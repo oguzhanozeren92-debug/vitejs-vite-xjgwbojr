@@ -3,6 +3,7 @@ import PcsePilotReadiness from '../features/field-detail/components/PcsePilotRea
 import FieldGrowthObservations from '../features/field-detail/components/FieldGrowthObservations';
 import SeasonModelInputs from '../features/field-detail/components/SeasonModelInputs';
 import FieldCostSummary from '../features/field-detail/components/FieldCostSummary';
+import FieldSeasonSummary from '../features/field-detail/components/FieldSeasonSummary';
 import { useEffect, useState } from 'react';
 import './FieldDetailLayout.css';
 import { getEntitlementSnapshot } from '../entitlements/useEntitlementStore';
@@ -512,6 +513,11 @@ export default function FieldDetailScreen(props: FieldDetailScreenProps) {
 
                 {!selectedField.demo && (
                   <div className="tp-production-history-block">
+                    {(selectedField.cropCycle ?? 'annual') === 'annual' && <FieldSeasonSummary
+                      seasons={annualSeasons}
+                      activities={activities}
+                      loading={historyLoading || activitiesLoading}
+                    />}
                     <div className="tp-production-history-head">
                       <div>
                         <span>
