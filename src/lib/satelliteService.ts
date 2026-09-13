@@ -37,6 +37,7 @@ function timeoutPromise(ms: number): Promise<never> {
 
 export async function analyzeFieldSatellite(
   geometry: any,
+  options?: { forceRefresh?: boolean },
 ): Promise<SatelliteHealthResult> {
   if (!supabase) {
     throw new Error('Uydu servisine bağlanılamadı.');
@@ -52,6 +53,9 @@ export async function analyzeFieldSatellite(
       daysBack: 45,
       maxCloudCoverage: 30,
     },
+    headers: options?.forceRefresh
+      ? { 'x-tp-force-refresh': '1' }
+      : undefined,
   });
 
   const result = await Promise.race([
