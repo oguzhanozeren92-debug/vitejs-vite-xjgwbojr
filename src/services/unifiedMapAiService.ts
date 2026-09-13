@@ -511,6 +511,58 @@ function biodiversityAnalysis(biodiversity: any): LiveSourceAnalysis | null {
   };
 }
 
+function soilProfileAnalysis(soil: any): LiveSourceAnalysis | null {
+  if (!soil || typeof soil !== 'object') return null;
+
+  const numberOrNull = (value: unknown) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
+
+  const ph = numberOrNull(soil.ph);
+  const organicCarbon = numberOrNull(soil.organicCarbon);
+  const clay = numberOrNull(soil.clay);
+  const sand = numberOrNull(soil.sand);
+  const silt = numberOrNull(soil.silt);
+  const resolutionMeters = numberOrNull(soil.resolutionMeters);
+
+  const facts: string[] = [];
+  if (ph !== null) facts.push(`pH ${ph.toFixed(1)}`);
+  if (organicCarbon !== null) {
+    facts.push(`organik karbon ${organicCarbon.toFixed(1)}`);
+  }
+
+  const texture: string[] = [];
+  if (clay !== null) texture.push(`kil %${clay.toFixed(0)}`);
+  if (sand !== null) texture.push(`kum %${sand.toFixed(0)}`);
+  if (silt !== null) texture.push(`silt %${silt.toFixed(0)}`);
+  if (texture.length) facts.push(texture.join(', '));
+
+  if (!facts.length) return null;
+
+  return {
+    layer: 'soil',
+    label: 'Toprak · SoilGrids',
+    result: {
+      status: 'normal',
+      headline: 'Toprak model profili bağlama eklendi',
+      summary: `${facts.join(' · ')}.${
+        resolutionMeters !== null
+          ? ` Yaklaşık ${resolutionMeters.toFixed(0)} m mekânsal çözünürlük.`
+          : ''
+      }`,
+      reasons: facts.slice(0, 3),
+      action:
+        'Gübreleme, kireçleme veya toprak düzenleme kararı için gerçek laboratuvar analizini önceliklendir.',
+      confidence: 'orta',
+      caution:
+        'SoilGrids model tabanlı toprak tahminidir; laboratuvar analizi varsa gerçek analiz daha yüksek otoritedir.',
+      importantArea: null,
+      model: 'soilgrids-profile-evidence-v1',
+    },
+  };
+}
+
 function sourceEvidence(source: LiveSourceAnalysis): FieldSynthesisEvidence {
   return {
     layer: source.layer,
@@ -749,21 +801,6 @@ async function interpretLiveUnifiedMap(
     );
   }
 
-  if (input.context.soil) {
-    jobs.push(
-      interpretSingleLayer({
-        ...input,
-        activeLayer: 'soil',
-        activeLayerLabel: 'Toprak',
-        context: { soil: input.context.soil },
-      }).then((result) => ({
-        layer: 'soil' as const,
-        label: 'Toprak',
-        result,
-      })),
-    );
-  }
-
   if (input.context.climate) {
     jobs.push(
       interpretSingleLayer({
@@ -786,6 +823,9 @@ async function interpretLiveUnifiedMap(
         result.status === 'fulfilled',
     )
     .map((result) => result.value);
+
+  const soil = soilProfileAnalysis(input.context.soil);
+  if (soil) sources.push(soil);
 
   const radar = radarVisionAnalysis(input.context.radar);
   if (radar) sources.push(radar);
