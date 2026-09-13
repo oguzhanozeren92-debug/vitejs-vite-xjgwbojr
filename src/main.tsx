@@ -6,6 +6,7 @@ import './styles/TarlaPusulaTheme.css';
 import './styles/MobileAppShell.css';
 import './styles/WhiteAppTheme.css';
 import './styles/MonochromeUI.css';
+import './styles/MobileUiFixes.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
