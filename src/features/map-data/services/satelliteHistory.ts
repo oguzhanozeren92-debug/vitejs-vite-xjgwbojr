@@ -127,6 +127,39 @@ export async function listSatelliteDates(
   return requestSceneListFallback(geometry);
 }
 
+export async function fetchHistoricalSatellitePreview(
+  geometry: unknown,
+  date: string,
+): Promise<string> {
+  const existing = getSatelliteHistoryPreview(date);
+  if (existing) return existing;
+  if (!supabase) throw new Error('Uydu servisine bağlanılamadı.');
+
+  const { data, error } = await supabase.functions.invoke(
+    'satellite-history-preview',
+    {
+      body: {
+        geometry: normalizeParcelGeometry(geometry),
+        imageDate: date,
+        maxCloudCoverage: 35,
+      },
+    },
+  );
+
+  if (error) throw new Error('Uydu önizlemesi alınamadı.');
+  if (
+    !data?.success ||
+    data.latestImageDate !== date ||
+    typeof data.ndviImage !== 'string' ||
+    !data.ndviImage
+  ) {
+    throw new Error(data?.message ?? 'Bu tarihin uydu önizlemesi bulunamadı.');
+  }
+
+  cacheSatelliteHistoryPreview(date, data.ndviImage);
+  return data.ndviImage;
+}
+
 export async function fetchHistoricalSatellite(
   geometry: unknown,
   date: string,
