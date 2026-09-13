@@ -204,6 +204,17 @@ export function useFieldProductionHistory({ selectedField, setSelectedField, set
       resetAnnualForm();
       setAnnualFormOpen(false);
       await loadProductionHistory(selectedField);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('tp:field-context-updated', {
+            detail: {
+              fieldId: String(selectedField.id),
+              changedFields: ['field_seasons', 'planting_date'],
+              source: 'field-season-saved',
+            },
+          }),
+        );
+      }
     } catch (error) {
       console.error('Sezon kaydedilemedi:', error);
       setHistoryMessage(error instanceof Error ? error.message : 'Sezon kaydedilemedi.');

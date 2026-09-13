@@ -426,6 +426,39 @@ export default function App() {
   };
 
   useEffect(() => {
+    const handleOpenFieldSeason = (event: Event) => {
+      const detail = (event as CustomEvent<{ fieldId?: string }>).detail ?? {};
+      const requestedFieldId = String(detail.fieldId ?? '').trim();
+      if (!requestedFieldId) return;
+
+      const field = realFields.find(
+        (item) => String(item.id) === requestedFieldId,
+      );
+      if (!field) return;
+
+      openFieldDetail(field);
+      setAnnualYear(String(field.season ?? new Date().getFullYear()));
+      setAnnualCrop(field.crop ?? '');
+      setAnnualPlantingDate('');
+      setAnnualHarvestDate('');
+      setAnnualNotes('');
+      setHistoryMessage('');
+      setAnnualFormOpen(true);
+    };
+
+    window.addEventListener(
+      'tp:open-field-season',
+      handleOpenFieldSeason as EventListener,
+    );
+    return () => {
+      window.removeEventListener(
+        'tp:open-field-season',
+        handleOpenFieldSeason as EventListener,
+      );
+    };
+  }, [realFields]);
+
+  useEffect(() => {
     if (screen !== 'fieldDetail' || !selectedField) return;
     void loadFieldSections(selectedField);
     void loadProductionHistory(selectedField);
