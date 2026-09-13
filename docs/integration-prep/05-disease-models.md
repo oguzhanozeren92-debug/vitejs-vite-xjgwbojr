@@ -4,15 +4,41 @@
 
 TarlaPusula'nın mevcut görsel hastalık teşhis akışını doğrudan değiştirmek değil; açık tarım veri setleri ve modellerle **benchmark** yapmak, gerçekten daha iyi sonuç veren bir model varsa kontrollü olarak ikinci görüş/yerel model katmanı eklemek.
 
-Ana aday: `Project-AgML/AgML`
+Ana framework adayı: `Project-AgML/AgML`
 
 ## Repo doğrulaması
 
 AgML aktif bir Python tarımsal ML framework'üdür. Tarımsal veri setleri, benchmarklar ve pretrained model erişimi sağlar. GitHub metadata'sında Apache-2.0 lisanslıdır.
 
-## PlantVillage notu
+2026-09-13 araştırma snapshot'ı: `c3343fc3b3f8abd89983927da3fc8319cb019d49`.
 
-`PlantVillage` tek bir yazılım paketi gibi ele alınmayacak. Kullanılan **dataset'in ve türevinin lisansı ayrıca doğrulanacak.** Bir dataset açıkça indirilebilir olsa bile ticari model eğitimi/yeniden dağıtım hakkı otomatik varsayılmaz.
+## PlantVillage lisans ve kaynak notu
+
+PlantVillage tek bir yazılım paketi gibi ele alınmayacak. `spMohanty/PlantVillage-Dataset` reposunun kök dizininde ayrı bir `LICENSE` dosyası görünmüyor; ancak güncel `README_HF.md` dataset metadata'sı lisansı **`cc-by-sa-3.0`** olarak işaretliyor.
+
+Bu nedenle:
+- datasetin Hugging Face/dağıtım metadata'sı CC BY-SA 3.0 olarak kaydedilir,
+- attribution hazırlanır,
+- datasetten türetilen artifact/model dağıtımının share-alike etkisi production öncesi ayrıca incelenir,
+- farklı mirror/repack datasetlerin lisansı orijinalle otomatik aynı varsayılmaz,
+- TensorFlow Datasets loader kodunun Apache lisansı ile görüntü datasetinin lisansı birbirine karıştırılmaz.
+
+Özet: **PlantVillage benchmark için kullanılabilir adaydır ama “kod açık = model ticari kullanım otomatik serbest” diye kabul edilmeyecek.**
+
+## Domain-shift uyarısı
+
+PlantVillage görüntüleri araştırma benchmarkı için değerlidir fakat gerçek çiftçi sahasındaki:
+- karmaşık arka plan,
+- farklı ışık,
+- birden fazla yaprak,
+- farklı telefon,
+- erken/geç belirti,
+- mekanik zarar,
+- besin noksanlığı
+
+gibi koşulları tek başına temsil ettiği varsayılmaz.
+
+Bu yüzden PlantVillage'da çok yüksek accuracy alan model doğrudan TarlaPusula production modeli olamaz.
 
 ## Ürün hedefi
 
@@ -84,9 +110,10 @@ TarlaPusula için ayrı test seti gerekir:
 - zararlı emgi/galeri belirtileri,
 - bulanık/düşük ışık görüntüler,
 - farklı telefon kameraları,
-- Türkiye'de kullanılan çeşitlerden örnekler.
+- Türkiye'de kullanılan çeşitlerden örnekler,
+- model sınıf listesinde olmayan vakalar.
 
-Dataset train/test sızıntısı olmamalı.
+Dataset train/test sızıntısı olmamalı. Aynı fiziksel yaprağın farklı augmentasyonları train ve test'e bölünmemeli.
 
 ## Ölçütler
 
@@ -98,6 +125,7 @@ En az:
 - yanlış pozitif oranı,
 - healthy vs diseased ayrımı,
 - out-of-distribution reddetme başarısı,
+- high-confidence wrong prediction rate,
 - inference süresi,
 - model boyutu
 ölçülür.
@@ -121,10 +149,13 @@ Model mobilde lokal çalışacaksa ayrıca ONNX/TFLite/CoreML dönüşüm hattı
 
 ## Feature flag
 
+Server-side rollout:
+
 ```text
-VITE_ENABLE_AGML_DISEASE_MODEL=false
-ENABLE_AGML_DISEASE_MODEL=false
+ENABLE_DISEASE_MODEL_V2=false
 ```
+
+Model secret veya kontrol credential'ı `VITE_*` ile frontend'e açılmaz.
 
 ## Mevcut AI ile karşılaştırma
 
@@ -139,6 +170,8 @@ Değerlendirme tablosu:
 ```text
 image_id | ground_truth | current_ai | candidate_model | current_correct | candidate_correct
 ```
+
+Gerçek kullanıcı fotoğrafı repo fixture'ı olmaz; benchmark ID ile güvenli test storage/araştırma seti ayrılır.
 
 ## Pusula bağlantısı
 
@@ -158,7 +191,8 @@ Bu fotoğraf güvenilir teşhis için yeterli görünmüyor. Daha yakın ve net 
 ## Sınır kalkınca ilk iş
 
 1. AgML içinde TarlaPusula ürün/hastalık kapsamına uygun dataset ve pretrained modelleri envanterle.
-2. Her datasetin lisansını ayrı tabloya yaz.
-3. 100+ etiketli açık/izinli görüntüden başlangıç benchmark seti oluştur.
-4. Mevcut AI ile aynı görüntüler üzerinde kör karşılaştırma yap.
-5. Aday model üstünlük göstermiyorsa uygulamaya ekleme.
+2. Her dataset **ve model ağırlığının** lisansını ayrı tabloya yaz.
+3. PlantVillage kullanılırsa CC BY-SA 3.0 metadata/attribution ve türev-model lisans etkisini release öncesi incele.
+4. 100+ etiketli açık/izinli görüntüden başlangıç benchmark seti oluştur; mümkün olduğunca gerçek saha görüntüsü ekle.
+5. Mevcut AI ile aynı görüntüler üzerinde kör karşılaştırma yap.
+6. Aday model gerçek saha setinde üstünlük göstermiyorsa uygulamaya ekleme.
