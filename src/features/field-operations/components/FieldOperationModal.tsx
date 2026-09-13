@@ -13,6 +13,7 @@ type Props = {
   fieldId: string | null;
   fieldName: string;
   initialType?: FieldOperationType;
+  initialDate?: string;
   onClose: () => void;
   onSaved?: (operation: FieldOperation) => void;
 };
@@ -80,6 +81,19 @@ const CSS = String.raw`
 .tp-field-operation-save{border:1px solid rgba(34,197,94,.18);background:rgba(34,197,94,.075);color:#bbf7d0}
 .tp-field-operation-actions button:disabled{opacity:.42;cursor:default}
 @media(max-width:480px){.tp-field-operation-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.tp-field-operation-row{grid-template-columns:1fr}}
+html body .tp-field-operation-sheet{background:#fff!important;border-color:#cbd0d6!important;filter:grayscale(1);box-shadow:0 20px 70px #0003!important}
+html body .tp-field-operation-sheet :is(h3,strong,span,p,label,small,div){color:#242a31!important}
+html body .tp-field-operation-sheet :is(.tp-field-operation-kicker,.tp-field-operation-cost-note,.tp-irrigation-mode small){color:#56616e!important;font-size:12px!important;line-height:1.5!important}
+html body .tp-field-operation-sheet h3{font-size:22px!important;line-height:1.3!important}
+html body .tp-field-operation-sheet :is(.tp-field-operation-label,.tp-field-operation-field label,.tp-irrigation-mode-title){font-size:14px!important}
+html body .tp-field-operation-sheet :is(input,select,textarea){background:#f7f8fa!important;color:#242a31!important;border-color:#cbd0d6!important;font-size:16px!important;min-height:44px!important}
+html body .tp-field-operation-sheet :is(input,select,textarea):focus{border-color:#424b56!important;box-shadow:0 0 0 2px #424b5620!important}
+html body .tp-field-operation-sheet button{background:#f0f2f4!important;color:#242a31!important;border-color:#cbd0d6!important;min-height:44px!important;font-size:14px!important;box-shadow:none!important}
+html body .tp-field-operation-sheet :is(.tp-field-operation-type.active,.tp-irrigation-mode.active){background:#e0e4e9!important;border-color:#424b56!important}
+html body .tp-field-operation-sheet :is(.tp-field-operation-type strong,.tp-irrigation-mode strong){font-size:14px!important}
+html body .tp-field-operation-sheet :is(.tp-irrigation-calc,.tp-irrigation-warning,.tp-field-operation-error,.tp-field-operation-success){background:#f0f2f4!important;border-color:#cbd0d6!important;font-size:14px!important;line-height:1.5!important}
+html body .tp-field-operation-sheet .tp-field-operation-save{background:#242a31!important;color:#fff!important}
+html body .tp-field-operation-head{border-color:#d4d9df!important}
 `;
 
 function localDate(offsetDays = 0) {
@@ -129,6 +143,7 @@ export default function FieldOperationModal({
   fieldId,
   fieldName,
   initialType = 'Sürme',
+  initialDate,
   onClose,
   onSaved,
 }: Props) {
@@ -153,7 +168,7 @@ export default function FieldOperationModal({
   useEffect(() => {
     if (!open) return;
     setType(initialType);
-    setDate(localDate());
+    setDate(initialDate ?? localDate());
     setProductName('');
     setQuantity('');
     setUnit('');
@@ -166,7 +181,7 @@ export default function FieldOperationModal({
     setError(null);
     setSuccess(null);
     setSaving(false);
-  }, [open, fieldId, initialType]);
+  }, [open, fieldId, initialType, initialDate]);
 
   useEffect(() => {
     if (!open || typeof document === 'undefined') return;

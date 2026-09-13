@@ -26,6 +26,7 @@ import { useEnsureHomeSatellite } from '../../features/home-map/hooks/useEnsureH
 import { useHomeSatelliteDate } from '../../features/home-map/hooks/useHomeSatelliteDate';
 import HomeMapPusulaStrip from '../../features/pusula/components/HomeMapPusulaStrip';
 import { useHomePusula } from '../../features/pusula/hooks/useHomePusula';
+import PusulaOperationQuestion from '../../features/pusula/components/PusulaOperationQuestion';
 import PusulaFieldChange from '../../features/field-changes/components/PusulaFieldChange';
 import PusulaFieldQuestion from '../../features/pusula/components/PusulaFieldQuestion';
 import { usePusulaFieldCompletion } from '../../features/pusula/hooks/usePusulaFieldCompletion';
@@ -207,6 +208,7 @@ export default function HomeScreen(props: HomeScreenProps) {
     fields: realFields,
   });
 
+  const [operationQuestionVisible, setOperationQuestionVisible] = useState(false);
   const homeIrrigation = useHomeIrrigationDecision(homeField);
   const homeNutrient = useHomeNutrientContext(homeField?.id);
   const homePhenology = useHomePhenologyInsight(homeField);
@@ -380,6 +382,7 @@ export default function HomeScreen(props: HomeScreenProps) {
     pusulaDecision,
     events: homeDecisionEvents,
     recentFieldOperations,
+    recentFieldOperationsReady,
   } = useHomeDecisionEngine({
     fieldKey,
     activeHomeLayer,
@@ -668,7 +671,7 @@ export default function HomeScreen(props: HomeScreenProps) {
             <button
               type="button"
               className={`tp-brand-pusula-anchor${
-                pusulaGuideAway ? ' tp-brand-pusula-away' : ''
+                pusulaGuideAway || operationQuestionVisible ? ' tp-brand-pusula-away' : ''
               }`}
               aria-label="Pusula"
               title="Pusula"
@@ -719,6 +722,15 @@ export default function HomeScreen(props: HomeScreenProps) {
           </div>
         </header>
 
+        <PusulaOperationQuestion
+          fieldId={homeField?.demo ? '' : fieldKey}
+          fieldName={String(homeField?.name ?? 'Tarlan')}
+          operations={recentFieldOperations}
+          ready={recentFieldOperationsReady}
+          paused={pusulaGuideAway || Boolean(quickSheet) || sideMenuOpen || irrigationRecordOpen}
+          onActiveChange={setOperationQuestionVisible}
+        />
+
         <PusulaFieldChange
           events={homeField?.demo ? [] : homeDecisionEvents}
           fieldId={fieldKey}
@@ -728,7 +740,7 @@ export default function HomeScreen(props: HomeScreenProps) {
           points={homePhenology.timeSeriesPoints}
           quality={homePhenology.ndviTrend?.quality}
           phenology={decisionPhenology}
-          paused={pusulaGuideAway || Boolean(quickSheet) || sideMenuOpen}
+          paused={pusulaGuideAway || Boolean(quickSheet) || sideMenuOpen || operationQuestionVisible}
           onMap={() => openHomeInsightTarget('map_vegetation')}
         />
 

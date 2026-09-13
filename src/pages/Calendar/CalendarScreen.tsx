@@ -416,6 +416,8 @@ export default function CalendarScreen({
                     value={reminderType}
                     onChange={setReminderType}
                     options={[
+                      'Sürme',
+                      'İkileme',
                       'Saha Kontrolü',
                       'Gübreleme',
                       'İlaçlama',

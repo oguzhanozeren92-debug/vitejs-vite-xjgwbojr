@@ -191,5 +191,6 @@ export function useHomeDecisionEngine(input: HomeDecisionEngineInput) {
     primaryDecision,
     pusulaDecision,
     recentFieldOperations: recentOperations.operations,
+    recentFieldOperationsReady: !recentOperations.loading && !recentOperations.error,
   };
 }
