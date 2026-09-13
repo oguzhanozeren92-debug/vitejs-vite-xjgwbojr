@@ -7,7 +7,7 @@ on:
 
 jobs:
   patch-and-build:
-    if: ${{ !contains(github.event.head_commit.message, 'wire model readiness routes') }}
+    if: "${{ !contains(github.event.head_commit.message, 'wire model readiness routes') }}"
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -89,7 +89,7 @@ jobs:
         );
       }
 """
-          if 'source: \'field-season-saved\'' not in text:
+          if "source: 'field-season-saved'" not in text:
               if old not in text:
                   raise SystemExit('useFieldProductionHistory season-save marker not found')
               text = text.replace(old, new, 1)
