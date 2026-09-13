@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 import TaskOverlayHost from './features/tasks/components/TaskOverlayHost';
+import FieldOperationHost from './features/field-operations/components/FieldOperationHost';
 import { installDataAuthorityNetworkGuard } from './features/data-bridge/dataAuthorityNetworkGuard';
 import './styles/TarlaPusulaTheme.css';
 import './styles/MobileAppShell.css';
@@ -20,5 +21,6 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
     <TaskOverlayHost />
+    <FieldOperationHost />
   </StrictMode>,
 )
