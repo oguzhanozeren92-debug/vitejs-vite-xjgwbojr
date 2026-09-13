@@ -2,127 +2,170 @@
 
 Bu klasör, açık kaynak ve harici tarım motorlarını **çalışan uygulamaya dokunmadan** entegrasyona hazır hale getirmek için kullanılır.
 
-## Kural
+## Ana kural
 
 Bir proje doğrudan `main` uygulama akışına alınmaz. Önce şu kapılardan geçer:
 
-1. **İhtiyaç doğrulama** — Mevcut TarlaPusula servisi aynı işi zaten yapıyor mu?
-2. **Lisans kontrolü** — Ticari dağıtım, türev çalışma, attribution ve bağımlılık lisansları.
-3. **Veri yeterliliği** — Modeli besleyecek gerçek ve tarihli girdi var mı?
-4. **Bağımsız pilot** — Kullanıcı verisini canlı akışa bağlamadan örnek/veri setiyle çalıştırma.
-5. **Karşılaştırmalı doğrulama** — Mevcut TarlaPusula sonucu ile aday motor aynı veri üzerinde karşılaştırılır.
-6. **Adapter sözleşmesi** — TarlaPusula iç veri tipleri ile üçüncü taraf model arasına izolasyon katmanı.
-7. **Feature flag** — Üretimde kapalı başlayacak; geri dönüş mümkün olacak.
-8. **Pusula kanıt şeması** — Model çıktısı ham tavsiye olarak değil, kaynak + tarih + güven + kanıt ile Pusula'ya taşınacak.
-9. **Kabul kriteri** — Hangi ölçümle başarılı sayılacağı önceden tanımlanır.
-10. **Canlıya geçiş** — Ancak doğrulama tamamlanınca `main` üzerinde ürün akışına bağlanır.
+1. ihtiyaç doğrulama — mevcut TarlaPusula servisi aynı işi zaten yapıyor mu?
+2. lisans kontrolü — kod, model, dataset ve harici API şartları.
+3. veri yeterliliği — gerçek ve tarihli input var mı?
+4. bağımsız pilot — fixture/açık veri üzerinde çalışma.
+5. shadow mode — gerçek TarlaPusula verisiyle ama kullanıcı kararını değiştirmeden kıyas.
+6. adapter sözleşmesi — üçüncü taraf formatı domain içine sızmaz.
+7. kalite kapısı — kabul metriği önceden tanımlıdır.
+8. feature flag / kill switch — üretimde varsayılan kapalı ve geri alınabilir.
+9. Pusula kanıt şeması — sonuç kaynak+tarih+kalite ile taşınır.
+10. sınırlı pilot — allowlist/field cohort.
+11. production — ancak doğrulama, lisans, privacy, fallback ve rollback tamamlanınca.
 
-## Standart adapter sözleşmesi
+## Hazırlık dosyaları
 
-Her motor mümkün olduğunca aynı üst sözleşmeye çevrilir:
+| Dosya | İçerik |
+| --- | --- |
+| `01-pyfao56.md` | FAO-56/su dengesi doğrulama pilotu |
+| `02-pcse.md` | PCSE/WOFOST gerçek yıllık ürün pilotu |
+| `03-aquacrop.md` | AquaCrop su-verim/sulama senaryosu |
+| `04-autogeobound.md` | otomatik tarla sınırı önerisi |
+| `05-disease-models.md` | AgML/PlantVillage ve hastalık modeli benchmarkı |
+| `06-farmvibes-agstack.md` | FarmVibes ve AgStack seçici araştırma |
+| `07-satellite-data-stack.md` | sentinelhub-py, eo-learn, custom scripts, OpenET, geemap |
+| `08-openagri-services.md` | OpenAgri Weather/Irrigation/FarmCalendar/Pest&Disease + Asset Registry |
+| `09-remaining-candidates.md` | farmOS ve belirsiz/eski adayların temizliği |
+| `10-license-matrix.md` | kod/veri/API lisans ve production kapısı |
+| `11-execution-runbook.md` | shadow -> pilot -> production uygulama runbook'u |
+| `12-common-contracts-and-schema.md` | ortak adapter tipleri ve Supabase schema taslağı |
+| `13-validation-test-matrix.md` | motor bazlı fixture, benchmark ve kabul testleri |
+| `14-feature-flags-and-env.md` | feature flag, secrets, timeout, cache, kill switch |
+| `15-data-readiness.md` | model bazlı minimum gerçek veri gereksinimleri |
+| `STATUS.md` | tek bakışta hazırlık ve canlılık durumu |
 
-```ts
-export type EngineEvidence = {
-  source: string;
-  observedAt?: string;
-  fieldId?: string;
-  metric: string;
-  value: number | string | null;
-  unit?: string;
-  confidence?: number;
-  note?: string;
-};
-
-export type EngineResult<T> = {
-  engine: string;
-  version?: string;
-  generatedAt: string;
-  validFor?: { fieldId?: string; from?: string; to?: string };
-  status: 'ok' | 'insufficient_data' | 'error';
-  result: T | null;
-  evidence: EngineEvidence[];
-  warnings: string[];
-};
-```
-
-Bu tip **tasarım sözleşmesidir**; çalışan uygulamaya henüz eklenmiş değildir.
-
-## Önerilen izolasyon yapısı
-
-Canlı entegrasyon zamanı geldiğinde hedef yapı:
+## Ortak mimari
 
 ```text
-src/integrations/<engine>/
-  adapter.ts
-  types.ts
-  mapper.ts
-  validation.ts
-  featureFlag.ts
-
-supabase/functions/<engine>-bridge/
-  index.ts
-
-tools/<engine>-poc/
-  README.md
-  fixtures/
-  run.*
+TarlaPusula gerçek verisi
+  -> input normalizer
+  -> integration adapter
+  -> external/model runner
+  -> normalized IntegrationResult
+  -> quality / validation gate
+  -> decision engine
+  -> Pusula evidence
+  -> UI / bildirim / takvim
 ```
 
-Python ağırlıklı motorlar Vercel ön yüzüne paketlenmez. Önce bağımsız iş/servis veya kontrollü backend katmanı olarak ele alınır.
+**Pusula AI hesap motoru değildir.** Sayısal/teknik motorların doğrulanmış sonucunu kullanıcıya açıklar ve birden fazla kanıtı bağlama göre birleştirir.
+
+## Python motorların sınırı
+
+PCSE, pyfao56, AquaCrop, AgML ve benzeri Python paketleri React/Vite bundle'a gömülmez.
+
+Mantıksal hedef:
+
+```text
+React UI
+   |
+trusted backend / Supabase auth boundary
+   |
+Model Gateway
+   |--- pyfao56 runner
+   |--- PCSE runner
+   |--- AquaCrop runner
+   |--- geospatial / ML runner
+```
+
+Deployment sağlayıcısı daha sonra seçilebilir; uygulama sözleşmesi sağlayıcıdan bağımsız tutulur.
 
 ## Öncelik sırası
 
 | Öncelik | Motor | Karar |
-|---|---|---|
-| P0 | pyfao56 | Mevcut PoC'yi gerçek eş tarihli veriyle doğrula; sulama kararına hemen bağlama. |
-| P0 | PCSE / WOFOST | Mevcut demo pilotunu gerçek yıllık ürün sezon verisiyle doğrula. |
-| P1 | AquaCrop-OSPy | Su-verim ve sulama senaryosu için yıllık ürün pilotu hazırla. |
-| P1 | AutoGeoBound / alan sınırı | Elle çizilen sınırın yanında öneri sınırı üret; kullanıcı onayı olmadan kaydetme. |
-| P1 | AgML / PlantVillage hattı | Hastalık modeli araştırması; mevcut AI teşhis akışına doğrudan bağlanmadan benchmark yap. |
-| P2 | FarmVibes.AI | Tek tek faydalı analiz parçalarını benchmark et; mevcut motorları komple değiştirme. |
-| P2 | AgStack Asset Registry | Tarla kimliği/interoperability ihtiyacı oluşursa değerlendir. |
-| HOLD | sentinelhub-py / eo-learn | Mevcut Copernicus NDVI hattı ihtiyacı karşılıyor; ölçülebilir üstünlük yoksa ekleme. |
-| HOLD | OpenAgri Weather | Mevcut hava altyapısı varken tekrar etme. |
-| HOLD | OpenAgri Irrigation | Mevcut Irrigation Engine'i doğrulamada referans olabilir; körlemesine değiştirme. |
+| --- | --- | --- |
+| P0 | pyfao56 | mevcut PoC'yi aynı gün/konum/veriyle shadow doğrula |
+| P0 | PCSE/WOFOST | gerçek yıllık ürün ve saha evre gözlemleriyle pilot |
+| P1 | AquaCrop-OSPy | sezon su/verim ve sulama senaryosu |
+| P1 | AutoGeoBound | öneri sınırı + TerraDraw düzenleme + kullanıcı onayı |
+| P1 | OpenAgri Pest&Disease | GDD/risk modeli benchmarkı; teşhis değil risk sinyali |
+| P2 | AgML/PlantVillage | mevcut hastalık AI'a karşı gerçek saha benchmarkı |
+| P2 | OpenET | ET validation / yardımcı uzaktan algılama sinyali |
+| P2 | FarmVibes.AI | yalnızca ölçülebilir değer sağlayan modüller |
+| RESEARCH | AgStack Asset Registry | gerçek interoperability ihtiyacı varsa |
+| HOLD | sentinelhub-py / eo-learn | mevcut Copernicus hattına üstünlük göstermedikçe eklenmez |
+| HOLD | OpenAgri Weather/Irrigation/FarmCalendar | mevcut sistemlerle büyük ölçüde çakışıyor; referans/benchmark |
+| HOLD | geemap | R&D/notebook aracı, production dependency değil |
+| REFERENCE | farmOS | veri modeli/işlem günlüğü fikirleri; full sistem değil |
 
-## Feature flag isimleri
+## Aktif kuyruktan çıkarılan belirsiz isimler
 
-Canlı entegrasyon aşamasında önerilen env/flag adları:
+- `YieldStack` — güvenilir tekil upstream doğrulanmadı.
+- `AgriGuard` — aynı isimde çok sayıda bağımsız demo var; exact upstream yok.
+- `agro-gis` — hangi repo ve hangi somut faydanın kastedildiği doğrulanmadı.
+- `Crop AI / CropGuard-like` — üretim bağımlılığı değil, UX/model fikir referansı.
+
+Exact URL + lisans + somut ürün katkısı olmadan yeniden aktif kuyruğa alınmazlar.
+
+## Feature flag kuralı
+
+Motorlar production'da varsayılan `off` başlar. Mantıksal isimler:
 
 ```text
-VITE_ENABLE_ENGINE_PYFAO56=false
-VITE_ENABLE_ENGINE_PCSE=false
-VITE_ENABLE_ENGINE_AQUACROP=false
-VITE_ENABLE_AUTO_FIELD_BOUNDARY=false
-VITE_ENABLE_AGML_DISEASE_MODEL=false
-VITE_ENABLE_FARMVIBES_ANALYTICS=false
+ENABLE_PYFAO56=false
+ENABLE_PCSE=false
+ENABLE_AQUACROP=false
+ENABLE_AUTOGEOBOUND=false
+ENABLE_PEST_RISK_ENGINE=false
+ENABLE_DISEASE_MODEL_V2=false
+ENABLE_OPENET=false
+ENABLE_FARMVIBES_EXPERIMENT=false
+ENABLE_AGSTACK_GEOID=false
 ```
 
-Sunucu tarafı gizli anahtarlar `VITE_` ile başlamaz ve ön yüze açılmaz.
+Bunların server-side uygulanması tercih edilir. **Secret/API credential için `VITE_*` kullanılmaz**; Vite frontend değişkenleri istemci bundle'ına girebilir.
 
 ## Güvenlik ve veri prensipleri
 
-- Özel tarla koordinatı harici servise yalnızca ürün akışı gerçekten gerektiriyorsa gönderilir.
-- Gerçek kullanıcı verisi PoC fixture olarak repoya commit edilmez.
-- Eksik veri model tarafından uydurulmaz; `insufficient_data` döner.
-- Model çıktısı tek başına ilaçlama, gübreleme veya sulama emri sayılmaz.
-- Her kritik öneride kaynak tarihi ve kullanılan girdiler saklanabilir olmalıdır.
-- Aynı tarla ve aynı tarih için eski/yeni motor karşılaştırılmadan varsayılan motor değiştirilmez.
+- gerçek kullanıcı verisi PoC fixture olarak GitHub'a commit edilmez.
+- özel tarla koordinatı yalnızca gereken servise ve minimum kapsamda gönderilir.
+- eksik veri model tarafından uydurulmaz; `no_data/not_ready` döner.
+- eski cache güncelmiş gibi gösterilmez.
+- model çıktısı tek başına ilaçlama/gübreleme/sulama emri değildir.
+- kritik sonuçlarda veri tarihi, kaynak ve model sürümü izlenebilir olmalıdır.
+- dış motor doğrudan React component'ten çağrılmaz.
+- frontend secret görmez.
+- her motor tek hareketle kapatılabilir olmalıdır.
 
-## Hazırlık tamamlandı ne demek?
+## Lisans özeti
 
-Bir entegrasyon ancak şu maddeler hazırsa `READY_FOR_IMPLEMENTATION` sayılır:
+Tam matris `10-license-matrix.md` içinde.
 
-- [ ] Repo ve resmi dokümantasyon doğrulandı
-- [ ] Lisans ve attribution notu yazıldı
-- [ ] Girdi şeması kesin
-- [ ] Çıktı şeması kesin
-- [ ] TarlaPusula adapter haritası kesin
-- [ ] Gerekli Supabase tablo/Edge Function taslağı kesin
-- [ ] Feature flag kesin
-- [ ] Fixture/test senaryosu kesin
-- [ ] Başarı ölçütü kesin
-- [ ] Fallback/rollback yolu kesin
-- [ ] Pusula'ya gidecek kanıt formatı kesin
+Öne çıkanlar:
+- pyfao56: CC0 1.0 / public-domain dedication.
+- AquaCrop-OSPy: Apache-2.0.
+- AutoGeoBound: Apache-2.0.
+- AgML: Apache-2.0.
+- FarmVibes.AI: MIT.
+- sentinelhub-py / eo-learn: MIT.
+- Sentinel Hub custom-scripts: CC-BY-SA-4.0 — doğrudan kopyalama ayrı değerlendirilir.
+- PCSE: repo LICENSE dosyasında EUPL 1.1 veya uygun sonraki sürümler.
+- OpenAgri Irrigation/Pest&Disease: EUPL-1.2.
+- farmOS: GPL-2.0.
+- AgStack Asset Registry: GitHub metadata'sında lisans görünmüyor; production öncesi manuel doğrulama zorunlu.
 
-Detaylı durum: `STATUS.md`.
+## `READY_FOR_IMPLEMENTATION` tanımı
+
+Bir entegrasyon ancak şu maddeler hazırsa uygulama PR'ına geçebilir:
+
+- [ ] exact upstream repo ve pinned version/commit
+- [ ] kod/model/dataset/API lisans notları
+- [ ] girdi şeması
+- [ ] çıktı şeması
+- [ ] adapter sınırı
+- [ ] gerekli backend/model-runner planı
+- [ ] veri readiness kontrolü
+- [ ] feature flag + kill switch
+- [ ] timeout/cache/rate/cost guard
+- [ ] fixture/test senaryoları
+- [ ] kabul metriği
+- [ ] fallback/rollback
+- [ ] Pusula evidence formatı
+- [ ] privacy ve authorization sınırı
+
+Detaylı durum için `STATUS.md`, uygulama sırası için `11-execution-runbook.md` kullanılır.
