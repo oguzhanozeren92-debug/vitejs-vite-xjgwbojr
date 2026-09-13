@@ -23,6 +23,7 @@ export type FieldOperationCreateInput = {
   photoPath?: string | null;
   aiAnalysis?: unknown | null;
   aiAnalyzedAt?: string | null;
+  inventoryProductId?: string | null;
 };
 
 export type FieldOperation = {
@@ -40,6 +41,9 @@ export type FieldOperation = {
   photoPath?: string | null;
   aiAnalysis?: unknown | null;
   aiAnalyzedAt?: string | null;
+  inventoryProductId?: string | null;
+  inventoryConsumedAmount?: number | null;
+  inventoryConsumedUnit?: string | null;
   createdAt: string;
 };
 
