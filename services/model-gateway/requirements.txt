@@ -1,0 +1,6 @@
+fastapi>=0.115,<1
+uvicorn[standard]>=0.34,<1
+pydantic>=2.10,<3
+pyfao56==1.4.3
+pcse==6.0.9
+aquacrop @ git+https://github.com/aquacropos/aquacrop.git@36cc20e44644ed1704398889312435c85e04a2f3
