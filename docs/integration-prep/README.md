@@ -65,8 +65,6 @@ TarlaPusula gerçek verisi
 
 PCSE, pyfao56, AquaCrop, AgML ve benzeri Python paketleri React/Vite bundle'a gömülmez.
 
-Mantıksal hedef:
-
 ```text
 React UI
    |
@@ -91,12 +89,12 @@ Deployment sağlayıcısı daha sonra seçilebilir; uygulama sözleşmesi sağla
 | P1 | AutoGeoBound | öneri sınırı + TerraDraw düzenleme + kullanıcı onayı |
 | P1 | OpenAgri Pest&Disease | GDD/risk modeli benchmarkı; teşhis değil risk sinyali |
 | P2 | AgML/PlantVillage | mevcut hastalık AI'a karşı gerçek saha benchmarkı |
-| P2 | OpenET | ET validation / yardımcı uzaktan algılama sinyali |
 | P2 | FarmVibes.AI | yalnızca ölçülebilir değer sağlayan modüller |
 | RESEARCH | AgStack Asset Registry | gerçek interoperability ihtiyacı varsa |
 | HOLD | sentinelhub-py / eo-learn | mevcut Copernicus hattına üstünlük göstermedikçe eklenmez |
 | HOLD | OpenAgri Weather/Irrigation/FarmCalendar | mevcut sistemlerle büyük ölçüde çakışıyor; referans/benchmark |
 | HOLD | geemap | R&D/notebook aracı, production dependency değil |
+| REFERENCE | OpenET | resmi kullanım alanı Batı ABD odaklı; Türkiye için adapter yazılmayacak |
 | REFERENCE | farmOS | veri modeli/işlem günlüğü fikirleri; full sistem değil |
 
 ## 2026-09-13 upstream snapshot'ları
@@ -115,18 +113,17 @@ FarmVibes.AI   d10670e18742d05aec50f73e4695d47978908994
 
 Bunlar “sonsuza kadar kullan” sürümleri değildir; reproducible başlangıç snapshot'larıdır. Implementasyon PR'ında upstream tekrar kontrol edilip bilinçli biçimde pinlenir.
 
-## Aktif kuyruktan çıkarılan belirsiz isimler
+## Aktif kuyruktan çıkarılan / reference'a düşürülenler
 
 - `YieldStack` — güvenilir tekil upstream doğrulanmadı.
 - `AgriGuard` — aynı isimde çok sayıda bağımsız demo var; exact upstream yok.
 - `agro-gis` — hangi repo ve hangi somut faydanın kastedildiği doğrulanmadı.
 - `Crop AI / CropGuard-like` — üretim bağımlılığı değil, UX/model fikir referansı.
-
-Exact URL + lisans + somut ürün katkısı olmadan yeniden aktif kuyruğa alınmazlar.
+- `OpenET` — resmi OpenET kullanımı Batı ABD/17 batı eyaleti bağlamında; Türkiye live ET kaynağı olarak planlanmıyor.
 
 ## Feature flag kuralı
 
-Motorlar production'da varsayılan `off` başlar. Mantıksal isimler:
+Motorlar production'da varsayılan `off` başlar:
 
 ```text
 ENABLE_PYFAO56=false
@@ -135,10 +132,11 @@ ENABLE_AQUACROP=false
 ENABLE_AUTOGEOBOUND=false
 ENABLE_PEST_RISK_ENGINE=false
 ENABLE_DISEASE_MODEL_V2=false
-ENABLE_OPENET=false
 ENABLE_FARMVIBES_EXPERIMENT=false
 ENABLE_AGSTACK_GEOID=false
 ```
+
+`ENABLE_OPENET` aktif planın parçası değildir; resmi Türkiye/global kapsama oluşursa yeniden değerlendirilir.
 
 Bunların server-side uygulanması tercih edilir. **Secret/API credential için `VITE_*` kullanılmaz**; Vite frontend değişkenleri istemci bundle'ına girebilir.
 
@@ -175,17 +173,18 @@ Tam matris `10-license-matrix.md` içinde.
 - AquaCrop-OSPy: Apache-2.0.
 - AutoGeoBound: Apache-2.0.
 - AgML: Apache-2.0.
+- PlantVillage (`README_HF.md` metadata): CC BY-SA 3.0; attribution/share-alike etkisi ayrıca incelenir.
 - FarmVibes.AI: MIT.
 - sentinelhub-py / eo-learn: MIT.
-- Sentinel Hub custom-scripts: CC-BY-SA-4.0 — doğrudan kopyalama ayrı değerlendirilir.
-- PCSE: repo LICENSE dosyasında EUPL 1.1 veya uygun sonraki sürümler.
+- Sentinel Hub custom-scripts: CC-BY-SA-4.0.
+- PCSE: EUPL 1.1 veya uygun sonraki sürümler.
 - OpenAgri Irrigation/Pest&Disease: EUPL-1.2.
 - farmOS: GPL-2.0.
-- AgStack Asset Registry: GitHub metadata'sında lisans görünmüyor; production öncesi manuel doğrulama zorunlu.
+- AgStack Asset Registry: repo metadata'sında lisans görünmüyor; production öncesi manuel doğrulama zorunlu.
 
 ## İlk implementation işleri
 
-`19-execution-backlog.md` kartları kullanılacak. İlk sıra:
+`19-execution-backlog.md` kartları kullanılacak:
 
 ```text
 TP-INT-001 common contracts
@@ -195,6 +194,8 @@ TP-INT-020 PCSE pilot
 TP-INT-030 AquaCrop scenarios
 TP-INT-040 AutoGeoBound
 TP-INT-050 Pest Risk
+TP-INT-060 Disease benchmark
+TP-INT-080 FarmVibes research
 ```
 
 Veri işleri (`TP-DATA-*`) bunlara paralel yürür.
