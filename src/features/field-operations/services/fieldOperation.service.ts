@@ -37,6 +37,9 @@ function mapOperation(row: any): FieldOperation {
     unit: nullableText(row.unit),
     cost: nullableNumber(row.cost),
     notes: nullableText(row.notes),
+    photoPath: nullableText(row.photo_path),
+    aiAnalysis: row.ai_analysis ?? null,
+    aiAnalyzedAt: nullableText(row.ai_analyzed_at),
     createdAt: String(row.created_at),
   };
 }
@@ -51,6 +54,43 @@ function localIsoDateOffset(days: number) {
   const day = String(date.getDate()).padStart(2, '0');
 
   return `${year}-${month}-${day}`;
+}
+
+function emitFieldOperationChange(
+  operation: Pick<FieldOperation, 'fieldId' | 'type'>,
+  action: 'saved' | 'deleted',
+  fullOperation?: FieldOperation,
+) {
+  if (typeof window === 'undefined') return;
+
+  if (action === 'saved' && fullOperation) {
+    window.dispatchEvent(
+      new CustomEvent('tp:field-operation-saved', {
+        detail: { fieldId: operation.fieldId, operation: fullOperation },
+      }),
+    );
+  }
+
+  if (action === 'deleted') {
+    window.dispatchEvent(
+      new CustomEvent('tp:field-operation-deleted', {
+        detail: { fieldId: operation.fieldId },
+      }),
+    );
+  }
+
+  window.dispatchEvent(
+    new CustomEvent('tp:field-context-updated', {
+      detail: {
+        fieldId: operation.fieldId,
+        changedFields:
+          operation.type === 'Sulama'
+            ? ['activities', 'irrigation_history']
+            : ['activities', 'field_operations'],
+        source: `field-operation-${action}`,
+      },
+    }),
+  );
 }
 
 export async function listRecentFieldOperations(
@@ -74,7 +114,7 @@ export async function listRecentFieldOperations(
   const { data, error } = await supabase
     .from('activities')
     .select(
-      'id,user_id,field_id,activity_type,title,activity_date,product_name,quantity,unit,cost,notes,created_at',
+      'id,user_id,field_id,activity_type,title,activity_date,product_name,quantity,unit,cost,notes,photo_path,ai_analysis,ai_analyzed_at,created_at',
     )
     .eq('field_id', fieldId)
     .eq('user_id', authData.user.id)
@@ -87,6 +127,11 @@ export async function listRecentFieldOperations(
   return (data ?? []).map(mapOperation);
 }
 
+/**
+ * TarlaPusula'da `activities` tablosuna kullanıcı işlemi yazan TEK kapı.
+ * Harita, Tarla Detayı, Pusula, Takvim ve gelecekteki tüm girişler bu servisi
+ * kullanmalıdır. Böylece aynı işlem için farklı doğrulama/motor tetikleri oluşmaz.
+ */
 export async function createFieldOperation(
   input: FieldOperationCreateInput,
 ): Promise<FieldOperation> {
@@ -127,6 +172,12 @@ export async function createFieldOperation(
       unit: quantity == null ? null : nullableText(input.unit),
       cost,
       notes: nullableText(input.notes),
+      photo_path: nullableText(input.photoPath),
+      ai_analysis: input.aiAnalysis ?? null,
+      ai_analyzed_at:
+        input.aiAnalysis == null
+          ? null
+          : nullableText(input.aiAnalyzedAt) ?? new Date().toISOString(),
     })
     .select('*')
     .single();
@@ -134,32 +185,55 @@ export async function createFieldOperation(
   if (error) throw error;
 
   const operation = mapOperation(data);
+  emitFieldOperationChange(operation, 'saved', operation);
+  return operation;
+}
 
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(
-      new CustomEvent('tp:field-operation-saved', {
-        detail: { fieldId: operation.fieldId, operation },
-      }),
-    );
+/**
+ * Silme de aynı domain kapısından geçer; böylece sulama/karar motorları eski
+ * operation cache'i ile devam etmez.
+ */
+export async function deleteFieldOperation(operationIdInput: string) {
+  const operationId = String(operationIdInput ?? '').trim();
+  if (!operationId) return;
 
-    /*
-     * Ortak Field Context tüketicilerine de haber ver.
-     * Sulama Motoru activities tablosundaki Sulama kaydını gerçek bağlam olarak
-     * okuduğu için yeni kayıt sonrası eski kararı ekranda tutmamalı.
-     */
-    window.dispatchEvent(
-      new CustomEvent('tp:field-context-updated', {
-        detail: {
-          fieldId: operation.fieldId,
-          changedFields:
-            operation.type === 'Sulama'
-              ? ['activities', 'irrigation_history']
-              : ['activities', 'field_operations'],
-          source: 'field-operation',
-        },
-      }),
-    );
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (authError || !authData.user) {
+    throw new Error('İşlem silmek için oturum gerekli.');
   }
 
-  return operation;
+  const { data: existing, error: readError } = await supabase
+    .from('activities')
+    .select('id,field_id,activity_type,photo_path')
+    .eq('id', operationId)
+    .eq('user_id', authData.user.id)
+    .maybeSingle();
+
+  if (readError) throw readError;
+  if (!existing) return;
+
+  const { error } = await supabase
+    .from('activities')
+    .delete()
+    .eq('id', operationId)
+    .eq('user_id', authData.user.id);
+
+  if (error) throw error;
+
+  const photoPath = nullableText(existing.photo_path);
+  if (photoPath) {
+    try {
+      await supabase.storage.from('field-activity-photos').remove([photoPath]);
+    } catch (storageError) {
+      console.warn('Silinen işlem fotoğrafı temizlenemedi:', storageError);
+    }
+  }
+
+  emitFieldOperationChange(
+    {
+      fieldId: String(existing.field_id),
+      type: String(existing.activity_type),
+    },
+    'deleted',
+  );
 }
