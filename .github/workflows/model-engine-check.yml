@@ -1,0 +1,56 @@
+name: Model Engine Check
+
+on:
+  push:
+    branches:
+      - feat/open-source-engines-20260913
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Lock raw pyfao56 client route
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('supabase/functions/model-engine-shadow/index.ts')
+          text = path.read_text()
+          needle = """  if (engine === 'pyfao56' && operation === 'shadow-run') {
+            return '/v1/irrigation/pyfao56/shadow';
+          }
+          """
+          if needle in text:
+              path.write_text(text.replace(needle, ''))
+
+      - name: Commit security patch if needed
+        run: |
+          if ! git diff --quiet -- supabase/functions/model-engine-shadow/index.ts; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add supabase/functions/model-engine-shadow/index.ts
+            git commit -m "security(model-engines): block raw pyfao56 client route [skip ci]"
+            git push
+          fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
