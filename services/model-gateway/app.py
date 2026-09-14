@@ -19,7 +19,7 @@ IS_DEVELOPMENT = os.getenv("MODEL_GATEWAY_ENV", "production").strip().lower() ==
 
 app = FastAPI(
     title="TarlaPusula Model Gateway",
-    version="0.2.3",
+    version="0.2.4",
     docs_url="/docs" if IS_DEVELOPMENT else None,
     redoc_url="/redoc" if IS_DEVELOPMENT else None,
     openapi_url="/openapi.json" if IS_DEVELOPMENT else None,
@@ -97,9 +97,6 @@ def _auth_configured() -> bool:
 def _authorize(shared_key: str | None) -> None:
     expected = _configured_shared_key()
 
-    # Auth'suz kullanım yalnız bilinçli olarak development seçildiğinde ve
-    # shared key tanımlanmadığında mümkündür. Deploy ortamı yanlış yapılandırılsa
-    # bile varsayılan davranış kapalı/güvenlidir.
     if not _auth_required():
         return
 
@@ -116,8 +113,104 @@ def _module_status(module_name: str) -> dict[str, Any]:
             "version": getattr(module, "__version__", None),
         }
     except Exception:
-        # Public health endpoint iç paket/traceback ayrıntısı sızdırmaz.
         return {"available": False, "version": None}
+
+
+def _saturation_vapour_pressure(temp_c: float) -> float:
+    return 0.6108 * math.exp((17.27 * temp_c) / (temp_c + 237.3))
+
+
+def _wind_at_two_meters(speed: float, height_m: float) -> float:
+    if abs(height_m - 2.0) < 1e-9:
+        return speed
+    denominator = math.log(67.8 * height_m - 5.42)
+    if denominator <= 0:
+        raise ValueError("Wind measurement height is outside FAO-56 logarithmic range")
+    return speed * 4.87 / denominator
+
+
+def _fao56_control_et0(item: WeatherDay, station: StationInput) -> float:
+    """Independent FAO-56 daily Penman-Monteith control using the exact same input weather.
+
+    This is diagnostic-only. It is deliberately kept separate from TarlaPusula's
+    production irrigation authority so we can distinguish provider/input effects
+    from pyfao56 implementation effects.
+    """
+    tmean = (item.tmax_c + item.tmin_c) / 2.0
+    es = (
+        _saturation_vapour_pressure(item.tmax_c)
+        + _saturation_vapour_pressure(item.tmin_c)
+    ) / 2.0
+    ea = _saturation_vapour_pressure(item.dew_point_c)
+
+    delta = (
+        4098.0
+        * _saturation_vapour_pressure(tmean)
+        / ((tmean + 237.3) ** 2)
+    )
+    pressure = 101.3 * (((293.0 - 0.0065 * station.elevation_m) / 293.0) ** 5.26)
+    gamma = 0.000665 * pressure
+
+    doy = item.date.timetuple().tm_yday
+    phi = math.radians(station.latitude)
+    dr = 1.0 + 0.033 * math.cos((2.0 * math.pi / 365.0) * doy)
+    solar_declination = 0.409 * math.sin((2.0 * math.pi / 365.0) * doy - 1.39)
+    sunset_arg = -math.tan(phi) * math.tan(solar_declination)
+    sunset_arg = max(-1.0, min(1.0, sunset_arg))
+    sunset_hour_angle = math.acos(sunset_arg)
+    extraterrestrial_radiation = (
+        (24.0 * 60.0 / math.pi)
+        * 0.0820
+        * dr
+        * (
+            sunset_hour_angle * math.sin(phi) * math.sin(solar_declination)
+            + math.cos(phi)
+            * math.cos(solar_declination)
+            * math.sin(sunset_hour_angle)
+        )
+    )
+
+    clear_sky_radiation = (
+        0.75 + 2e-5 * station.elevation_m
+    ) * extraterrestrial_radiation
+    rs_rso = (
+        item.solar_radiation_mj_m2 / clear_sky_radiation
+        if clear_sky_radiation > 0
+        else 0.0
+    )
+    rs_rso = max(0.0, min(1.0, rs_rso))
+
+    net_shortwave = (1.0 - 0.23) * item.solar_radiation_mj_m2
+    sigma = 4.903e-9
+    tmax_k = item.tmax_c + 273.16
+    tmin_k = item.tmin_c + 273.16
+    net_longwave = (
+        sigma
+        * ((tmax_k**4 + tmin_k**4) / 2.0)
+        * (0.34 - 0.14 * math.sqrt(max(ea, 0.0)))
+        * (1.35 * rs_rso - 0.35)
+    )
+    net_radiation = net_shortwave - net_longwave
+
+    u2 = _wind_at_two_meters(item.wind_m_s, station.wind_height_m)
+    numerator = (
+        0.408 * delta * net_radiation
+        + gamma
+        * (900.0 / (tmean + 273.0))
+        * u2
+        * max(0.0, es - ea)
+    )
+    denominator = delta + gamma * (1.0 + 0.34 * u2)
+    if denominator <= 0:
+        raise ValueError("FAO-56 control denominator is not positive")
+
+    return max(0.0, numerator / denominator)
+
+
+def _delta_pct(reference: float, candidate: float) -> float | None:
+    if not math.isfinite(reference) or abs(reference) < 1e-9:
+        return None
+    return ((candidate - reference) / reference) * 100.0
 
 
 @app.get("/health")
@@ -153,13 +246,7 @@ def run_pyfao56_shadow(
     payload: PyFao56Request,
     x_model_gateway_key: str | None = Header(default=None),
 ) -> dict[str, Any]:
-    """Compare pyfao56 reference ET with TarlaPusula's validated daily Kc.
-
-    This first shadow scope intentionally does NOT execute pyfao56.Model. The
-    upstream model has crop/soil defaults that would create synthetic farm
-    assumptions when Kcb, evaporation layer and current soil water are missing.
-    Full root-zone water balance stays blocked until those explicit inputs exist.
-    """
+    """Compare pyfao56 reference ET with TarlaPusula's validated daily Kc."""
     _authorize(x_model_gateway_key)
 
     if ENGINE_REGISTRY["pyfao56"]["rollout"] not in {"shadow", "pilot", "production"}:
@@ -221,6 +308,10 @@ def run_pyfao56_shadow(
                     detail=f"pyfao56 could not compute ET0 for {item.date.isoformat()}",
                 )
 
+            control_et0 = _fao56_control_et0(item, payload.station)
+            algorithm_delta = et0 - control_et0
+            algorithm_delta_pct = _delta_pct(control_et0, et0)
+
             results.append(
                 {
                     "date": item.date.isoformat(),
@@ -228,6 +319,13 @@ def run_pyfao56_shadow(
                     "kc": round(float(item.kc), 4),
                     "crop_et_mm": round(et0 * float(item.kc), 3),
                     "rain_mm": round(float(item.rain_mm), 3),
+                    "same_weather_fao56_control_et_mm": round(control_et0, 3),
+                    "same_weather_algorithm_delta_mm": round(algorithm_delta, 3),
+                    "same_weather_algorithm_delta_pct": (
+                        round(algorithm_delta_pct, 2)
+                        if algorithm_delta_pct is not None
+                        else None
+                    ),
                 }
             )
 
@@ -239,6 +337,15 @@ def run_pyfao56_shadow(
             "engine_version": getattr(fao, "__version__", None),
             "field_id": payload.field_id,
             "production_authority": False,
+            "algorithm_isolation": {
+                "enabled": True,
+                "control": "independent_fao56_daily_penman_monteith",
+                "weather_basis": "identical_gateway_weather_input",
+                "note": (
+                    "This diagnostic isolates implementation/formula delta from weather-provider delta; "
+                    "it does not change production irrigation decisions."
+                ),
+            },
             "full_water_balance_ready": False,
             "blocked_full_water_balance_inputs": [
                 "validated_basal_kcb",
