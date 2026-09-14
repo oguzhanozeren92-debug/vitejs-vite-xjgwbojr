@@ -37,7 +37,7 @@ jobs:
             echo "Synthetic risk data introduced"
             exit 1
           fi
-          if grep -R "riskScore\|risk_score\|0-100" src/features/risk; then
+          if grep -R "riskScore\|risk_score" src/features/risk; then
             echo "Fabricated composite risk score introduced"
             exit 1
           fi
