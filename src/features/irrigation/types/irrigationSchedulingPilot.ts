@@ -25,6 +25,11 @@ export type IrrigationSchedulingPilotResult = {
     missingInputs: string[];
     evidence: Record<string, unknown>;
     context: Record<string, unknown>;
+    inputAdapters: {
+      soilProfileCandidate: Record<string, unknown>;
+      initialWaterContent: Record<string, unknown>;
+      irrigationManagement: Record<string, unknown>;
+    };
   };
 
   etContext: {
