@@ -24,9 +24,17 @@ def assert_close(actual: float, expected: float, tolerance: float = 0.01) -> Non
 
 def main() -> None:
     # Fail-closed security: deploy-style/default production mode must never allow
-    # an empty shared key.
+    # an empty shared key and must report itself as not ready.
     os.environ.pop("MODEL_GATEWAY_ENV", None)
     os.environ.pop("MODEL_GATEWAY_SHARED_KEY", None)
+
+    production_health = health()
+    assert production_health["ok"] is False
+    assert production_health["ready"] is False
+    assert production_health["environment"] == "production"
+    assert production_health["auth_required"] is True
+    assert production_health["auth_configured"] is False
+    assert production_health["production_authority"] is False
 
     secure_payload = PyFao56Request(
         field_id="smoke-field",
@@ -68,10 +76,13 @@ def main() -> None:
     assert day["crop_et_mm"] > 0
     assert_close(day["crop_et_mm"], day["reference_et_mm"] * 0.8, tolerance=0.02)
 
-    health_result = health()
-    assert health_result["ok"] is True
-    assert health_result["auth_required"] is False
-    assert health_result["engines"]["pyfao56"]["available"] is True
+    development_health = health()
+    assert development_health["ok"] is True
+    assert development_health["ready"] is True
+    assert development_health["auth_required"] is False
+    assert development_health["auth_configured"] is True
+    assert development_health["production_authority"] is False
+    assert development_health["engines"]["pyfao56"]["available"] is True
 
     pcse = pcse_readiness(
         EngineReadinessRequest(field_id="smoke-field", available_inputs=[]),
