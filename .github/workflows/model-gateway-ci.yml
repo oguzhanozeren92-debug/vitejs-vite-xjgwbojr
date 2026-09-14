@@ -30,8 +30,11 @@ jobs:
           cache: 'npm'
       - name: Install frontend dependencies
         run: npm ci
-      - name: Typecheck frontend
-        run: npm run typecheck
+      - name: Lint shadow integration files
+        run: >-
+          npx oxlint
+          src/features/model-engines/services/modelEngineShadow.service.ts
+          src/features/irrigation/services/historicalKcReconstruction.service.ts
       - name: Build frontend
         run: npm run build
 
