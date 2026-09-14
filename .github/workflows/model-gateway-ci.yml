@@ -4,18 +4,37 @@ on:
   pull_request:
     paths:
       - 'services/model-gateway/**'
+      - 'src/features/model-engines/**'
+      - 'src/features/irrigation/services/historicalKcReconstruction.service.ts'
       - '.github/workflows/model-gateway-ci.yml'
   push:
     branches:
       - 'feat/open-source-engines-20260913'
     paths:
       - 'services/model-gateway/**'
+      - 'src/features/model-engines/**'
+      - 'src/features/irrigation/services/historicalKcReconstruction.service.ts'
       - '.github/workflows/model-gateway-ci.yml'
 
 permissions:
   contents: read
 
 jobs:
+  frontend-shadow-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Typecheck frontend
+        run: npm run typecheck
+      - name: Build frontend
+        run: npm run build
+
   core-shadow:
     runs-on: ubuntu-latest
     defaults:
