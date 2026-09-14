@@ -1,0 +1,203 @@
+name: Model Gateway CI
+
+on:
+  pull_request:
+    paths:
+      - 'services/model-gateway/**'
+      - 'src/features/model-engines/**'
+      - 'src/features/map-data/services/fieldClimateLayers.service.ts'
+      - 'src/features/irrigation/hooks/useIrrigationSchedulingPilot.ts'
+      - 'src/features/irrigation/services/historicalKcReconstruction.service.ts'
+      - 'src/features/irrigation/services/irrigationSchedulingPilot.service.ts'
+      - 'src/features/irrigation/types/irrigationSchedulingPilot.ts'
+      - 'supabase/functions/model-engine-shadow/**'
+      - 'supabase/functions/model-engine-readiness/**'
+      - 'supabase/functions/aquacrop-pilot-inputs/**'
+      - 'supabase/functions/aquacrop-pilot-run/**'
+      - 'supabase/functions/aquacrop-soil-profile/**'
+      - 'supabase/functions/pcse-pilot-inputs/**'
+      - 'supabase/functions/field-climate-layers/**'
+      - 'supabase/migrations/*climate_layer*'
+      - 'tools/check-model-engine-contracts.py'
+      - '.github/workflows/model-gateway-ci.yml'
+  push:
+    branches:
+      - 'feat/open-source-engines-20260913'
+    paths:
+      - 'services/model-gateway/**'
+      - 'src/features/model-engines/**'
+      - 'src/features/map-data/services/fieldClimateLayers.service.ts'
+      - 'src/features/irrigation/hooks/useIrrigationSchedulingPilot.ts'
+      - 'src/features/irrigation/services/historicalKcReconstruction.service.ts'
+      - 'src/features/irrigation/services/irrigationSchedulingPilot.service.ts'
+      - 'src/features/irrigation/types/irrigationSchedulingPilot.ts'
+      - 'supabase/functions/model-engine-shadow/**'
+      - 'supabase/functions/model-engine-readiness/**'
+      - 'supabase/functions/aquacrop-pilot-inputs/**'
+      - 'supabase/functions/aquacrop-pilot-run/**'
+      - 'supabase/functions/aquacrop-soil-profile/**'
+      - 'supabase/functions/pcse-pilot-inputs/**'
+      - 'supabase/functions/field-climate-layers/**'
+      - 'supabase/migrations/*climate_layer*'
+      - 'tools/check-model-engine-contracts.py'
+      - '.github/workflows/model-gateway-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  contract-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify model-engine contracts stay synchronized
+        run: python tools/check-model-engine-contracts.py
+      - name: Verify readiness trust boundary
+        run: |
+          grep -q "input_authority: 'server-derived'" supabase/functions/model-engine-readiness/index.ts
+          grep -q "client_supplied_available_inputs_ignored: true" supabase/functions/model-engine-readiness/index.ts
+          grep -q "model-engine-readiness" src/features/model-engines/services/modelEngineShadow.service.ts
+          if grep -q "available_inputs: availableInputs" src/features/model-engines/services/modelEngineShadow.service.ts; then
+            echo "Client-controlled readiness inputs reintroduced"
+            exit 1
+          fi
+      - name: Verify AquaCrop pilot input trust boundary
+        run: |
+          grep -q "production_authority: false" supabase/functions/aquacrop-pilot-inputs/index.ts
+          grep -q "input_authority: 'server-derived'" supabase/functions/aquacrop-pilot-inputs/index.ts
+          grep -q "client_supplied_agricultural_values_accepted: false" supabase/functions/aquacrop-pilot-inputs/index.ts
+          grep -q "productionAuthority: false" src/features/irrigation/services/irrigationSchedulingPilot.service.ts
+      - name: Verify AquaCrop soil adapter trust boundary
+        run: |
+          grep -q "production_authority: false" supabase/functions/aquacrop-soil-profile/index.ts
+          grep -q "input_authority: 'server-derived'" supabase/functions/aquacrop-soil-profile/index.ts
+          grep -q "model_ready: modelReady" supabase/functions/aquacrop-soil-profile/index.ts
+      - name: Verify AquaCrop pilot runner trust boundary
+        run: |
+          grep -q "MODEL_GATEWAY_URL" supabase/functions/aquacrop-pilot-run/index.ts
+          grep -q "MODEL_GATEWAY_SHARED_KEY" supabase/functions/aquacrop-pilot-run/index.ts
+          grep -q "production_authority: false" supabase/functions/aquacrop-pilot-run/index.ts
+          grep -q "initial_water_not_measured_near_planting" supabase/functions/aquacrop-pilot-run/index.ts
+          grep -q "Open-Meteo Archive" supabase/functions/aquacrop-pilot-run/index.ts
+          if grep -q "VITE_" supabase/functions/aquacrop-pilot-run/index.ts; then
+            echo "Client secret leaked into AquaCrop pilot runner"
+            exit 1
+          fi
+      - name: Verify PCSE pilot input trust boundary
+        run: |
+          grep -q "production_authority: false" supabase/functions/pcse-pilot-inputs/index.ts
+          grep -q "input_authority: 'server-derived'" supabase/functions/pcse-pilot-inputs/index.ts
+          grep -q "client_supplied_agricultural_values_accepted: false" supabase/functions/pcse-pilot-inputs/index.ts
+          grep -q "field_pcse_parameter_sets" supabase/functions/pcse-pilot-inputs/index.ts
+          if grep -q "VITE_" supabase/functions/pcse-pilot-inputs/index.ts; then
+            echo "Client secret leaked into PCSE pilot adapter"
+            exit 1
+          fi
+      - name: Verify field climate layer trust boundary
+        run: |
+          grep -q "production_authority: false" supabase/functions/field-climate-layers/index.ts
+          grep -q "input_authority: 'server-derived'" supabase/functions/field-climate-layers/index.ts
+          grep -q "client_supplied_coordinates_accepted: false" supabase/functions/field-climate-layers/index.ts
+          grep -q "is_actual_crop_et: false" supabase/functions/field-climate-layers/index.ts
+          grep -q "chirps: 'adapter_not_connected'" supabase/functions/field-climate-layers/index.ts
+          grep -q "landsat_modis_raster: 'adapter_not_connected'" supabase/functions/field-climate-layers/index.ts
+          if grep -q "body?.latitude\|body.latitude\|body?.longitude\|body.longitude" supabase/functions/field-climate-layers/index.ts; then
+            echo "Client-controlled coordinates introduced into field climate layers"
+            exit 1
+          fi
+
+  frontend-shadow-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Lint shadow and pilot integration files
+        run: >-
+          npx oxlint
+          src/features/model-engines/services/modelEngineShadow.service.ts
+          src/features/model-engines/services/aquacropPilotInputs.service.ts
+          src/features/model-engines/services/aquacropInputRecords.service.ts
+          src/features/model-engines/services/aquacropPilotRun.service.ts
+          src/features/model-engines/services/pcsePilotInputs.service.ts
+          src/features/model-engines/services/modelEngineRuns.service.ts
+          src/features/map-data/services/fieldClimateLayers.service.ts
+          src/features/irrigation/hooks/useIrrigationSchedulingPilot.ts
+          src/features/irrigation/services/historicalKcReconstruction.service.ts
+          src/features/irrigation/services/irrigationSchedulingPilot.service.ts
+          src/features/irrigation/types/irrigationSchedulingPilot.ts
+      - name: Build frontend
+        run: npm run build
+
+  core-shadow:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/model-gateway
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: services/model-gateway/.python-version
+          cache: 'pip'
+          cache-dependency-path: services/model-gateway/requirements.txt
+      - name: Validate deploy configuration
+        run: |
+          python -m json.tool vercel.json >/dev/null
+          test "$(cat .python-version)" = "3.12"
+      - name: Install core dependencies
+        run: pip install -r requirements.txt
+      - name: Verify dependency consistency
+        run: pip check
+      - name: Compile gateway
+        run: python -m py_compile app.py engine_registry.py aquacrop_runner.py smoke_test.py
+      - name: Run shadow smoke test
+        run: python smoke_test.py
+
+  pilot-imports:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/model-gateway
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version-file: services/model-gateway/.python-version
+          cache: 'pip'
+          cache-dependency-path: |
+            services/model-gateway/requirements.txt
+            services/model-gateway/requirements-pilot.txt
+      - name: Install pilot dependencies
+        run: pip install -r requirements.txt -r requirements-pilot.txt
+      - name: Verify pilot dependency consistency
+        run: pip check
+      - name: Import pilot engines and runner
+        run: python -c "import pcse, aquacrop; from aquacrop_runner import AquaCropPilotRequest, run_aquacrop_pilot; print('pilot imports ok')"
+      - name: Verify AquaCrop built-in crop aliases
+        run: >-
+          python -c "from aquacrop.entities.crops.crop_params import crop_params;
+          expected={'Wheat','Barley','Maize','Cotton','Potato'};
+          missing=expected-set(crop_params);
+          assert not missing, f'missing AquaCrop built-ins: {sorted(missing)}';
+          print('aquacrop crop aliases ok')"
+
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build core production image
+        run: docker build -t tarlapusula-model-gateway:core services/model-gateway
+      - name: Verify core image starts and imports app
+        run: docker run --rm -e MODEL_GATEWAY_SHARED_KEY=ci-only-key tarlapusula-model-gateway:core python -c "import app; assert app.app.version"
+      - name: Build pilot-enabled image
+        run: docker build --build-arg INSTALL_PILOT=1 -t tarlapusula-model-gateway:pilot services/model-gateway
+      - name: Verify pilot image has AquaCrop runner
+        run: docker run --rm -e MODEL_GATEWAY_SHARED_KEY=ci-only-key tarlapusula-model-gateway:pilot python -c "import aquacrop, app; from aquacrop_runner import run_aquacrop_pilot; assert app.app.version; print('pilot image ok')"

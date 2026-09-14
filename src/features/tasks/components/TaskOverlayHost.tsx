@@ -12,6 +12,8 @@ import {
   CANOPY_DEVELOPMENT_OPTIONS,
   CANOPY_HEIGHT_OPTIONS,
 } from '../../fields/data/canopyDevelopmentProfiles';
+import { openFieldOperation } from '../../field-operations/services/openFieldOperation';
+import { openFieldSeason } from '../../field-detail/services/openFieldSeason';
 
 const CSS = String.raw`
 /* Eski bağımsız fullscreen düğmesi artık Görevlerim girişidir. */
@@ -116,7 +118,6 @@ export default function TaskOverlayHost() {
       const button = target?.closest?.('.tp-map-fullscreen-btn');
       if (!button) return;
 
-      // MapFirst'in eski native fullscreen capture'ına ulaşmadan olayı burada bitir.
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
@@ -141,6 +142,33 @@ export default function TaskOverlayHost() {
     const timer = window.setTimeout(() => setAwardNotice(null), 2600);
     return () => window.clearTimeout(timer);
   }, [awardNotice]);
+
+  const startTask = (task: FieldTask) => {
+    setAnswerError(null);
+    setSheetOpen(false);
+
+    if (task.taskKey === 'model-last-irrigation') {
+      setSelectedTask(null);
+      openFieldOperation({
+        fieldId: task.fieldId || fieldId,
+        fieldName,
+        type: 'Sulama',
+        source: 'model-readiness-task',
+      });
+      return;
+    }
+
+    if (task.taskKey === 'model-planting-date') {
+      setSelectedTask(null);
+      openFieldSeason({
+        fieldId: task.fieldId || fieldId,
+        source: 'model-readiness-task',
+      });
+      return;
+    }
+
+    setSelectedTask(task);
+  };
 
   const saveTaskAnswer = async (value: string) => {
     if (!selectedTask || !fieldId || saving) return;
@@ -197,11 +225,7 @@ export default function TaskOverlayHost() {
         error={error}
         currentTaskKey={tasks[0]?.taskKey ?? null}
         onClose={() => setSheetOpen(false)}
-        onStartTask={(task) => {
-          setAnswerError(null);
-          setSheetOpen(false);
-          setSelectedTask(task);
-        }}
+        onStartTask={startTask}
       />
 
       {selectedTask ? (

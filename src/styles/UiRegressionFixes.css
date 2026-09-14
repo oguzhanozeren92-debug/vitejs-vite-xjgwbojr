@@ -1,0 +1,335 @@
+/* =========================================================
+   TARLAPUSULA UI REGRESSION FIXES
+   Narrow mobile shell compatibility layer.
+   Loaded last so legacy light-theme selectors cannot repaint dark routes.
+   ========================================================= */
+
+/* Legacy WhiteAppTheme paints generic *-row/*-box/*-section nodes white.
+   These routes are authored as dark product surfaces; restore them explicitly. */
+html body :is(.tp-market-ref-page,.tp-peststore-page,.tp-pest-guide-page,.tp-placeholder-page)
+  :is([class*='-box'],[class*='-row'],[class*='-section'],[class*='-sheet'],[class*='-modal'])
+  :not(.maplibregl-map):not(.tp-map-stage) {
+  color: var(--tp-pro-text-soft) !important;
+  background-color: transparent !important;
+  border-color: var(--tp-pro-line-soft) !important;
+}
+
+html body :is(.tp-market-ref-page,.tp-peststore-page,.tp-pest-guide-page)
+  :is([class$='-card'],[class*='-card '],[class$='-panel'],[class*='-panel ']) {
+  color: var(--tp-pro-text-soft) !important;
+  background: var(--tp-pro-surface) !important;
+  border-color: var(--tp-pro-line) !important;
+}
+
+/* -------------------------------------------------------------------------
+   Notifications + Settings
+   ------------------------------------------------------------------------- */
+html body .tp-placeholder-page.tp-utility-page {
+  min-height: 100dvh;
+  color: var(--tp-pro-text) !important;
+  background: transparent !important;
+}
+
+html body .tp-placeholder-page .tp-utility-top {
+  min-height: 62px;
+  padding: 8px 12px;
+  color: var(--tp-pro-text) !important;
+  background: rgba(3,8,6,.92) !important;
+  border-bottom: 1px solid var(--tp-pro-line-soft) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  backdrop-filter: blur(20px) !important;
+}
+
+html body .tp-placeholder-page .tp-utility-icon-btn {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--tp-pro-line) !important;
+  border-radius: 12px !important;
+  color: var(--tp-pro-text) !important;
+  background: rgba(255,255,255,.05) !important;
+}
+
+html body .tp-placeholder-page .tp-utility-top-title small,
+html body .tp-placeholder-page .tp-utility-hero p,
+html body .tp-placeholder-page .tp-notification-copy p,
+html body .tp-placeholder-page .tp-settings-copy p {
+  color: var(--tp-pro-muted) !important;
+}
+
+html body .tp-placeholder-page .tp-utility-top-title strong,
+html body .tp-placeholder-page .tp-utility-hero h1,
+html body .tp-placeholder-page .tp-notification-copy strong,
+html body .tp-placeholder-page .tp-settings-copy strong {
+  color: var(--tp-pro-text) !important;
+}
+
+html body .tp-placeholder-page .tp-utility-main {
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 20px 14px 104px !important;
+}
+
+html body .tp-placeholder-page .tp-utility-hero {
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+html body .tp-placeholder-page .tp-utility-badge {
+  border: 1px solid var(--tp-pro-line) !important;
+  color: var(--tp-pro-text-soft) !important;
+  background: rgba(255,255,255,.04) !important;
+}
+
+html body .tp-placeholder-page .tp-utility-section-head {
+  margin: 0 0 10px;
+}
+
+html body .tp-placeholder-page .tp-utility-section-head button,
+html body .tp-placeholder-page .tp-settings-link {
+  min-height: 32px;
+  border: 1px solid var(--tp-pro-line-soft) !important;
+  border-radius: 10px !important;
+  padding: 0 10px !important;
+  color: var(--tp-pro-text-soft) !important;
+  background: rgba(255,255,255,.035) !important;
+}
+
+html body .tp-placeholder-page .tp-notification-list,
+html body .tp-placeholder-page .tp-settings-list {
+  gap: 9px !important;
+}
+
+html body .tp-placeholder-page .tp-notification-card,
+html body .tp-placeholder-page .tp-settings-card,
+html body .tp-placeholder-page .tp-generic-card,
+html body .tp-placeholder-page .tp-notification-empty {
+  overflow: hidden;
+  border: 1px solid var(--tp-pro-line) !important;
+  border-radius: 16px !important;
+  color: var(--tp-pro-text-soft) !important;
+  background: linear-gradient(180deg,rgba(10,21,16,.96),rgba(5,12,9,.96)) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.025) !important;
+}
+
+html body .tp-placeholder-page .tp-notification-card.unread {
+  border-color: rgba(53,212,125,.25) !important;
+  background: linear-gradient(180deg,rgba(10,25,17,.98),rgba(5,13,9,.98)) !important;
+}
+
+html body .tp-placeholder-page .tp-notification-icon,
+html body .tp-placeholder-page .tp-settings-card-icon {
+  border: 1px solid rgba(53,212,125,.18) !important;
+  color: #8ce3ad !important;
+  background: rgba(53,212,125,.07) !important;
+}
+
+html body .tp-placeholder-page .tp-notification-copy small {
+  color: #71847a !important;
+}
+
+html body .tp-placeholder-page .tp-notification-calendar {
+  min-height: 29px;
+  border: 1px solid var(--tp-pro-line) !important;
+  border-radius: 9px !important;
+  color: #9edbb2 !important;
+  background: rgba(53,212,125,.055) !important;
+}
+
+html body .tp-placeholder-page .tp-settings-note {
+  border: 1px solid var(--tp-pro-line-soft) !important;
+  color: var(--tp-pro-muted) !important;
+  background: rgba(255,255,255,.025) !important;
+}
+
+html body .tp-placeholder-page .tp-switch {
+  border: 1px solid var(--tp-pro-line) !important;
+  background: rgba(255,255,255,.10) !important;
+}
+html body .tp-placeholder-page .tp-switch.on {
+  border-color: rgba(53,212,125,.4) !important;
+  background: rgba(53,212,125,.72) !important;
+}
+
+/* -------------------------------------------------------------------------
+   Mobile-shell layout authority.
+   The browser viewport can be desktop-wide while #root remains phone-wide,
+   so viewport media queries in old route CSS cannot be trusted here.
+   ------------------------------------------------------------------------- */
+html body .tp-pest-guide-sidebar,
+html body .tp-peststore-sidebar {
+  display: none !important;
+}
+
+html body .tp-pest-guide-content,
+html body .tp-peststore-content {
+  width: 100% !important;
+  min-width: 0 !important;
+  margin-left: 0 !important;
+}
+
+html body .tp-pest-guide-mobile-menu,
+html body .tp-peststore-mobile-menu {
+  display: grid !important;
+}
+
+html body .tp-pest-guide-main,
+html body .tp-peststore-main,
+html body .tp-market-ref-main {
+  width: calc(100% - 24px) !important;
+  max-width: none !important;
+  margin-inline: 12px !important;
+}
+
+html body .tp-pest-guide-heading,
+html body .tp-market-ref-heading {
+  display: block !important;
+}
+
+html body .tp-pest-guide-quick-cards {
+  width: 100% !important;
+  grid-template-columns: repeat(3,minmax(0,1fr)) !important;
+  margin-top: 12px;
+}
+
+html body .tp-pest-guide-quick-cards article {
+  min-width: 0;
+  min-height: 76px;
+  padding: 9px 7px !important;
+}
+
+html body .tp-pest-guide-workspace,
+html body .tp-peststore-top-grid,
+html body .tp-market-ref-top-grid {
+  grid-template-columns: minmax(0,1fr) !important;
+  gap: 12px !important;
+}
+
+html body .tp-pest-guide-browser,
+html body .tp-pest-guide-detail,
+html body .tp-peststore-card,
+html body .tp-market-ref-card {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+html body .tp-pest-guide-detail-hero {
+  min-height: 250px !important;
+}
+
+html body .tp-pest-guide-list > button {
+  grid-template-columns: 78px minmax(0,1fr) 14px !important;
+  min-height: 108px !important;
+}
+html body .tp-pest-guide-list > button > img {
+  width: 78px !important;
+  height: 92px !important;
+}
+
+html body .tp-peststore-hero {
+  min-height: 230px !important;
+  padding: 22px 18px !important;
+}
+html body .tp-peststore-hero h1 {
+  font-size: clamp(29px,8vw,38px) !important;
+}
+
+html body .tp-market-ref-heading-actions {
+  width: 100%;
+  margin-top: 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+html body .tp-market-ref-heading-actions::-webkit-scrollbar { display:none; }
+html body .tp-market-ref-tabs {
+  display: flex !important;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+html body .tp-market-ref-tabs::-webkit-scrollbar { display:none; }
+html body .tp-market-ref-tabs button {
+  flex: 0 0 auto;
+  min-width: 104px;
+}
+html body .tp-market-ref-source-state {
+  flex: 0 0 auto;
+}
+html body .tp-market-ref-table-wrap {
+  max-width: 100%;
+  overflow-x: auto !important;
+}
+
+/* -------------------------------------------------------------------------
+   Explicitly undo legacy white painting on the photographed route pieces.
+   ------------------------------------------------------------------------- */
+html body .tp-market-ref-page :is(
+  .tp-market-ref-card,.tp-market-ref-date-banner,.tp-market-ref-crop-footer,
+  .tp-market-ref-crop-footer > div,.tp-market-ref-trend-grid > div,
+  .tp-market-ref-location,.tp-market-ref-card-head select
+) {
+  color: var(--tp-pro-text-soft) !important;
+  background-color: rgba(6,14,10,.96) !important;
+  border-color: var(--tp-pro-line) !important;
+}
+
+html body .tp-peststore-page :is(
+  .tp-peststore-hero,.tp-peststore-card,.tp-peststore-dropzone,
+  .tp-peststore-stock-item,.tp-peststore-toolbar label,.tp-peststore-inline-message
+),
+html body .tp-pest-guide-page :is(
+  .tp-pest-guide-quick-cards article,.tp-pest-guide-note,.tp-pest-guide-browser,
+  .tp-pest-guide-detail,.tp-pest-guide-search-row label,.tp-pest-guide-list > button
+) {
+  color: var(--tp-pro-text-soft) !important;
+  background-color: rgba(6,14,10,.96) !important;
+  border-color: var(--tp-pro-line) !important;
+}
+
+/* Header controls / map chips photographed as pale grey. */
+html body .tp-v1 :is(
+  .tp-field-select-box,.tp-map-fullscreen-btn,.tp-add-field-3d,.tp-map-shortcut,
+  .tp-home-general-metric,.tp-ndvi-legend-card,.tp-map-data-badge,.tp-real-home-legend
+) {
+  color: var(--tp-pro-text-soft) !important;
+  background: rgba(4,10,7,.90) !important;
+  border-color: rgba(255,255,255,.13) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,.26) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  backdrop-filter: blur(14px) !important;
+}
+
+html body .tp-v1 .tp-field-select-box :is(strong,span,b),
+html body .tp-v1 .tp-map-data-badge :is(strong,span,b) {
+  color: var(--tp-pro-text) !important;
+}
+
+/* Bottom navigation: passive entries were almost invisible. */
+html body #root .tp-v1 .tp-bottom button,
+html body .tp-field-detail-page .tp-field-detail-bottom button,
+html body .bottomNav button {
+  color: #82958b !important;
+  opacity: 1 !important;
+}
+html body #root .tp-v1 .tp-bottom button.active,
+html body .tp-field-detail-page .tp-field-detail-bottom button.active,
+html body .bottomNav button.active {
+  color: #f3f8f5 !important;
+}
+
+/* Make route content obey the phone shell even on a desktop preview. */
+@media (min-width: 700px) {
+  html body #root :is(.tp-pest-guide-page,.tp-peststore-page,.tp-market-ref-page,.tp-placeholder-page) {
+    container-type: inline-size;
+  }
+}
+
+@container (max-width: 560px) {
+  .tp-pest-guide-quick-cards {
+    grid-template-columns: 1fr !important;
+  }
+  .tp-pest-guide-quick-cards article {
+    min-height: 62px !important;
+  }
+  .tp-market-ref-crop-footer {
+    grid-template-columns: 1fr !important;
+  }
+}

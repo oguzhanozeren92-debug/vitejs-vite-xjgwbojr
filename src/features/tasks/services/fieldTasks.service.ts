@@ -44,11 +44,37 @@ export async function syncFieldTasks(fieldIdInput: string): Promise<FieldTask[]>
   const fieldId = String(fieldIdInput ?? '').trim();
   if (!fieldId) return [];
 
-  const { data, error } = await supabase.rpc('tp_sync_field_tasks', {
-    p_field_id: fieldId,
-  });
+  const [fieldSync, modelSync] = await Promise.all([
+    supabase.rpc('tp_sync_field_tasks', { p_field_id: fieldId }),
+    supabase.rpc('tp_sync_model_readiness_tasks', { p_field_id: fieldId }),
+  ]);
+
+  if (fieldSync.error) throw fieldSync.error;
+  if (modelSync.error) throw modelSync.error;
+
+  // Her senkron fonksiyonu yalnız kendi domain görevini üretir/tamamlar.
+  // Kullanıcı ise tek Görevlerim listesi görür; ikinci task store yaratmayız.
+  const { data, error } = await supabase
+    .from('field_todos')
+    .select(
+      'id,field_id,task_key,title,description,source,action_target,priority,reward_rule_key,metadata,due_date',
+    )
+    .eq('field_id', fieldId)
+    .eq('completed', false)
+    .eq('dismissed', false)
+    .not('task_key', 'is', null)
+    .order('priority', { ascending: false })
+    .order('created_at', { ascending: true });
 
   if (error) throw error;
+
+  // Readiness verisi başka bir ekrandan tamamlandıysa sync RPC server tarafında
+  // doğrulayıp ödülü vermiş olabilir. Üst bardaki Pusula puanını da eşitle.
+  try {
+    await refreshGamification();
+  } catch {
+    // Liste çalışmaya devam eder; puan normal store refresh'inde eşitlenir.
+  }
 
   return (Array.isArray(data) ? data : [])
     .map(normalizeTask)

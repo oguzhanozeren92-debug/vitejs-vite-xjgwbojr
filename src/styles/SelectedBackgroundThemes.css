@@ -1,0 +1,75 @@
+/* Selected TarlaPusula background themes.
+   Scope: Home background + existing left drawer background/contrast only.
+   No menu names/order/functions are changed. */
+
+/* Home — option 05: soft countryside / landscape silhouette */
+html body .tp-v1 {
+  position: relative;
+  isolation: isolate;
+  background-color: #f7f5ef !important;
+  background-image:
+    linear-gradient(180deg, rgba(255,255,255,.84) 0%, rgba(250,247,239,.90) 30%, rgba(247,245,239,.96) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 520'%3E%3Cdefs%3E%3ClinearGradient id='sky' x1='0' y1='0' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23fffaf0'/%3E%3Cstop offset='1' stop-color='%23eef1e8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='900' height='520' fill='url(%23sky)'/%3E%3Ccircle cx='735' cy='118' r='52' fill='%23e8c98b' fill-opacity='.34'/%3E%3Cpath d='M0 245 C120 170 230 210 340 178 C455 144 550 205 655 170 C760 135 825 158 900 120 L900 520 L0 520 Z' fill='%23cfd9c9' fill-opacity='.55'/%3E%3Cpath d='M0 300 C130 230 250 255 375 218 C500 182 625 245 730 208 C805 183 860 185 900 176 L900 520 L0 520 Z' fill='%23b9c8b3' fill-opacity='.46'/%3E%3Cpath d='M0 365 C145 320 255 328 390 294 C520 262 650 309 900 260 L900 520 L0 520 Z' fill='%23aeba9f' fill-opacity='.34'/%3E%3Cpath d='M0 398 C165 362 330 385 500 350 C650 318 775 340 900 322' fill='none' stroke='%238f9f84' stroke-opacity='.24' stroke-width='2'/%3E%3Cpath d='M0 435 C170 398 330 420 510 386 C690 352 810 373 900 360' fill='none' stroke='%238f9f84' stroke-opacity='.19' stroke-width='2'/%3E%3Cpath d='M92 192 q16 -12 32 0 q16 -12 32 0 M177 164 q13 -9 26 0 q13 -9 26 0' fill='none' stroke='%23899a86' stroke-width='3' stroke-linecap='round' stroke-opacity='.40'/%3E%3C/svg%3E");
+  background-repeat: no-repeat, no-repeat !important;
+  background-size: 100% 100%, 100% 430px !important;
+  background-position: center, center top !important;
+}
+
+html body .tp-v1::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(255,255,255,.70), transparent 24%),
+    linear-gradient(180deg, transparent 0 300px, rgba(247,245,239,.78) 430px, #f7f5ef 690px);
+}
+
+/* Existing left drawer — white + subtle satellite/parcel background only. */
+html body .tp-premium-drawer {
+  color: #18211d !important;
+  background-color: #fafaf7 !important;
+  background-image:
+    linear-gradient(180deg, rgba(255,255,255,.93), rgba(249,249,245,.94)),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 1200'%3E%3Crect width='600' height='1200' fill='%23eef0e8'/%3E%3Cg stroke='%23ffffff' stroke-width='4' fill='none' opacity='.68'%3E%3Cpath d='M-30 125 L650 28'/%3E%3Cpath d='M-25 270 L625 160'/%3E%3Cpath d='M0 430 L620 310'/%3E%3Cpath d='M-20 602 L635 478'/%3E%3Cpath d='M-15 790 L620 642'/%3E%3Cpath d='M-20 986 L630 824'/%3E%3Cpath d='M85 -30 L20 1240'/%3E%3Cpath d='M225 -40 L172 1240'/%3E%3Cpath d='M370 -20 L325 1230'/%3E%3Cpath d='M520 -40 L470 1240'/%3E%3C/g%3E%3Cg opacity='.32'%3E%3Cpath d='M24 38 L210 14 L188 242 L5 266 Z' fill='%23aeba9f'/%3E%3Cpath d='M214 12 L374 0 L360 216 L190 240 Z' fill='%23c7b78f'/%3E%3Cpath d='M378 0 L612 0 L590 176 L364 214 Z' fill='%2399ab8f'/%3E%3Cpath d='M8 272 L192 244 L178 430 L0 454 Z' fill='%23c4c5a9'/%3E%3Cpath d='M195 244 L358 218 L346 402 L180 430 Z' fill='%23a4b395'/%3E%3Cpath d='M362 218 L588 178 L568 360 L350 402 Z' fill='%23c7b18d'/%3E%3Cpath d='M0 458 L176 432 L160 620 L0 646 Z' fill='%23aab89d'/%3E%3Cpath d='M180 432 L346 404 L330 590 L162 620 Z' fill='%23d0c4a7'/%3E%3Cpath d='M350 404 L568 362 L550 550 L334 590 Z' fill='%239faf91'/%3E%3Cpath d='M0 650 L160 622 L146 812 L0 842 Z' fill='%23c5b799'/%3E%3Cpath d='M164 622 L330 592 L312 780 L150 812 Z' fill='%23a1b091'/%3E%3Cpath d='M334 592 L550 552 L530 744 L316 780 Z' fill='%23c4cba8'/%3E%3Cpath d='M0 846 L146 814 L130 1010 L0 1040 Z' fill='%239bac8e'/%3E%3Cpath d='M150 814 L312 782 L294 972 L134 1010 Z' fill='%23c8b996'/%3E%3Cpath d='M316 782 L530 746 L510 936 L298 972 Z' fill='%23a5b39a'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 100% 100%, cover !important;
+  background-position: center, center !important;
+  background-repeat: no-repeat !important;
+  border-color: rgba(37,48,42,.14) !important;
+  box-shadow: 18px 0 52px rgba(39,48,43,.18), inset -1px 0 0 rgba(255,255,255,.80) !important;
+}
+
+html body .tp-premium-drawer::before {
+  background: linear-gradient(180deg, rgba(255,255,255,.20), rgba(255,255,255,.46)) !important;
+}
+html body .tp-premium-drawer::after {
+  background: linear-gradient(90deg, transparent, rgba(78,93,83,.18), transparent) !important;
+  box-shadow: none !important;
+}
+html body .tp-premium-drawer-atmosphere { opacity: 0 !important; }
+
+/* Contrast compensation only; wording/order/icons/functions stay identical. */
+html body .tp-premium-drawer-brand-name,
+html body .tp-premium-drawer-welcome strong,
+html body .tp-premium-drawer nav button,
+html body .tp-premium-drawer button,
+html body .tp-premium-drawer a { color: #172019 !important; }
+html body .tp-premium-drawer-brand-name em { color: #4f5b54 !important; }
+html body .tp-premium-drawer-welcome small,
+html body .tp-premium-drawer-welcome p { color: #6e7771 !important; }
+html body .tp-premium-drawer-x { color: #172019 !important; text-shadow: none !important; }
+html body .tp-premium-drawer-top { border-bottom-color: rgba(38,49,43,.12) !important; }
+html body .tp-premium-drawer nav button { text-shadow: none !important; }
+html body .tp-premium-drawer nav button:hover,
+html body .tp-premium-drawer nav button[aria-current='page'],
+html body .tp-premium-drawer nav button.active {
+  background: rgba(236,239,234,.86) !important;
+  border-color: rgba(38,49,43,.10) !important;
+}
+html body .tp-premium-points {
+  background: rgba(255,255,255,.80) !important;
+  color: #3f4943 !important;
+  border-color: rgba(49,59,53,.14) !important;
+  box-shadow: 0 6px 18px rgba(33,42,37,.06) !important;
+}

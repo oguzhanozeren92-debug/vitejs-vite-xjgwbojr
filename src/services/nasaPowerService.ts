@@ -3,6 +3,7 @@ export type NasaPowerDay = {
   temperature: number | null;
   maxTemperature: number | null;
   minTemperature: number | null;
+  dewPoint: number | null;
   humidity: number | null;
   windSpeed: number | null;
   precipitation: number | null;
@@ -36,6 +37,7 @@ const PARAMETERS = [
   'T2M',
   'T2M_MAX',
   'T2M_MIN',
+  'T2MDEW',
   'RH2M',
   'WS2M',
   'PRECTOTCORR',
@@ -165,6 +167,7 @@ export async function fetchNasaPowerRange(
     temperature: safeNumber(parameter.T2M?.[date]),
     maxTemperature: safeNumber(parameter.T2M_MAX?.[date]),
     minTemperature: safeNumber(parameter.T2M_MIN?.[date]),
+    dewPoint: safeNumber(parameter.T2MDEW?.[date]),
 
     humidity: safeNumber(parameter.RH2M?.[date]),
     windSpeed: safeNumber(parameter.WS2M?.[date]),

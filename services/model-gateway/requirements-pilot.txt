@@ -1,0 +1,3 @@
+-r requirements.txt
+pcse==6.0.9
+aquacrop @ git+https://github.com/aquacropos/aquacrop.git@36cc20e44644ed1704398889312435c85e04a2f3
