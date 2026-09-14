@@ -1,0 +1,11 @@
+create index if not exists field_observation_comparisons_current_photo_id_idx on public.field_observation_comparisons(current_photo_id);
+create index if not exists field_observation_comparisons_previous_photo_id_idx on public.field_observation_comparisons(previous_photo_id);
+create index if not exists field_observation_comparisons_user_id_idx on public.field_observation_comparisons(user_id);
+create index if not exists map_ai_analyses_previous_analysis_id_idx on public.map_ai_analyses(previous_analysis_id);
+create index if not exists fields_province_id_idx on public.fields(province_id);
+create index if not exists fields_district_id_idx on public.fields(district_id);
+create index if not exists fields_village_id_idx on public.fields(village_id);
+create index if not exists gamification_transactions_rule_key_idx on public.gamification_transactions(rule_key);
+create index if not exists agri_news_author_id_idx on public.agri_news(author_id);
+create index if not exists app_contents_created_by_idx on public.app_contents(created_by);
+create index if not exists app_media_created_by_idx on public.app_media(created_by);
