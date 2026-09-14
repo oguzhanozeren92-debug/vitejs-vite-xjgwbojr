@@ -4,9 +4,11 @@ on:
   pull_request:
     paths:
       - 'supabase/functions/risk-radar/**'
+      - 'supabase/functions/risk-radar-dispatch/**'
       - 'src/services/riskRadarService.ts'
       - 'src/services/unifiedMapAiService.ts'
       - 'supabase/migrations/*risk_notification*'
+      - 'supabase/migrations/*risk_radar_dispatch*'
       - '.github/workflows/risk-radar-ci.yml'
   push:
     branches:
@@ -15,9 +17,11 @@ on:
       - 'work/**'
     paths:
       - 'supabase/functions/risk-radar/**'
+      - 'supabase/functions/risk-radar-dispatch/**'
       - 'src/services/riskRadarService.ts'
       - 'src/services/unifiedMapAiService.ts'
       - 'supabase/migrations/*risk_notification*'
+      - 'supabase/migrations/*risk_radar_dispatch*'
       - '.github/workflows/risk-radar-ci.yml'
 
 permissions:
@@ -31,8 +35,10 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - name: Type check edge function
+      - name: Type check user Risk Radar
         run: deno check supabase/functions/risk-radar/index.ts
+      - name: Type check proactive dispatcher
+        run: deno check supabase/functions/risk-radar-dispatch/index.ts
       - name: Run deterministic engine tests
         run: deno test supabase/functions/risk-radar/risk-engine.test.ts
 
@@ -45,13 +51,18 @@ jobs:
           grep -q "auth.getUser" supabase/functions/risk-radar/index.ts
           grep -q "eq('user_id', userId)" supabase/functions/risk-radar/index.ts
           grep -q "SUPABASE_SERVICE_ROLE_KEY" supabase/functions/risk-radar/index.ts
+      - name: Verify dispatcher cron boundary
+        run: |
+          grep -q "verify_push_dispatch_secret" supabase/functions/risk-radar-dispatch/index.ts
+          grep -q "x-cron-secret" supabase/functions/risk-radar-dispatch/index.ts
+          grep -q "field_risk_notification_state" supabase/functions/risk-radar-dispatch/index.ts
       - name: Reject client-controlled coordinates and synthetic risk data
         run: |
-          if grep -E "body\?\.(latitude|longitude|lat|lng|geometry)|body\.(latitude|longitude|lat|lng|geometry)" supabase/functions/risk-radar/index.ts; then
+          if grep -E "body\?\.(latitude|longitude|lat|lng|geometry)|body\.(latitude|longitude|lat|lng|geometry)" supabase/functions/risk-radar/index.ts supabase/functions/risk-radar-dispatch/index.ts; then
             echo "Client-controlled location input introduced into Risk Radar"
             exit 1
           fi
-          if grep -E "Math\.random|synthetic|mock" supabase/functions/risk-radar/index.ts supabase/functions/risk-radar/risk-engine.ts src/services/riskRadarService.ts; then
+          if grep -E "Math\.random|synthetic|mock" supabase/functions/risk-radar/index.ts supabase/functions/risk-radar/risk-engine.ts supabase/functions/risk-radar-dispatch/index.ts src/services/riskRadarService.ts; then
             echo "Synthetic or mock Risk Radar data introduced"
             exit 1
           fi
@@ -59,6 +70,7 @@ jobs:
         run: |
           grep -q "Risk skoru tek başına ilaçlama kararı değildir" supabase/functions/risk-radar/index.ts
           grep -q "kesin hastalık teşhisi veya pestisit uygulama talimatı değildir" supabase/functions/risk-radar/index.ts
+          grep -q "Risk skoru erken uyarıdır" supabase/functions/risk-radar-dispatch/index.ts
           grep -q "Apache-2.0" supabase/functions/risk-radar/index.ts
           grep -q "AgStack/OpenAgri Pest & Disease Models" supabase/functions/risk-radar/index.ts
 
