@@ -26,7 +26,8 @@ export type IrrigationSchedulingPilotResult = {
     evidence: Record<string, unknown>;
     context: Record<string, unknown>;
     inputAdapters: {
-      soilProfileCandidate: Record<string, unknown>;
+      cropParameters: Record<string, unknown>;
+      soilProfile: Record<string, unknown>;
       initialWaterContent: Record<string, unknown>;
       irrigationManagement: Record<string, unknown>;
     };
