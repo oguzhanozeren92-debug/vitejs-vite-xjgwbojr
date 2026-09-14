@@ -1,0 +1,47 @@
+name: Climate Layers CI
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/field-climate-layers/**'
+      - 'supabase/functions/field-chirps-rain/**'
+      - '.github/workflows/climate-layers-ci.yml'
+  push:
+    branches:
+      - 'feat/open-source-engines-20260913'
+    paths:
+      - 'supabase/functions/field-climate-layers/**'
+      - 'supabase/functions/field-chirps-rain/**'
+      - '.github/workflows/climate-layers-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  trust-boundary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify server-authoritative climate adapters
+        run: |
+          grep -q "production_authority: false" supabase/functions/field-climate-layers/index.ts
+          grep -q "input_authority: 'server-derived'" supabase/functions/field-climate-layers/index.ts
+          grep -q "client_supplied_coordinates_accepted: false" supabase/functions/field-climate-layers/index.ts
+          grep -q "production_authority: false" supabase/functions/field-chirps-rain/index.ts
+          grep -q "input_authority: 'server-derived'" supabase/functions/field-chirps-rain/index.ts
+          grep -q "client_supplied_geometry_accepted: false" supabase/functions/field-chirps-rain/index.ts
+          grep -q "UCSB CHIRPS via SERVIR ClimateSERV" supabase/functions/field-chirps-rain/index.ts
+          grep -q "field_climate_layer_snapshots" supabase/functions/field-chirps-rain/index.ts
+          if grep -R "VITE_" supabase/functions/field-climate-layers supabase/functions/field-chirps-rain; then
+            echo "Client-side secret usage found in climate Edge Functions"
+            exit 1
+          fi
+      - name: Verify CHIRPS cannot accept client geometry
+        run: |
+          if grep -q "body?.geometry\|body.geometry" supabase/functions/field-chirps-rain/index.ts; then
+            echo "Client-controlled CHIRPS geometry was introduced"
+            exit 1
+          fi
+          grep -q "parcel_geometry" supabase/functions/field-chirps-rain/index.ts
+          grep -q "datatype: CHIRPS_DATATYPE" supabase/functions/field-chirps-rain/index.ts
+          grep -q "operationtype: AVERAGE_OPERATION" supabase/functions/field-chirps-rain/index.ts
