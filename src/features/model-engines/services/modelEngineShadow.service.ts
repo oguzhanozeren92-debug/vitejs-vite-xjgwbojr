@@ -212,8 +212,8 @@ export async function runHistoricalPyFao56FieldShadow(
 
 /**
  * Crop-model readiness is derived on the server from the authenticated field and
- * real provider/model records. The legacy availableInputs argument is deliberately
- * ignored so a phone/client cannot promote a missing model input to "ready".
+ * canonical records. The legacy availableInputs argument is deliberately ignored
+ * so a phone/client cannot promote a missing model input to "ready".
  */
 export async function checkCropModelReadiness(
   engine: 'pcse' | 'aquacrop',
@@ -260,6 +260,8 @@ export async function checkCropModelReadiness(
         ? data.context
         : {},
     inputAuthority: 'server-derived',
+    checkedAt: String(data.checked_at ?? ''),
+    snapshotPersisted: Boolean(data.snapshot_persisted),
     rollout: data.rollout ?? 'off',
     productionAuthority: false,
     note: String(data.note ?? ''),
