@@ -7,6 +7,7 @@ on:
       - 'supabase/functions/field-chirps-rain/**'
       - 'src/features/map-data/services/**'
       - 'src/features/map-data/hooks/useClimateLayerHistory.ts'
+      - 'src/features/map-data/climateLayerRegistry.ts'
       - '.github/workflows/climate-layers-ci.yml'
   push:
     branches:
@@ -16,6 +17,7 @@ on:
       - 'supabase/functions/field-chirps-rain/**'
       - 'src/features/map-data/services/**'
       - 'src/features/map-data/hooks/useClimateLayerHistory.ts'
+      - 'src/features/map-data/climateLayerRegistry.ts'
       - '.github/workflows/climate-layers-ci.yml'
 
 permissions:
@@ -65,6 +67,8 @@ jobs:
           grep -q "open_meteo_era5_land_tmin" src/features/map-data/hooks/useClimateLayerHistory.ts
           grep -q "climateserv_chirps" src/features/map-data/hooks/useClimateLayerHistory.ts
           grep -q "createModisLstComparisonSources" src/features/map-data/hooks/useClimateLayerHistory.ts
+          grep -q "renderKind: 'dated-raster'" src/features/map-data/climateLayerRegistry.ts
+          grep -q "renderKind: 'field-value'" src/features/map-data/climateLayerRegistry.ts
           if grep -q "Math.random\|mock\|synthetic" src/features/map-data/hooks/useClimateLayerHistory.ts; then
             echo "Synthetic climate history data introduced"
             exit 1
@@ -88,5 +92,6 @@ jobs:
           src/features/map-data/services/modisLstTiles.service.ts
           src/features/map-data/services/fieldClimateHistory.service.ts
           src/features/map-data/hooks/useClimateLayerHistory.ts
+          src/features/map-data/climateLayerRegistry.ts
       - name: Build frontend
         run: npm run build
