@@ -7,6 +7,7 @@ on:
       - 'src/features/model-engines/**'
       - 'src/features/irrigation/services/historicalKcReconstruction.service.ts'
       - 'supabase/functions/model-engine-shadow/**'
+      - 'supabase/functions/model-engine-readiness/**'
       - 'tools/check-model-engine-contracts.py'
       - '.github/workflows/model-gateway-ci.yml'
   push:
@@ -17,6 +18,7 @@ on:
       - 'src/features/model-engines/**'
       - 'src/features/irrigation/services/historicalKcReconstruction.service.ts'
       - 'supabase/functions/model-engine-shadow/**'
+      - 'supabase/functions/model-engine-readiness/**'
       - 'tools/check-model-engine-contracts.py'
       - '.github/workflows/model-gateway-ci.yml'
 
@@ -33,6 +35,15 @@ jobs:
           python-version: '3.12'
       - name: Verify model-engine contracts stay synchronized
         run: python tools/check-model-engine-contracts.py
+      - name: Verify readiness trust boundary
+        run: |
+          grep -q "input_authority: 'server-derived'" supabase/functions/model-engine-readiness/index.ts
+          grep -q "client_supplied_available_inputs_ignored: true" supabase/functions/model-engine-readiness/index.ts
+          grep -q "model-engine-readiness" src/features/model-engines/services/modelEngineShadow.service.ts
+          if grep -q "available_inputs: availableInputs" src/features/model-engines/services/modelEngineShadow.service.ts; then
+            echo "Client-controlled readiness inputs reintroduced"
+            exit 1
+          fi
 
   frontend-shadow-integration:
     runs-on: ubuntu-latest
