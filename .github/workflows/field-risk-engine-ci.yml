@@ -30,6 +30,8 @@ jobs:
           grep -q "loadFieldObservationEvidence" src/features/risk/services/fieldRiskEngine.service.ts
           grep -q "crop_stage_heat_stress_threshold" src/features/risk/services/fieldRiskEngine.service.ts
           grep -q "validated_drainage_or_radar_waterlogging_signal" src/features/risk/services/fieldRiskEngine.service.ts
+          grep -q "calculateFieldRiskEngine" src/features/risk/services/fieldRiskPusula.service.ts
+          grep -q "productionAuthority: false" src/features/risk/services/fieldRiskPusula.service.ts
           grep -q "client_supplied_coordinates_accepted: false" supabase/functions/field-risk-weather/index.ts
           grep -q "'latitude' in body" supabase/functions/field-risk-weather/index.ts
           grep -q "'geometry' in body" supabase/functions/field-risk-weather/index.ts
@@ -58,6 +60,7 @@ jobs:
           src/features/risk/types/fieldRisk.ts
           src/features/risk/services/fieldRiskWeather.service.ts
           src/features/risk/services/fieldRiskEngine.service.ts
+          src/features/risk/services/fieldRiskPusula.service.ts
           src/features/risk/hooks/useFieldRiskEngine.ts
       - name: Build frontend
         run: npm run build
