@@ -1,66 +1,282 @@
-/* TarlaPusula notification/settings readability hotfix.
-   Loaded after UiRegressionFixes.css to ensure the phone shell stays dark
-   even when the desktop browser canvas is white. */
+/* TarlaPusula utility pages — mobile-app visual authority.
+   This file is intentionally loaded last. It isolates Notifications / Settings
+   from the old light theme and forces a coherent phone-shell layout. */
+
+html:has(.tp-placeholder-page.tp-utility-page),
+body:has(.tp-placeholder-page.tp-utility-page) {
+  background: #020804 !important;
+}
+
+body:has(.tp-placeholder-page.tp-utility-page) #root {
+  background: #020804 !important;
+}
 
 html body .tp-placeholder-page.tp-utility-page {
-  background: #020804 !important;
+  width: 100% !important;
+  min-height: 100dvh !important;
+  margin: 0 !important;
+  padding: 0 0 110px !important;
+  box-sizing: border-box !important;
+  background:
+    radial-gradient(circle at 50% -80px, rgba(34,197,94,.10), transparent 260px),
+    #020804 !important;
   color: #f3f8f5 !important;
 }
 
+/* The app already has its own global top bar. Avoid a second stacked mobile header. */
+html body .tp-placeholder-page .tp-utility-top {
+  display: none !important;
+}
+
 html body .tp-placeholder-page .tp-utility-main {
-  background: #020804 !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 22px 14px 110px !important;
+  box-sizing: border-box !important;
+  background: transparent !important;
 }
 
-html body .tp-placeholder-page .tp-utility-hero h1,
-html body .tp-placeholder-page .tp-utility-section-head strong,
-html body .tp-placeholder-page .tp-notification-copy strong,
-html body .tp-placeholder-page .tp-settings-copy strong,
-html body .tp-placeholder-page .tp-generic-card h3 {
+html body .tp-placeholder-page .tp-utility-hero {
+  display: block !important;
+  margin: 0 0 18px !important;
+  padding: 0 2px !important;
+}
+
+html body .tp-placeholder-page .tp-utility-hero h1 {
+  display: block !important;
+  margin: 0 !important;
   color: #f7fbf8 !important;
+  font-size: 26px !important;
+  line-height: 1.08 !important;
+  font-weight: 900 !important;
+  letter-spacing: -.035em !important;
 }
 
-html body .tp-placeholder-page .tp-utility-hero p,
-html body .tp-placeholder-page .tp-notification-copy p,
-html body .tp-placeholder-page .tp-settings-copy p,
-html body .tp-placeholder-page .tp-generic-card p {
-  color: #b7c8be !important;
+html body .tp-placeholder-page .tp-utility-hero p {
+  display: block !important;
+  max-width: 100% !important;
+  margin: 8px 0 0 !important;
+  color: #a9bbb1 !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
 }
 
-html body .tp-placeholder-page .tp-notification-copy small,
-html body .tp-placeholder-page .tp-generic-card small,
-html body .tp-placeholder-page .tp-utility-top-title small {
-  color: #8fa39a !important;
+html body .tp-placeholder-page .tp-utility-badge {
+  display: inline-flex !important;
+  margin-top: 12px !important;
+  min-height: 30px !important;
+  padding: 0 10px !important;
+  border: 1px solid rgba(34,197,94,.22) !important;
+  border-radius: 999px !important;
+  background: rgba(34,197,94,.07) !important;
+  color: #bfe7cc !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+}
+
+html body .tp-placeholder-page .tp-utility-section-head {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  margin: 0 0 12px !important;
 }
 
 html body .tp-placeholder-page .tp-utility-section-head button,
-html body .tp-placeholder-page .tp-settings-link,
-html body .tp-placeholder-page .tp-notification-calendar {
-  color: #bfe7cc !important;
+html body .tp-placeholder-page .tp-settings-link {
+  min-height: 34px !important;
+  padding: 0 11px !important;
+  border: 1px solid rgba(255,255,255,.10) !important;
+  border-radius: 10px !important;
+  background: rgba(255,255,255,.045) !important;
+  color: #c6ded0 !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
 }
 
-html body .tp-placeholder-page .tp-notification-card,
-html body .tp-placeholder-page .tp-settings-card,
-html body .tp-placeholder-page .tp-generic-card,
-html body .tp-placeholder-page .tp-notification-empty {
-  background: linear-gradient(180deg, rgba(9, 21, 15, .98), rgba(4, 11, 7, .98)) !important;
-  border-color: rgba(101, 139, 116, .32) !important;
+html body .tp-placeholder-page .tp-notification-list,
+html body .tp-placeholder-page .tp-settings-list,
+html body .tp-placeholder-page .tp-generic-cards {
+  display: grid !important;
+  gap: 10px !important;
+  width: 100% !important;
+}
+
+html body .tp-placeholder-page .tp-notification-card {
+  position: relative !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns: 42px minmax(0,1fr) !important;
+  column-gap: 11px !important;
+  row-gap: 8px !important;
+  align-items: start !important;
+  padding: 14px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(96,132,111,.28) !important;
+  border-radius: 16px !important;
+  background: linear-gradient(180deg, rgba(9,22,15,.98), rgba(4,11,7,.98)) !important;
+  box-shadow: inset 0 1px rgba(255,255,255,.025), 0 10px 24px rgba(0,0,0,.18) !important;
+  color: #eef7f1 !important;
 }
 
 html body .tp-placeholder-page .tp-notification-card.unread {
-  background: linear-gradient(180deg, rgba(11, 29, 18, .99), rgba(5, 14, 9, .99)) !important;
-  border-color: rgba(34, 197, 94, .38) !important;
+  border-color: rgba(34,197,94,.35) !important;
+  background: linear-gradient(180deg, rgba(10,28,18,.99), rgba(5,14,9,.99)) !important;
+}
+
+html body .tp-placeholder-page .tp-notification-card.danger { border-left: 3px solid #ef4444 !important; }
+html body .tp-placeholder-page .tp-notification-card.warning { border-left: 3px solid #f59e0b !important; }
+html body .tp-placeholder-page .tp-notification-card.info { border-left: 3px solid #22c55e !important; }
+
+html body .tp-placeholder-page .tp-notification-main {
+  display: contents !important;
 }
 
 html body .tp-placeholder-page .tp-notification-icon,
 html body .tp-placeholder-page .tp-settings-card-icon {
+  width: 42px !important;
+  height: 42px !important;
+  display: grid !important;
+  place-items: center !important;
+  border: 1px solid rgba(34,197,94,.24) !important;
+  border-radius: 12px !important;
+  background: rgba(34,197,94,.08) !important;
   color: #9ce8b8 !important;
-  background: rgba(34, 197, 94, .10) !important;
-  border-color: rgba(34, 197, 94, .28) !important;
 }
 
-html body .tp-placeholder-page .tp-utility-badge,
-html body .tp-placeholder-page .tp-utility-section-head button,
-html body .tp-placeholder-page .tp-settings-link {
-  background: rgba(255,255,255,.045) !important;
-  border-color: rgba(255,255,255,.10) !important;
+html body .tp-placeholder-page .tp-notification-copy {
+  min-width: 0 !important;
+  width: 100% !important;
+  text-align: left !important;
+}
+
+html body .tp-placeholder-page .tp-notification-copy small {
+  display: block !important;
+  margin: 0 20px 0 0 !important;
+  color: #7f9488 !important;
+  font-size: 10px !important;
+  line-height: 1.35 !important;
+  font-weight: 700 !important;
+  text-transform: none !important;
+}
+
+html body .tp-placeholder-page .tp-notification-copy strong {
+  display: block !important;
+  margin: 4px 0 0 !important;
+  color: #f7fbf8 !important;
+  font-size: 14px !important;
+  line-height: 1.28 !important;
+  font-weight: 850 !important;
+  overflow-wrap: anywhere !important;
+}
+
+html body .tp-placeholder-page .tp-notification-copy p {
+  display: block !important;
+  margin: 7px 0 0 !important;
+  color: #aebfb5 !important;
+  font-size: 12.5px !important;
+  line-height: 1.45 !important;
+  overflow-wrap: anywhere !important;
+}
+
+html body .tp-placeholder-page .tp-notification-side {
+  grid-column: 2 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+html body .tp-placeholder-page .tp-notification-dot {
+  position: absolute !important;
+  top: 15px !important;
+  right: 14px !important;
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 999px !important;
+  background: #22c55e !important;
+  box-shadow: 0 0 0 4px rgba(34,197,94,.09) !important;
+}
+
+html body .tp-placeholder-page .tp-notification-calendar {
+  min-height: 30px !important;
+  padding: 0 9px !important;
+  border: 1px solid rgba(34,197,94,.20) !important;
+  border-radius: 9px !important;
+  background: rgba(34,197,94,.055) !important;
+  color: #bfe7cc !important;
+  font-size: 10.5px !important;
+  font-weight: 800 !important;
+}
+
+html body .tp-placeholder-page .tp-settings-card,
+html body .tp-placeholder-page .tp-generic-card,
+html body .tp-placeholder-page .tp-notification-empty {
+  width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  border: 1px solid rgba(96,132,111,.28) !important;
+  border-radius: 16px !important;
+  background: linear-gradient(180deg, rgba(9,22,15,.98), rgba(4,11,7,.98)) !important;
+  color: #eef7f1 !important;
+}
+
+html body .tp-placeholder-page .tp-settings-card {
+  grid-template-columns: 42px minmax(0,1fr) auto !important;
+  gap: 11px !important;
+  padding: 14px !important;
+}
+
+html body .tp-placeholder-page .tp-settings-copy strong,
+html body .tp-placeholder-page .tp-generic-card h3 {
+  color: #f7fbf8 !important;
+  font-size: 13px !important;
+}
+
+html body .tp-placeholder-page .tp-settings-copy p,
+html body .tp-placeholder-page .tp-generic-card p {
+  color: #aebfb5 !important;
+  font-size: 11.5px !important;
+  line-height: 1.45 !important;
+}
+
+html body .tp-placeholder-page .tp-settings-note {
+  color: #9fb2a7 !important;
+  background: rgba(255,255,255,.025) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+}
+
+html body .tp-placeholder-page .tp-switch {
+  border: 1px solid rgba(255,255,255,.12) !important;
+  background: rgba(255,255,255,.10) !important;
+}
+
+html body .tp-placeholder-page .tp-switch.on {
+  border-color: rgba(34,197,94,.42) !important;
+  background: rgba(34,197,94,.78) !important;
+}
+
+@media (max-width: 520px) {
+  html body .tp-placeholder-page .tp-utility-main {
+    padding-inline: 12px !important;
+  }
+
+  html body .tp-placeholder-page .tp-utility-hero h1 {
+    font-size: 24px !important;
+  }
+
+  html body .tp-placeholder-page .tp-utility-section-head {
+    align-items: stretch !important;
+  }
+
+  html body .tp-placeholder-page .tp-utility-section-head button {
+    flex: 1 1 0 !important;
+    justify-content: center !important;
+  }
 }
