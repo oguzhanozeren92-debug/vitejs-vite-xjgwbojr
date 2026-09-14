@@ -6,6 +6,7 @@ on:
       - 'supabase/functions/field-climate-layers/**'
       - 'supabase/functions/field-chirps-rain/**'
       - 'src/features/map-data/services/**'
+      - 'src/features/map-data/hooks/useClimateLayerHistory.ts'
       - '.github/workflows/climate-layers-ci.yml'
   push:
     branches:
@@ -14,6 +15,7 @@ on:
       - 'supabase/functions/field-climate-layers/**'
       - 'supabase/functions/field-chirps-rain/**'
       - 'src/features/map-data/services/**'
+      - 'src/features/map-data/hooks/useClimateLayerHistory.ts'
       - '.github/workflows/climate-layers-ci.yml'
 
 permissions:
@@ -56,6 +58,17 @@ jobs:
           grep -q "GoogleMapsCompatible_Level7" src/features/map-data/services/modisLstTiles.service.ts
           grep -q "numericValuesAvailableFromTiles: false" src/features/map-data/services/modisLstTiles.service.ts
           grep -q "productionAuthority: false" src/features/map-data/services/modisLstTiles.service.ts
+      - name: Verify historical climate selection uses persisted real sources
+        run: |
+          grep -q "field_climate_layer_snapshots" src/features/map-data/services/fieldClimateHistory.service.ts
+          grep -q "open_meteo_era5_land_et0" src/features/map-data/hooks/useClimateLayerHistory.ts
+          grep -q "open_meteo_era5_land_tmin" src/features/map-data/hooks/useClimateLayerHistory.ts
+          grep -q "climateserv_chirps" src/features/map-data/hooks/useClimateLayerHistory.ts
+          grep -q "createModisLstComparisonSources" src/features/map-data/hooks/useClimateLayerHistory.ts
+          if grep -q "Math.random\|mock\|synthetic" src/features/map-data/hooks/useClimateLayerHistory.ts; then
+            echo "Synthetic climate history data introduced"
+            exit 1
+          fi
 
   frontend-client:
     runs-on: ubuntu-latest
@@ -73,5 +86,7 @@ jobs:
           src/features/map-data/services/fieldClimateLayers.service.ts
           src/features/map-data/services/chirpsRain.service.ts
           src/features/map-data/services/modisLstTiles.service.ts
+          src/features/map-data/services/fieldClimateHistory.service.ts
+          src/features/map-data/hooks/useClimateLayerHistory.ts
       - name: Build frontend
         run: npm run build
