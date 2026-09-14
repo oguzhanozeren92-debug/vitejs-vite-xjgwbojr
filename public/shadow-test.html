@@ -10,16 +10,16 @@
 </head>
 <body>
   <main class="card">
-    <h1>pyfao56 Shadow Test</h1>
-    <div class="sub">Bu sayfa yalnız bu preview branch’indeki gerçek entegrasyon testini tetikler. Production karar mekanizmasını değiştirmez.</div>
-    <div class="field"><b>dağlık · Antep Fıstığı</b><span>Gerçek field_id + mevcut Kc/konum verisi kullanılır.</span></div>
-    <button id="run">Gerçek Shadow Testini Başlat</button>
+    <h1>pyfao56 Historical Shadow Test</h1>
+    <div class="sub">7 Eylül 2026 için geçmiş Kc reconstruction kaydı hazırlandı. Bu test gerçek hava + gerçek tarla konumu ile yalnız shadow karşılaştırması yapar; production sulama kararını değiştirmez.</div>
+    <div class="field"><b>ŞENO · Badem · 7 Eylül 2026</b><span>Kc 0.688 · Hasat Penceresi · historical_reconstructed:calendar_only</span></div>
+    <button id="run">Geçmiş Gerçek Shadow Testini Başlat</button>
     <div id="status" class="status">Hazır. Önce aynı Vercel preview’da TarlaPusula hesabınla giriş yapmış ol.</div>
-    <div class="note">Shared gateway anahtarı tarayıcıya gelmez. Çağrı: kullanıcı JWT’si → Supabase Edge Function → Render Model Gateway → pyfao56.</div>
+    <div class="note">Shared gateway anahtarı tarayıcıya gelmez. Çağrı: kullanıcı JWT’si → Supabase Edge Function → NASA POWER + Open-Meteo + DEM → Render Model Gateway → pyfao56.</div>
   </main>
 <script>
 (() => {
-  const FIELD_ID = 'bbcdea40-5b87-4e1c-8d45-52152afec801';
+  const FIELD_ID = 'fdecf923-cafa-4f42-98a6-57b2e8482132';
   const FUNCTION_URL = 'https://xwyfidtktauxivsosmex.supabase.co/functions/v1/model-engine-shadow';
   const PUBLISHABLE_KEY = 'sb_publishable_Ans_S4Zx2A1LXLT7FMfEZA_h-n-kfu_';
   const button = document.getElementById('run');
@@ -41,7 +41,7 @@
 
   button.addEventListener('click', async () => {
     button.disabled = true;
-    setStatus('Çalışıyor… NASA POWER / Open-Meteo / Render / pyfao56 zinciri bekleniyor.');
+    setStatus('Çalışıyor… 7 Eylül Kc + NASA POWER + Open-Meteo + DEM + Render + pyfao56 zinciri bekleniyor.');
     try {
       const token = getAccessToken();
       const response = await fetch(FUNCTION_URL, {
