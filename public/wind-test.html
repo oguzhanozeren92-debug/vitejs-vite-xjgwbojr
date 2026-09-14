@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TarlaPusula · Open-Meteo Rüzgâr Doğrulama</title>
+  <style>
+    :root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#020804;color:#e7f7eb;padding:24px}.wrap{width:min(760px,100%);margin:0 auto}.card{background:rgba(6,19,8,.94);border:1px solid #1e3a24;border-radius:22px;padding:20px;box-shadow:0 0 40px rgba(34,197,94,.08)}h1{font-size:22px;margin:0 0 8px}.sub{color:#9fb4a4;line-height:1.5;font-size:14px}.summary{margin:16px 0;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.metric{padding:14px;border:1px solid #1e3a24;border-radius:16px;background:#041008}.metric b{display:block;font-size:20px}.metric span{font-size:12px;color:#8da394}.status{margin:16px 0;padding:14px;border-radius:14px;border:1px solid #1e3a24;background:#041008;white-space:pre-wrap}.ok{border-color:#22c55e}.err{border-color:#ef4444}.table{display:grid;grid-template-columns:1fr 1fr 1fr;border:1px solid #1e3a24;border-radius:16px;overflow:hidden}.table>div{padding:9px 10px;border-bottom:1px solid rgba(30,58,36,.55)}.head{font-weight:800;background:#07160b}.hi{color:#fbbf24}.good{color:#4ade80}.note{margin-top:14px;font-size:12px;color:#7f9785;line-height:1.5}@media(max-width:620px){.summary{grid-template-columns:1fr}.table{font-size:12px}}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card">
+      <h1>Open-Meteo 24 Saatlik Rüzgâr Doğrulama</h1>
+      <div class="sub">ŞENO · 7 Eylül 2026 · 38.9620, 38.7569. Saatlik 10 m rüzgârı çekilir; FAO-56 yüksekliğe göre 2 m'ye çevrilir ve günlük ortalama kontrol edilir.</div>
+      <div id="status" class="status">Veri alınıyor…</div>
+      <div id="summary" class="summary" hidden></div>
+      <div id="table" class="table" hidden></div>
+      <div class="note">FAO-56 dönüşümü: u₂ = u_z × 4.87 / ln(67.8z − 5.42), z=10 m. Open-Meteo wind_speed_10m değeri m/s istenir. Bu ekran yalnız teşhis amaçlıdır; production sulama kararını değiştirmez.</div>
+    </section>
+  </main>
+<script>
+(async()=>{
+  const LAT=38.9619998275862, LON=38.7569432758621, DATE='2026-09-07';
+  const status=document.getElementById('status'), summary=document.getElementById('summary'), table=document.getElementById('table');
+  const round=(v,d=2)=>Number(v.toFixed(d));
+  const mean=a=>a.reduce((s,v)=>s+v,0)/a.length;
+  const u10to2=u10=>u10*4.87/Math.log(67.8*10-5.42);
+  try{
+    const url='https://api.open-meteo.com/v1/forecast?latitude='+LAT+'&longitude='+LON+'&hourly=wind_speed_10m&start_date='+DATE+'&end_date='+DATE+'&timezone=UTC&wind_speed_unit=ms';
+    const r=await fetch(url);
+    if(!r.ok) throw new Error('Open-Meteo HTTP '+r.status);
+    const j=await r.json();
+    const times=j?.hourly?.time||[], wind=j?.hourly?.wind_speed_10m||[];
+    const rows=[];
+    for(let i=0;i<times.length;i++){
+      if(String(times[i]).startsWith(DATE) && Number.isFinite(Number(wind[i]))) rows.push({time:String(times[i]).slice(11,16),u10:Number(wind[i]),u2:u10to2(Number(wind[i]))});
+    }
+    if(rows.length!==24) throw new Error('Beklenen 24 saat yerine '+rows.length+' saat döndü.');
+    const avg10=mean(rows.map(x=>x.u10));
+    const avg2=mean(rows.map(x=>x.u2));
+    const max10=Math.max(...rows.map(x=>x.u10));
+    const min10=Math.min(...rows.map(x=>x.u10));
+    status.textContent='24/24 saat geldi. Dönüşüm ve günlük ortalama hesaplandı.';
+    status.className='status ok';
+    summary.innerHTML='<div class="metric"><b>'+round(avg10)+' m/s</b><span>10 m günlük ortalama</span></div><div class="metric"><b>'+round(avg2)+' m/s</b><span>2 m FAO-56 ortalaması</span></div><div class="metric"><b>'+round(min10)+'–'+round(max10)+' m/s</b><span>10 m günlük min–maks</span></div>';
+    summary.hidden=false;
+    table.innerHTML='<div class="head">Saat (UTC)</div><div class="head">10 m m/s</div><div class="head">2 m m/s</div>'+rows.map(x=>'<div>'+x.time+'</div><div'+(x.u10>=7?' class="hi"':'')+'>'+round(x.u10,2)+'</div><div>'+round(x.u2,2)+'</div>').join('');
+    table.hidden=false;
+  }catch(e){status.textContent=String(e?.message||e);status.className='status err';}
+})();
+</script>
+</body>
+</html>
