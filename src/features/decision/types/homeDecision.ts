@@ -6,7 +6,7 @@ import type { HomeSatelliteTrendSignal } from '../../satellite/services/buildHom
 
 export type HomeDecisionTarget = 'home' | 'weather' | 'spray_weather' | 'calendar' | 'ai' | 'irrigation_detail' | 'soil' | 'map_vegetation';
 export type HomeDecisionSource =
-  | 'field' | 'weather' | 'calendar' | 'satellite' | 'pusula'
+  | 'field' | 'weather' | 'calendar' | 'satellite' | 'pusula' | 'risk-radar'
   | 'irrigation' | 'phenology' | 'operation' | 'nutrition';
 export type HomeTodayIconKey = 'water' | 'rain' | 'document' | 'leaf-green' | 'leaf-gold';
 export type HomePhenologySignal = Pick<PhenologyResult, 'stage' | 'stageLabel' | 'dataStatus' | 'warnings'>;
