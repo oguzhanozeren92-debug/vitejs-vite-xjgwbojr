@@ -1,0 +1,83 @@
+name: Risk Radar CI
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/risk-radar/**'
+      - 'src/services/riskRadarService.ts'
+      - 'src/services/unifiedMapAiService.ts'
+      - '.github/workflows/risk-radar-ci.yml'
+  push:
+    branches:
+      - 'main'
+      - 'fix/mobile-shell-map-ui-20260913'
+      - 'work/**'
+    paths:
+      - 'supabase/functions/risk-radar/**'
+      - 'src/services/riskRadarService.ts'
+      - 'src/services/unifiedMapAiService.ts'
+      - '.github/workflows/risk-radar-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  risk-engine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Format check
+        run: deno fmt --check supabase/functions/risk-radar
+      - name: Type check edge function
+        run: deno check supabase/functions/risk-radar/index.ts
+      - name: Run deterministic engine tests
+        run: deno test supabase/functions/risk-radar/risk-engine.test.ts
+
+  trust-boundary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify authenticated field ownership boundary
+        run: |
+          grep -q "auth.getUser" supabase/functions/risk-radar/index.ts
+          grep -q "eq('user_id', userId)" supabase/functions/risk-radar/index.ts
+          grep -q "SUPABASE_SERVICE_ROLE_KEY" supabase/functions/risk-radar/index.ts
+      - name: Reject client-controlled coordinates and synthetic risk data
+        run: |
+          if grep -E "body\?\.(latitude|longitude|lat|lng|geometry)|body\.(latitude|longitude|lat|lng|geometry)" supabase/functions/risk-radar/index.ts; then
+            echo "Client-controlled location input introduced into Risk Radar"
+            exit 1
+          fi
+          if grep -E "Math\.random|synthetic|mock" supabase/functions/risk-radar/index.ts supabase/functions/risk-radar/risk-engine.ts src/services/riskRadarService.ts; then
+            echo "Synthetic or mock Risk Radar data introduced"
+            exit 1
+          fi
+      - name: Preserve safety and provenance rules
+        run: |
+          grep -q "Risk skoru tek başına ilaçlama kararı değildir" supabase/functions/risk-radar/index.ts
+          grep -q "kesin hastalık teşhisi veya pestisit uygulama talimatı değildir" supabase/functions/risk-radar/index.ts
+          grep -q "Apache-2.0" supabase/functions/risk-radar/index.ts
+          grep -q "AgStack/OpenAgri Pest & Disease Models" supabase/functions/risk-radar/index.ts
+
+  frontend-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Lint Risk Radar integration
+        run: >-
+          npx oxlint
+          src/services/riskRadarService.ts
+          src/services/unifiedMapAiService.ts
+      - name: Typecheck frontend
+        run: npm run typecheck
+      - name: Build frontend
+        run: npm run build
