@@ -5,6 +5,7 @@ on:
     paths:
       - 'services/model-gateway/**'
       - 'src/features/model-engines/**'
+      - 'src/features/irrigation/hooks/useIrrigationSchedulingPilot.ts'
       - 'src/features/irrigation/services/historicalKcReconstruction.service.ts'
       - 'src/features/irrigation/services/irrigationSchedulingPilot.service.ts'
       - 'src/features/irrigation/types/irrigationSchedulingPilot.ts'
@@ -19,6 +20,7 @@ on:
     paths:
       - 'services/model-gateway/**'
       - 'src/features/model-engines/**'
+      - 'src/features/irrigation/hooks/useIrrigationSchedulingPilot.ts'
       - 'src/features/irrigation/services/historicalKcReconstruction.service.ts'
       - 'src/features/irrigation/services/irrigationSchedulingPilot.service.ts'
       - 'src/features/irrigation/types/irrigationSchedulingPilot.ts'
@@ -72,6 +74,8 @@ jobs:
           npx oxlint
           src/features/model-engines/services/modelEngineShadow.service.ts
           src/features/model-engines/services/aquacropPilotInputs.service.ts
+          src/features/model-engines/services/aquacropInputRecords.service.ts
+          src/features/irrigation/hooks/useIrrigationSchedulingPilot.ts
           src/features/irrigation/services/historicalKcReconstruction.service.ts
           src/features/irrigation/services/irrigationSchedulingPilot.service.ts
           src/features/irrigation/types/irrigationSchedulingPilot.ts
