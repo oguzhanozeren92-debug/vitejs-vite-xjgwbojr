@@ -89,6 +89,10 @@ export async function loadFieldObservationTrend(
   const first = timeline[0] ?? null;
   const latest = timeline.at(-1) ?? null;
   const latestComparison = comparisons.at(-1) ?? null;
+  const recentComparisonStatuses = comparisons
+    .slice(-5)
+    .reverse()
+    .map((row: any) => comparisonStatus(row.status));
 
   return {
     pointId,
@@ -106,6 +110,7 @@ export async function loadFieldObservationTrend(
     latestNdvi: latest?.ndviValue ?? null,
     ndviDelta: difference(first?.ndviValue ?? null, latest?.ndviValue ?? null),
     latestComparisonStatus: comparisonStatus(latestComparison?.status),
+    recentComparisonStatuses,
     improvingCount: counts.improving,
     stableCount: counts.stable,
     worseningCount: counts.worsening,
