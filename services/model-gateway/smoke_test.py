@@ -39,8 +39,6 @@ def weather_day(day: date) -> WeatherDay:
 
 
 def main() -> None:
-    # Fail-closed security: deploy-style/default production mode must never allow
-    # an empty shared key and must report itself as not ready.
     os.environ.pop("MODEL_GATEWAY_ENV", None)
     os.environ.pop("MODEL_GATEWAY_SHARED_KEY", None)
 
@@ -52,8 +50,6 @@ def main() -> None:
     assert production_health["auth_configured"] is False
     assert production_health["production_authority"] is False
 
-    # Import-time default is production, therefore interactive API discovery is
-    # not exposed unless the process is explicitly started in development mode.
     assert app.docs_url is None
     assert app.redoc_url is None
     assert app.openapi_url is None
@@ -71,7 +67,6 @@ def main() -> None:
         if exc.status_code != 401:
             raise
 
-    # Request caps must reject oversized batches before any engine work starts.
     try:
         PyFao56Request(
             field_id="smoke-field",
@@ -85,7 +80,6 @@ def main() -> None:
     except ValidationError:
         pass
 
-    # Explicit development mode may run without a key for local/CI smoke tests.
     os.environ["MODEL_GATEWAY_ENV"] = "development"
     result = run_pyfao56_shadow(secure_payload, None)
 
@@ -94,11 +88,16 @@ def main() -> None:
     assert result["shadow_scope"] == "reference_et_and_single_kc"
     assert result["production_authority"] is False
     assert result["full_water_balance_ready"] is False
+    assert result["algorithm_isolation"]["enabled"] is True
+    assert result["algorithm_isolation"]["weather_basis"] == "identical_gateway_weather_input"
     assert len(result["days"]) == 1
 
     day = result["days"][0]
     assert day["reference_et_mm"] > 0
     assert day["crop_et_mm"] > 0
+    assert day["same_weather_fao56_control_et_mm"] > 0
+    assert isinstance(day["same_weather_algorithm_delta_mm"], float)
+    assert day["same_weather_algorithm_delta_pct"] is not None
     assert_close(day["crop_et_mm"], day["reference_et_mm"] * 0.8, tolerance=0.02)
 
     duplicate_payload = PyFao56Request(
@@ -140,6 +139,8 @@ def main() -> None:
         {
             "pyfao56_version": result.get("engine_version"),
             "reference_et_mm": day["reference_et_mm"],
+            "same_weather_fao56_control_et_mm": day["same_weather_fao56_control_et_mm"],
+            "same_weather_algorithm_delta_pct": day["same_weather_algorithm_delta_pct"],
             "crop_et_mm": day["crop_et_mm"],
             "max_shadow_days": MAX_SHADOW_DAYS,
         },
