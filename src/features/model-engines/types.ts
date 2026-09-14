@@ -108,6 +108,8 @@ export type ModelReadinessResult = {
   evidence: Record<string, ModelReadinessEvidence>;
   context: Record<string, unknown>;
   inputAuthority: 'server-derived';
+  checkedAt: string;
+  snapshotPersisted: boolean;
   rollout: 'off' | 'shadow' | 'pilot' | 'production';
   productionAuthority: false;
   note: string;
