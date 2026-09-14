@@ -210,20 +210,23 @@ export async function runHistoricalPyFao56FieldShadow(
   };
 }
 
+/**
+ * Crop-model readiness is derived on the server from the authenticated field and
+ * real provider/model records. The legacy availableInputs argument is deliberately
+ * ignored so a phone/client cannot promote a missing model input to "ready".
+ */
 export async function checkCropModelReadiness(
   engine: 'pcse' | 'aquacrop',
   fieldId: string,
-  availableInputs: string[],
+  _availableInputs: string[] = [],
 ): Promise<ModelReadinessResult> {
+  if (!fieldId.trim()) throw new Error(`${engine} readiness için tarla kimliği gerekli.`);
+
   const client = requireSupabase();
-  const { data, error } = await client.functions.invoke('model-engine-shadow', {
+  const { data, error } = await client.functions.invoke('model-engine-readiness', {
     body: {
       engine,
-      operation: 'readiness',
-      payload: {
-        field_id: fieldId,
-        available_inputs: availableInputs,
-      },
+      field_id: fieldId,
     },
   });
 
@@ -233,15 +236,30 @@ export async function checkCropModelReadiness(
   if (!data || data.ok === false) {
     throw new Error(data?.error || `${engine} readiness sonucu alınamadı.`);
   }
+  if (data.input_authority !== 'server-derived') {
+    throw new Error(`${engine} readiness sonucu sunucu otoritesinden gelmedi.`);
+  }
 
   return {
     ok: true,
     engine,
     fieldId: String(data.field_id ?? fieldId),
     ready: Boolean(data.ready),
+    availableInputs: Array.isArray(data.available_inputs)
+      ? data.available_inputs.map(String)
+      : [],
     missingInputs: Array.isArray(data.missing_inputs)
       ? data.missing_inputs.map(String)
       : [],
+    evidence:
+      data.evidence && typeof data.evidence === 'object'
+        ? data.evidence
+        : {},
+    context:
+      data.context && typeof data.context === 'object'
+        ? data.context
+        : {},
+    inputAuthority: 'server-derived',
     rollout: data.rollout ?? 'off',
     productionAuthority: false,
     note: String(data.note ?? ''),
