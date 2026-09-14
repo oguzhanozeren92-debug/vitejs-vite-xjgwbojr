@@ -2,6 +2,7 @@
   "nodeModulesDir": "auto",
   "compilerOptions": {
     "strict": true,
+    "noImplicitAny": false,
     "lib": ["deno.window", "dom", "dom.iterable"]
   },
   "fmt": {
