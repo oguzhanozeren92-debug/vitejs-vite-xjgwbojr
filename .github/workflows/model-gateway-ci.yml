@@ -95,6 +95,7 @@ jobs:
           src/features/model-engines/services/modelEngineShadow.service.ts
           src/features/model-engines/services/aquacropPilotInputs.service.ts
           src/features/model-engines/services/aquacropInputRecords.service.ts
+          src/features/model-engines/services/aquacropPilotRun.service.ts
           src/features/irrigation/hooks/useIrrigationSchedulingPilot.ts
           src/features/irrigation/services/historicalKcReconstruction.service.ts
           src/features/irrigation/services/irrigationSchedulingPilot.service.ts
@@ -159,5 +160,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build production image
-        run: docker build -t tarlapusula-model-gateway:ci services/model-gateway
+      - name: Build core production image
+        run: docker build -t tarlapusula-model-gateway:core services/model-gateway
+      - name: Verify core image starts and imports app
+        run: docker run --rm -e MODEL_GATEWAY_SHARED_KEY=ci-only-key tarlapusula-model-gateway:core python -c "import app; assert app.app.version"
+      - name: Build pilot-enabled image
+        run: docker build --build-arg INSTALL_PILOT=1 -t tarlapusula-model-gateway:pilot services/model-gateway
+      - name: Verify pilot image has AquaCrop runner
+        run: docker run --rm -e MODEL_GATEWAY_SHARED_KEY=ci-only-key tarlapusula-model-gateway:pilot python -c "import aquacrop, app; from aquacrop_runner import run_aquacrop_pilot; assert app.app.version; print('pilot image ok')"
