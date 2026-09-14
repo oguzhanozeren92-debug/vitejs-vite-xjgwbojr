@@ -25,6 +25,7 @@ export type FieldObservationTrendSummary = {
   latestNdvi: number | null;
   ndviDelta: number | null;
   latestComparisonStatus: FieldObservationComparisonStatus;
+  recentComparisonStatuses: FieldObservationComparisonStatus[];
   improvingCount: number;
   stableCount: number;
   worseningCount: number;
