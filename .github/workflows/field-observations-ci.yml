@@ -31,6 +31,8 @@ jobs:
           grep -q "productionAuthority: false" src/features/field-observations/services/fieldObservationEvidence.service.ts
           grep -q "listFieldObservationPoints" src/features/field-observations/services/fieldObservationEvidence.service.ts
           grep -q "loadFieldObservationTrend" src/features/field-observations/services/fieldObservationEvidence.service.ts
+          grep -q "useFieldObservationTrend" src/features/field-observations/components/NdviObservationTimelineModal.tsx
+          grep -q "İlk → son değişim" src/features/field-observations/components/NdviObservationTimelineModal.tsx
           if grep -R "Math.random\|synthetic\|mock" src/features/field-observations/services/fieldObservationTrend.service.ts src/features/field-observations/services/fieldObservationEvidence.service.ts src/features/field-observations/hooks/useFieldObservationTrend.ts; then
             echo "Synthetic field-observation trend/evidence data introduced"
             exit 1
@@ -53,5 +55,6 @@ jobs:
           src/features/field-observations/services/fieldObservationTrend.service.ts
           src/features/field-observations/services/fieldObservationEvidence.service.ts
           src/features/field-observations/hooks/useFieldObservationTrend.ts
+          src/features/field-observations/components/NdviObservationTimelineModal.tsx
       - name: Build frontend
         run: npm run build
