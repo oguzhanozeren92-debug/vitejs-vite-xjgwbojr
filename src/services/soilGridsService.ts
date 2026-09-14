@@ -69,71 +69,26 @@ type SoilGridsErrorResponse = {
   };
 };
 
-const CACHE_PREFIX = 'tp_soilgrids_edge_v1';
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-
-function cacheKey(latitude: number, longitude: number) {
-  return `${CACHE_PREFIX}:${latitude.toFixed(5)}:${longitude.toFixed(5)}`;
-}
-
-function readCache(latitude: number, longitude: number) {
-  if (typeof window === 'undefined') return null;
-
-  try {
-    const raw = window.localStorage.getItem(cacheKey(latitude, longitude));
-    if (!raw) return null;
-
-    const parsed = JSON.parse(raw) as {
-      savedAt?: number;
-      data?: SoilGridsProfile;
-    };
-
-    if (!parsed.savedAt || !parsed.data) return null;
-    if (Date.now() - parsed.savedAt > CACHE_TTL_MS) return null;
-
-    return parsed.data;
-  } catch {
-    return null;
-  }
-}
-
-function writeCache(
-  latitude: number,
-  longitude: number,
-  data: SoilGridsProfile,
-) {
-  if (typeof window === 'undefined') return;
-
-  try {
-    window.localStorage.setItem(
-      cacheKey(latitude, longitude),
-      JSON.stringify({
-        savedAt: Date.now(),
-        data,
-      }),
-    );
-  } catch {
-    // Cache zorunlu değil.
-  }
-}
-
+/**
+ * Eski sürümlerde SoilGrids ayrıca localStorage cache kullanıyordu.
+ * Artık bütün read-only harita verileri supabaseClient içindeki tek persistent
+ * data bridge üzerinden geçtiği için ikinci cache katmanı kaldırıldı.
+ *
+ * Fonksiyon geriye dönük çağrılar kırılmasın diye tutuluyor; eski key'leri
+ * temizler ama güncel cache'i yönetmez.
+ */
 export function clearSoilGridsCache() {
   if (typeof window === 'undefined') return;
 
   try {
     const keys: string[] = [];
-
     for (let i = 0; i < window.localStorage.length; i += 1) {
       const key = window.localStorage.key(i);
-
-      if (key?.startsWith('tp_soilgrids_')) {
-        keys.push(key);
-      }
+      if (key?.startsWith('tp_soilgrids_')) keys.push(key);
     }
-
     keys.forEach((key) => window.localStorage.removeItem(key));
   } catch {
-    // localStorage kapalı olabilir.
+    // Eski cache temizliği kritik değil.
   }
 }
 
@@ -153,9 +108,8 @@ export async function fetchSoilGridsProfile(
     throw new Error('SoilGrids için geçerli bir boylam gerekli.');
   }
 
-  if (!options?.forceRefresh) {
-    const cached = readCache(latitude, longitude);
-    if (cached) return cached;
+  if (!supabase) {
+    throw new Error('SoilGrids için Supabase bağlantısı hazır değil.');
   }
 
   const { data, error } = await supabase.functions.invoke<
@@ -165,6 +119,9 @@ export async function fetchSoilGridsProfile(
       latitude,
       longitude,
     },
+    headers: options?.forceRefresh
+      ? { 'x-tp-force-refresh': '1' }
+      : undefined,
   });
 
   if (options?.signal?.aborted) {
@@ -194,8 +151,6 @@ export async function fetchSoilGridsProfile(
       `${failed?.error ?? 'SoilGrids verisi alınamadı.'}${debugText}${warningText}`,
     );
   }
-
-  writeCache(latitude, longitude, data);
 
   return data;
 }

@@ -7,29 +7,14 @@ import type {
 type SatelliteFusionOptions = {
   daysBack?: number;
   maxCloudCoverage?: number;
+  forceRefresh?: boolean;
 };
 
-const CACHE_TTL_MS = 30 * 60 * 1000;
-
-const memoryCache = new Map<
-  string,
-  {
-    expiresAt: number;
-    value: SatelliteFusionResponse;
-  }
->();
-
-function geometryCacheKey(
-  geometry: unknown,
-  options?: SatelliteFusionOptions,
-) {
-  return JSON.stringify({
-    geometry,
-    daysBack: options?.daysBack ?? 90,
-    maxCloudCoverage: options?.maxCloudCoverage ?? 35,
-  });
-}
-
+/**
+ * Satellite fusion artık kendi memory cache'ini tutmaz.
+ * Bütün read-only katman istekleri supabaseClient içindeki tek data bridge
+ * üzerinden geçer; Home ve diğer ekranlar aynı snapshot'ı kullanır.
+ */
 export async function fetchFieldSatelliteFusion(
   geometry: unknown,
   options?: SatelliteFusionOptions,
@@ -40,18 +25,8 @@ export async function fetchFieldSatelliteFusion(
     );
   }
 
-  const cacheKey = geometryCacheKey(
-    geometry,
-    options,
-  );
-
-  const cached = memoryCache.get(cacheKey);
-
-  if (
-    cached &&
-    cached.expiresAt > Date.now()
-  ) {
-    return cached.value;
+  if (!supabase) {
+    throw new Error('Sentinel fusion için Supabase bağlantısı hazır değil.');
   }
 
   const { data, error } = await supabase.functions.invoke<
@@ -63,6 +38,9 @@ export async function fetchFieldSatelliteFusion(
       maxCloudCoverage:
         options?.maxCloudCoverage ?? 35,
     },
+    headers: options?.forceRefresh
+      ? { 'x-tp-force-refresh': '1' }
+      : undefined,
   });
 
   if (error) {
@@ -81,11 +59,6 @@ export async function fetchFieldSatelliteFusion(
         'Sentinel-1 + Sentinel-2 fusion verisi alınamadı.',
     );
   }
-
-  memoryCache.set(cacheKey, {
-    value: data,
-    expiresAt: Date.now() + CACHE_TTL_MS,
-  });
 
   return data;
 }

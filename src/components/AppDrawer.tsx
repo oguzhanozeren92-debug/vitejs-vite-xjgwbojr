@@ -71,9 +71,15 @@ const ITEMS: DrawerItem[] = [
     fallback: `${DRAWER_MENU_FALLBACK_BASE}/support.webp`,
   },
   {
-    label: 'Bilgi Rehberi',
-    target: 'pestGuideHub' as Screen,
+    label: 'Bilgi Merkezi',
+    target: 'knowledgeHub' as Screen,
     image: premiumIconUrl('19-bilgi-rehberi.webp'),
+    fallback: `${DRAWER_MENU_FALLBACK_BASE}/guide.webp`,
+  },
+  {
+    label: 'Hastalık & Zararlı',
+    target: 'pestGuideHub' as Screen,
+    image: `${DRAWER_MENU_FALLBACK_BASE}/guide.webp`,
     fallback: `${DRAWER_MENU_FALLBACK_BASE}/guide.webp`,
   },
   {
@@ -608,8 +614,6 @@ export default function AppDrawer({
           letter-spacing:.22em;
         }
 
-
-        /* Opsiyon D — dinamik Pusula Puanı */
         .tp-premium-points-opd{
           width:100%!important;
           min-height:62px!important;

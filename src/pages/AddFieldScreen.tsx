@@ -3,7 +3,12 @@ import FieldMap from '../components/FieldMap';
 import MobileWheelPicker from '../components/MobileWheelPicker';
 import { TURKEY_CROP_PICKER_OPTIONS } from '../data/crops';
 import { onboardingStyles } from '../styles/onboardingStyles';
-import type { CropCycle, LocationOption, Screen } from '../types';
+import type {
+  CropCycle,
+  IrrigationStatus,
+  LocationOption,
+  Screen,
+} from '../types';
 import './AddFieldMobile.css';
 
 const PUSULA_BODY_SRC =
@@ -61,7 +66,10 @@ type AddFieldScreenProps = {
   handleParcelLookup: () => void | Promise<void>;
   openOfficialParcelQuery: () => void;
   handleFieldCropSelection: (value: string) => void;
-  handleAddField: (event: FormEvent) => void | Promise<void>;
+  handleAddField: (
+    event: FormEvent,
+    irrigationStatus: IrrigationStatus,
+  ) => void | Promise<void>;
 };
 
 export default function AddFieldScreen(props: AddFieldScreenProps) {
@@ -76,6 +84,7 @@ export default function AddFieldScreen(props: AddFieldScreenProps) {
   } = props;
 
   const [step,setStep] = useState(0);
+  const [irrigationStatus, setIrrigationStatus] = useState<IrrigationStatus | ''>('');
   const [pendingLocation, setPendingLocation] = useState<'district' | 'village' | null>(null);
   const [districtOpenToken, setDistrictOpenToken] = useState(0);
   const [villageOpenToken, setVillageOpenToken] = useState(0);
@@ -97,8 +106,8 @@ export default function AddFieldScreen(props: AddFieldScreenProps) {
     if(step===0) return Boolean(selectedProvinceId && selectedDistrictId && fieldVillage);
     if(step===1) return Boolean(parcelGeometry || (fieldAda.trim() && fieldParcel.trim()));
     if(step===2) return Boolean(fieldCrop && fieldName.trim());
-    return true;
-  },[step,selectedProvinceId,selectedDistrictId,fieldVillage,parcelGeometry,fieldAda,fieldParcel,fieldCrop,fieldName]);
+    return Boolean(irrigationStatus);
+  },[step,selectedProvinceId,selectedDistrictId,fieldVillage,parcelGeometry,fieldAda,fieldParcel,fieldCrop,fieldName,irrigationStatus]);
 
   const next = async () => {
     if(step===1 && !parcelGeometry && fieldAda.trim() && fieldParcel.trim()) {
@@ -167,6 +176,10 @@ export default function AddFieldScreen(props: AddFieldScreenProps) {
       .tp-choice-row{display:flex;gap:8px;flex-wrap:wrap}
       .tp-choice{border:1px solid ${C.line};background:rgba(11,27,17,.92);color:#e3ded0;border-radius:999px;padding:11px 15px;font-size:14px;font-weight:750;cursor:pointer}
       .tp-choice.active{border-color:${C.gold};color:${C.gold}}
+      .tp-irrigation-choice{flex:1 1 150px;border-radius:14px;text-align:left;padding:12px 14px;line-height:1.25}
+      .tp-irrigation-choice strong{display:block;font-size:14px;color:inherit}
+      .tp-irrigation-choice small{display:block;margin-top:4px;color:#98a49b;font-size:11px;font-weight:650}
+      .tp-irrigation-choice.active small{color:#b8d8c0}
 
       @media(max-width:520px){
         .tp-chat-field{padding:14px 11px 34px}
@@ -233,7 +246,7 @@ export default function AddFieldScreen(props: AddFieldScreenProps) {
               {step===0 && 'Konumu seç. Sonraki adımda resmi ada/parsel sınırını bulmaya çalışacağım.'}
               {step===1 && 'Ada ve parseli girince sınırı haritada kontrol edebilirsin.'}
               {step===2 && 'Ürünü bilmem; uydu, iklim, rehber ve Pusula önerilerini kişiselleştirir.'}
-              {step===3 && 'Bu bilgiler daha sonra Pusula AI tarafından tarla bağlamı olarak kullanılacak.'}
+              {step===3 && 'Sulama durumu dahil bu bilgiler Pusula, ET ve sulama kararlarında aynı tarla kaydından kullanılacak.'}
             </p>
           </div>
         </div>
@@ -274,21 +287,21 @@ export default function AddFieldScreen(props: AddFieldScreenProps) {
               <label className="full">
                 Köy / Mahalle
                 <MobileWheelPicker
-  title="Köy / mahalle seç"
-  value={String(
-    villageOptions.find(
-      item => item.name === fieldVillage
-    )?.id ?? ''
-  )}
-  onChange={(value) => { handleVillageSelection(value); setPendingLocation(null); setStep(1); }}
-  disabled={!selectedDistrictId || villageOptions.length === 0}
-  autoOpenToken={villageOpenToken}
-  searchable
-  options={villageOptions.map(x=>({
-    value:String(x.id),
-    label:x.name,
-  }))}
-/>
+                  title="Köy / mahalle seç"
+                  value={String(
+                    villageOptions.find(
+                      item => item.name === fieldVillage
+                    )?.id ?? ''
+                  )}
+                  onChange={(value) => { handleVillageSelection(value); setPendingLocation(null); setStep(1); }}
+                  disabled={!selectedDistrictId || villageOptions.length === 0}
+                  autoOpenToken={villageOpenToken}
+                  searchable
+                  options={villageOptions.map(x=>({
+                    value:String(x.id),
+                    label:x.name,
+                  }))}
+                />
               </label>
 
               {(locationOptionsLoading || locationOptionsMessage) && (
@@ -425,6 +438,36 @@ export default function AddFieldScreen(props: AddFieldScreenProps) {
                 />
               </label>
 
+              <label className="full">
+                Sulama durumu
+                <div className="tp-choice-row">
+                  <button
+                    type="button"
+                    className={`tp-choice tp-irrigation-choice ${irrigationStatus==='sulu'?'active':''}`}
+                    onClick={()=>setIrrigationStatus('sulu')}
+                  >
+                    <strong>Sulu</strong>
+                    <small>Düzenli sulama imkânı var</small>
+                  </button>
+                  <button
+                    type="button"
+                    className={`tp-choice tp-irrigation-choice ${irrigationStatus==='susuz'?'active':''}`}
+                    onClick={()=>setIrrigationStatus('susuz')}
+                  >
+                    <strong>Susuz</strong>
+                    <small>Yağışa dayalı üretim</small>
+                  </button>
+                  <button
+                    type="button"
+                    className={`tp-choice tp-irrigation-choice ${irrigationStatus==='kismi'?'active':''}`}
+                    onClick={()=>setIrrigationStatus('kismi')}
+                  >
+                    <strong>Kısmi / İhtiyaca göre</strong>
+                    <small>Gerektikçe sulama yapılıyor</small>
+                  </button>
+                </div>
+              </label>
+
               {fieldCropCycle!=='annual' && (
                 <>
                   <label>
@@ -492,16 +535,27 @@ export default function AddFieldScreen(props: AddFieldScreenProps) {
               Devam →
             </button>
           ) : (
-            <form style={{flex:1}} onSubmit={handleAddField}>
+            <form
+              style={{flex:1}}
+              onSubmit={(event)=>{
+                if (!irrigationStatus) {
+                  event.preventDefault();
+                  return;
+                }
+                void handleAddField(event, irrigationStatus);
+              }}
+            >
               <button
                 className="next"
                 style={{width:'100%'}}
                 type="submit"
-                disabled={fieldFormLoading}
+                disabled={fieldFormLoading || !irrigationStatus}
               >
                 {fieldFormLoading
                   ? 'Tarlan oluşturuluyor…'
-                  : 'Tarlayı Oluştur ✓'}
+                  : irrigationStatus
+                    ? 'Tarlayı Oluştur ✓'
+                    : 'Sulama durumunu seç'}
               </button>
             </form>
           )}

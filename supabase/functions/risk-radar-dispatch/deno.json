@@ -1,0 +1,13 @@
+{
+  "nodeModulesDir": "auto",
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": false,
+    "lib": ["deno.window", "dom", "dom.iterable"]
+  },
+  "fmt": {
+    "lineWidth": 88,
+    "semiColons": true,
+    "singleQuote": true
+  }
+}

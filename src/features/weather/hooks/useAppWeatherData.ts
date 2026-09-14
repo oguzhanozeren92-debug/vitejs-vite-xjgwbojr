@@ -2,17 +2,21 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { fetchNasaPowerData } from '../../../services/nasaPowerService';
 import {
-  fetchOpenMeteoForecast,
   geocodeFieldLocation,
   resolveHomeWeatherLocation,
 } from '../../../services/weatherService';
 import type {
   Field,
   FieldWeatherState,
-  WeatherForecastDay,
-  WeatherProviderResult,
 } from '../../../types';
 import { fetchHourlySprayForecast, type HourlySprayState } from '../services/hourlySprayForecast';
+import { fetchWeatherCompareSnapshot } from '../services/weatherCompare.service';
+import {
+  combineFusionConfidence,
+  fuseHistoricalPrecipitation,
+  fuseHistoricalTemperature,
+  type FusedClimateMetric,
+} from '../services/multiSourceClimateFusion';
 
 export type NasaPowerCardState = {
   status: 'idle' | 'loading' | 'ready' | 'error';
@@ -99,6 +103,10 @@ export type UnifiedClimateContext = {
     status: Era5ClimateState['status'];
     data: Era5ClimateResponse | null;
   };
+  fusion: {
+    averageTemperatureC: FusedClimateMetric;
+    totalPrecipitationMm: FusedClimateMetric;
+  };
   normalized: {
     averageTemperatureC: number | null;
     totalPrecipitationMm: number | null;
@@ -142,48 +150,40 @@ function buildUnifiedClimateContext(
   const nasaSummary = nasaMatches ? nasaPowerState.data?.summary : null;
   const eraSummary = era5Matches ? era5ClimateState.data?.summary : null;
 
-  const nasaTemp = finiteNumber(nasaSummary?.averageTemperature);
-  const eraTemp = finiteNumber(eraSummary?.averageTemperatureC);
-  const nasaRain = finiteNumber(nasaSummary?.totalPrecipitation);
-  const eraRain = finiteNumber(eraSummary?.totalPrecipitationMm);
-
-  const averageTemperatureC =
-    nasaTemp !== null && eraTemp !== null
-      ? Number(((nasaTemp + eraTemp) / 2).toFixed(2))
-      : (eraTemp ?? nasaTemp);
-  const totalPrecipitationMm =
-    nasaRain !== null && eraRain !== null
-      ? Number(((nasaRain + eraRain) / 2).toFixed(2))
-      : (eraRain ?? nasaRain);
-
-  const tempDifference =
-    nasaTemp !== null && eraTemp !== null ? Math.abs(nasaTemp - eraTemp) : null;
-  const rainDifference =
-    nasaRain !== null && eraRain !== null ? Math.abs(nasaRain - eraRain) : null;
+  const temperatureFusion = fuseHistoricalTemperature(
+    eraSummary?.averageTemperatureC,
+    nasaSummary?.averageTemperature,
+  );
+  const precipitationFusion = fuseHistoricalPrecipitation(
+    eraSummary?.totalPrecipitationMm,
+    nasaSummary?.totalPrecipitation,
+  );
 
   const notes: string[] = [
-    'NASA POWER iklim referansı; ERA5-Land/ERA5 bölgesel reanalysis verisi olarak değerlendirilir.',
+    'ERA5-Land/ERA5 bölgesel reanalysis ana iklim kaynağıdır; NASA POWER bağımsız referans ve doğrulama katmanı olarak birlikte değerlendirilir.',
+    'Kaynaklar ciddi biçimde ayrışırsa yapay bir orta değer üretilmez; ana reanalysis değeri korunur ve güven seviyesi düşürülür.',
     'Bu veriler tarla içi sensör ölçümü değildir; Pusula AI kararlarında kullanıcı kaydı, gerçek laboratuvar analizi ve saha gözlemleri daha yüksek öncelik taşır.',
   ];
 
-  if (tempDifference !== null && tempDifference >= 3) {
+  if (temperatureFusion.agreement === 'diverge') {
     notes.push(
-      `NASA POWER ile ERA5 ortalama sıcaklıkları arasında ${tempDifference.toFixed(1)} °C fark var; sıcaklık yorumu belirsizlik içerebilir.`,
+      `ERA5 ile NASA POWER sıcaklık referansları ${temperatureFusion.difference?.toFixed(1) ?? '?'} °C ayrışıyor; sıcaklık güveni sınırlı kabul edildi.`,
+    );
+  } else if (temperatureFusion.agreement === 'moderate') {
+    notes.push(
+      `Sıcaklık kaynakları arasında ${temperatureFusion.difference?.toFixed(1) ?? '?'} °C fark var; ağırlıklı birleşim orta güvenle kullanılıyor.`,
     );
   }
 
-  if (rainDifference !== null && rainDifference >= 10) {
+  if (precipitationFusion.agreement === 'diverge') {
     notes.push(
-      `NASA POWER ile ERA5 toplam yağış değerleri arasında ${rainDifference.toFixed(1)} mm fark var; yağış yorumu kaynaklar arası belirsizlik içerir.`,
+      `ERA5 ile NASA POWER yağış referansları ${precipitationFusion.difference?.toFixed(1) ?? '?'} mm ayrışıyor; yağış için ERA5 ana değer olarak korundu.`,
+    );
+  } else if (precipitationFusion.agreement === 'moderate') {
+    notes.push(
+      `Yağış kaynaklarında ${precipitationFusion.difference?.toFixed(1) ?? '?'} mm fark var; ağırlıklı birleşim orta güvenle kullanılıyor.`,
     );
   }
-
-  const confidence: UnifiedClimateContext['confidence'] =
-    nasaMatches && era5Matches
-      ? tempDifference !== null && tempDifference >= 3
-        ? 'medium'
-        : 'high'
-      : 'limited';
 
   return {
     version: 1,
@@ -194,12 +194,15 @@ function buildUnifiedClimateContext(
       longitude: finiteNumber(field.parcelCentroidLng ?? field.longitude),
     },
     generatedAt: new Date().toISOString(),
-    confidence,
+    confidence: combineFusionConfidence(
+      temperatureFusion,
+      precipitationFusion,
+    ),
     sourcePriority: [
       'Kullanıcı saha kaydı / sensör / laboratuvar',
-      'Kısa vadeli hava tahmin sağlayıcıları',
+      'TarlaPusula birleşik kısa vadeli hava tahmini',
       'ERA5-Land + ERA5 bölgesel reanalysis',
-      'NASA POWER iklim referansı',
+      'NASA POWER bağımsız iklim referansı',
     ],
     nasaPower: {
       status: nasaPowerState.status,
@@ -209,9 +212,13 @@ function buildUnifiedClimateContext(
       status: era5ClimateState.status,
       data: era5Matches ? era5ClimateState.data ?? null : null,
     },
+    fusion: {
+      averageTemperatureC: temperatureFusion,
+      totalPrecipitationMm: precipitationFusion,
+    },
     normalized: {
-      averageTemperatureC,
-      totalPrecipitationMm,
+      averageTemperatureC: temperatureFusion.value,
+      totalPrecipitationMm: precipitationFusion.value,
       averageHumidityPercent: finiteNumber(nasaSummary?.averageHumidity),
       averageWindSpeed: finiteNumber(nasaSummary?.averageWindSpeed),
       averageSolarRadiation: finiteNumber(nasaSummary?.averageSolarRadiation),
@@ -255,13 +262,16 @@ export function useAppWeatherData({ realFields, favoriteFieldId }: UseAppWeather
 
     try {
       const location = await resolveHomeWeatherLocation(field);
-      const forecast = await fetchOpenMeteoForecast(location.latitude, location.longitude);
+      const snapshot = await fetchWeatherCompareSnapshot(
+        location.latitude,
+        location.longitude,
+      );
       setFieldWeather((current) => ({
         ...current,
         [key]: {
           status: 'ready',
-          forecast,
-          providers: [{ name: 'Open-Meteo', forecast }],
+          forecast: snapshot.forecast,
+          providers: snapshot.providers,
           locationLabel: location.label,
         },
       }));
@@ -300,60 +310,17 @@ export function useAppWeatherData({ realFields, favoriteFieldId }: UseAppWeather
         throw new Error('Bu tarla için hava tahmini göstermek üzere il veya ilçe bilgisi gerekli.');
       }
 
-      const { data, error } = await supabase.functions.invoke('weather-compare', {
-        body: { latitude: location.latitude, longitude: location.longitude },
-      });
-      if (error) throw error;
-
-      const forecast = Array.isArray(data?.forecast)
-        ? (data.forecast as WeatherForecastDay[]).slice(0, 5)
-        : [];
-      const rawProviders = Array.isArray(data?.providers)
-        ? data.providers
-        : Array.isArray(data?.sources)
-          ? data.sources
-          : Array.isArray(data?.results)
-            ? data.results
-            : [];
-
-      const providers: WeatherProviderResult[] = rawProviders
-        .map((provider: any, index: number) => {
-          const providerForecast = Array.isArray(provider?.forecast)
-            ? provider.forecast.slice(0, 5)
-            : Array.isArray(provider?.days)
-              ? provider.days.slice(0, 5)
-              : [];
-
-          return {
-            name:
-              String(provider?.name ?? provider?.provider ?? provider?.source ?? `Kaynak ${index + 1}`).trim() ||
-              `Kaynak ${index + 1}`,
-            forecast: providerForecast,
-          };
-        })
-        .filter((provider: WeatherProviderResult) => provider.forecast.length > 0)
-        .slice(0, 3);
-
-      if (!forecast.length && providers.length === 0) {
-        setFieldWeather((current) => ({
-          ...current,
-          [key]: {
-            status: 'error',
-            forecast: [],
-            providers: [],
-            locationLabel: location.label,
-            message: data?.message ?? 'Hava tahmini güncelleniyor.',
-          },
-        }));
-        return;
-      }
+      const snapshot = await fetchWeatherCompareSnapshot(
+        location.latitude,
+        location.longitude,
+      );
 
       setFieldWeather((current) => ({
         ...current,
         [key]: {
           status: 'ready',
-          forecast: forecast.length ? forecast : providers[0]?.forecast ?? [],
-          providers,
+          forecast: snapshot.forecast,
+          providers: snapshot.providers,
           locationLabel: location.label,
         },
       }));
@@ -395,7 +362,6 @@ export function useAppWeatherData({ realFields, favoriteFieldId }: UseAppWeather
           message: error instanceof Error ? error.message : 'Saatlik tahmin alınamadı.',
         },
       }));
-      // Başarısız isteği hemen tekrar tekrar deneme; yeniden dene düğmesi zorlayabilir.
       hourlyFetchedAt.current.set(key, Date.now());
     } finally {
       hourlyInFlight.current.delete(key);

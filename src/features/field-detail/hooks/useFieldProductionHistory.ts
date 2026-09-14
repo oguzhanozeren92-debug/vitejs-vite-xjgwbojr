@@ -38,7 +38,7 @@ export function useFieldProductionHistory({ selectedField, setSelectedField, set
   const [detailBearing, setDetailBearing] = useState(true);
 
   const resetAnnualForm = () => {
-    setAnnualYear(String(new Date().getFullYear()));
+    setAnnualYear(String(selectedField?.season ?? new Date().getFullYear()));
     setAnnualCrop(selectedField?.crop ?? '');
     setAnnualPlantingDate('');
     setAnnualHarvestDate('');
@@ -184,7 +184,11 @@ export function useFieldProductionHistory({ selectedField, setSelectedField, set
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError) throw userError;
       if (!user) throw new Error('Oturum bulunamadı.');
-      const { error } = await supabase.from('field_seasons').insert({
+
+      // Aynı tarla+yıl için ikinci sezon kaydı üretme. Tarlayı eklerken girilen
+      // ürün/yıl zaten canonical sezon satırını oluşturur; bu form yalnız eksik
+      // ekim/hasat/not ayrıntılarını tamamlar veya geçmiş bir yılı ekler.
+      const { error } = await supabase.from('field_seasons').upsert({
         field_id: String(selectedField.id),
         user_id: user.id,
         year,
@@ -192,11 +196,25 @@ export function useFieldProductionHistory({ selectedField, setSelectedField, set
         planting_date: annualPlantingDate || null,
         harvest_date: annualHarvestDate || null,
         notes: annualNotes.trim() || null,
+      }, {
+        onConflict: 'field_id,year',
       });
       if (error) throw error;
+
       resetAnnualForm();
       setAnnualFormOpen(false);
       await loadProductionHistory(selectedField);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('tp:field-context-updated', {
+            detail: {
+              fieldId: String(selectedField.id),
+              changedFields: ['field_seasons', 'planting_date'],
+              source: 'field-season-saved',
+            },
+          }),
+        );
+      }
     } catch (error) {
       console.error('Sezon kaydedilemedi:', error);
       setHistoryMessage(error instanceof Error ? error.message : 'Sezon kaydedilemedi.');
@@ -212,8 +230,33 @@ export function useFieldProductionHistory({ selectedField, setSelectedField, set
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError) throw userError;
       if (!user) throw new Error('Oturum bulunamadı.');
-      const { error } = await supabase.from('field_seasons').delete().eq('id', id).eq('user_id', user.id);
-      if (error) throw error;
+
+      const target = annualSeasons.find((season) => season.id === id);
+      const isCurrentSummarySeason =
+        target && Number(target.year) === Number(selectedField.season);
+
+      if (isCurrentSummarySeason) {
+        const { error } = await supabase
+          .from('field_seasons')
+          .update({
+            crop: selectedField.crop,
+            planting_date: null,
+            harvest_date: null,
+            notes: null,
+          })
+          .eq('id', id)
+          .eq('user_id', user.id);
+        if (error) throw error;
+        setHistoryMessage('Güncel sezonun ek ayrıntıları temizlendi; tarla ürün/yıl kaydı korundu.');
+      } else {
+        const { error } = await supabase
+          .from('field_seasons')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', user.id);
+        if (error) throw error;
+      }
+
       await loadProductionHistory(selectedField);
     } catch (error) {
       setHistoryMessage(error instanceof Error ? error.message : 'Sezon silinemedi.');

@@ -1,4 +1,5 @@
 import { supabase } from '../supabaseClient';
+import { canonicalRadarOptions } from '../features/data-bridge/dataAuthority';
 
 export type Sentinel1RadarMode =
   | 'composite'
@@ -43,18 +44,28 @@ export async function fetchSentinel1Radar(
     mode?: Sentinel1RadarMode;
     days?: number;
     radiusKm?: number;
+    forceRefresh?: boolean;
   },
 ): Promise<Sentinel1RadarResponse> {
+  if (!supabase) {
+    throw new Error('Sentinel-1 için Supabase bağlantısı hazır değil.');
+  }
+
+  const canonical = canonicalRadarOptions(options);
+
   const { data, error } = await supabase.functions.invoke<
     Sentinel1RadarResponse | Sentinel1ErrorResponse
   >('sentinel1-radar', {
     body: {
       latitude,
       longitude,
-      mode: options?.mode ?? 'composite',
-      days: options?.days ?? 30,
-      radiusKm: options?.radiusKm ?? 2,
+      mode: canonical.mode,
+      days: canonical.days,
+      radiusKm: canonical.radiusKm,
     },
+    headers: options?.forceRefresh
+      ? { 'x-tp-force-refresh': '1' }
+      : undefined,
   });
 
   if (error) {

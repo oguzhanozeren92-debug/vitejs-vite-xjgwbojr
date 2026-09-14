@@ -1,0 +1,127 @@
+name: Risk Radar CI
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/risk-radar/**'
+      - 'supabase/functions/risk-radar-dispatch/**'
+      - 'src/services/riskRadarService.ts'
+      - 'src/services/unifiedMapAiService.ts'
+      - 'supabase/migrations/*risk_notification*'
+      - 'supabase/migrations/*risk_radar_dispatch*'
+      - '.github/workflows/risk-radar-ci.yml'
+  push:
+    branches:
+      - 'main'
+      - 'fix/mobile-shell-map-ui-20260913'
+      - 'work/**'
+    paths:
+      - 'supabase/functions/risk-radar/**'
+      - 'supabase/functions/risk-radar-dispatch/**'
+      - 'src/services/riskRadarService.ts'
+      - 'src/services/unifiedMapAiService.ts'
+      - 'supabase/migrations/*risk_notification*'
+      - 'supabase/migrations/*risk_radar_dispatch*'
+      - '.github/workflows/risk-radar-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  risk-engine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type check user Risk Radar
+        run: deno check supabase/functions/risk-radar/index.ts
+      - name: Capture proactive dispatcher typecheck
+        id: dispatcher-check
+        continue-on-error: true
+        run: >-
+          deno check
+          --config supabase/functions/risk-radar-dispatch/deno.json
+          supabase/functions/risk-radar-dispatch/index.ts
+          > dispatcher-check.log 2>&1
+      - name: Print dispatcher diagnostics
+        if: always()
+        run: cat dispatcher-check.log || true
+      - name: Upload dispatcher diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: risk-radar-dispatch-typecheck
+          path: dispatcher-check.log
+          if-no-files-found: ignore
+          retention-days: 1
+      - name: Run deterministic engine tests
+        run: deno test supabase/functions/risk-radar/risk-engine.test.ts
+      - name: Enforce dispatcher typecheck
+        if: steps.dispatcher-check.outcome == 'failure'
+        run: exit 1
+
+  trust-boundary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify authenticated field ownership boundary
+        run: |
+          grep -q "auth.getUser" supabase/functions/risk-radar/index.ts
+          grep -q "eq('user_id', userId)" supabase/functions/risk-radar/index.ts
+          grep -q "SUPABASE_SERVICE_ROLE_KEY" supabase/functions/risk-radar/index.ts
+      - name: Verify dispatcher cron boundary
+        run: |
+          grep -q "verify_push_dispatch_secret" supabase/functions/risk-radar-dispatch/index.ts
+          grep -q "x-cron-secret" supabase/functions/risk-radar-dispatch/index.ts
+          grep -q "field_risk_notification_state" supabase/functions/risk-radar-dispatch/index.ts
+      - name: Reject client-controlled coordinates and synthetic risk data
+        run: |
+          if grep -E "body\?\.(latitude|longitude|lat|lng|geometry)|body\.(latitude|longitude|lat|lng|geometry)" supabase/functions/risk-radar/index.ts supabase/functions/risk-radar-dispatch/index.ts; then
+            echo "Client-controlled location input introduced into Risk Radar"
+            exit 1
+          fi
+          if grep -E "Math\.random|synthetic|mock" supabase/functions/risk-radar/index.ts supabase/functions/risk-radar/risk-engine.ts supabase/functions/risk-radar-dispatch/index.ts src/services/riskRadarService.ts; then
+            echo "Synthetic or mock Risk Radar data introduced"
+            exit 1
+          fi
+      - name: Preserve safety and provenance rules
+        run: |
+          grep -q "Risk skoru tek başına ilaçlama kararı değildir" supabase/functions/risk-radar/index.ts
+          grep -q "kesin hastalık teşhisi veya pestisit uygulama talimatı değildir" supabase/functions/risk-radar/index.ts
+          grep -q "Risk skoru erken uyarıdır" supabase/functions/risk-radar-dispatch/index.ts
+          grep -q "Apache-2.0" supabase/functions/risk-radar/index.ts
+          grep -q "AgStack/OpenAgri Pest & Disease Models" supabase/functions/risk-radar/index.ts
+
+  frontend-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Lint Risk Radar integration
+        run: >-
+          npx oxlint
+          src/services/riskRadarService.ts
+          src/services/unifiedMapAiService.ts
+      - name: Capture project type debt
+        continue-on-error: true
+        run: npm run typecheck -- --pretty false > typecheck.log 2>&1
+      - name: Print project type debt
+        if: always()
+        run: cat typecheck.log || true
+      - name: Upload project type debt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: risk-radar-typecheck
+          path: typecheck.log
+          if-no-files-found: ignore
+          retention-days: 1
+      - name: Build frontend
+        run: npm run build

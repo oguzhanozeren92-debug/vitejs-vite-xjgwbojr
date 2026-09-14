@@ -6,6 +6,7 @@ import AgriNewsScreen from './components/AgriNewsScreen';
 import PlantNutritionScreen from './components/PlantNutritionScreen';
 import ProducerMarketScreen from './components/ProducerMarketScreen';
 import PestGuideScreen from './components/PestGuideScreen';
+import KnowledgeCenterScreen from './features/content/components/KnowledgeCenterScreen';
 import AdminPageBuilder from './pages/Admin/AdminPageBuilder';
 import AuthScreens from './pages/Auth/AuthScreens';
 import OnboardingScreen from './pages/Onboarding/OnboardingScreen';
@@ -46,51 +47,6 @@ import type {
   Screen,
   Field,
 } from './types';
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 export default function App() {
   const { isNewUserPreview } = useEntitlementStore();
@@ -150,8 +106,6 @@ export default function App() {
     }
   });
 
-  // Geliştirici test anahtarındaki YENİ KULLANICI modu yalnızca önizlemedir.
-  // Gerçek profil/veri değişmeden mevcut yeni kullanıcı onboarding ekranı açılır.
   const newUserPreviewWasActiveRef = useRef(false);
   const newUserPreviewReturnScreenRef = useRef<Screen>('home');
 
@@ -190,8 +144,7 @@ export default function App() {
     setPusulaIntroOpen(false);
     setScreen(newUserPreviewReturnScreenRef.current ?? 'home');
   }, [isNewUserPreview]);
-  // Merkezi puan motorunu bir kez başlat.
-  // Oturum varsa günlük giriş ödülünü de server-side limit kontrolüyle dener.
+
   useEffect(() => {
     return startGamificationSession();
   }, []);
@@ -473,6 +426,39 @@ export default function App() {
   };
 
   useEffect(() => {
+    const handleOpenFieldSeason = (event: Event) => {
+      const detail = (event as CustomEvent<{ fieldId?: string }>).detail ?? {};
+      const requestedFieldId = String(detail.fieldId ?? '').trim();
+      if (!requestedFieldId) return;
+
+      const field = realFields.find(
+        (item) => String(item.id) === requestedFieldId,
+      );
+      if (!field) return;
+
+      openFieldDetail(field);
+      setAnnualYear(String(field.season ?? new Date().getFullYear()));
+      setAnnualCrop(field.crop ?? '');
+      setAnnualPlantingDate('');
+      setAnnualHarvestDate('');
+      setAnnualNotes('');
+      setHistoryMessage('');
+      setAnnualFormOpen(true);
+    };
+
+    window.addEventListener(
+      'tp:open-field-season',
+      handleOpenFieldSeason as EventListener,
+    );
+    return () => {
+      window.removeEventListener(
+        'tp:open-field-season',
+        handleOpenFieldSeason as EventListener,
+      );
+    };
+  }, [realFields]);
+
+  useEffect(() => {
     if (screen !== 'fieldDetail' || !selectedField) return;
     void loadFieldSections(selectedField);
     void loadProductionHistory(selectedField);
@@ -495,12 +481,10 @@ export default function App() {
     return <PusulaTest />;
   }
 
-
   if (pusulaIntroOpen) {
     const clearPreviewSeenFlag = () => {
       if (!isNewUserPreview || typeof window === 'undefined') return;
 
-      // Önizleme gerçek kullanıcının "fragmanı gördü" kaydını kirletmesin.
       try {
         window.localStorage.removeItem('tp_pusula_intro_seen_v1');
       } catch {
@@ -521,8 +505,6 @@ export default function App() {
           clearPreviewSeenFlag();
 
           if (isNewUserPreview) {
-            // Test hesabındaki gerçek tarlalar alan limitini tetiklemesin.
-            // Form açılır; aşağıdaki handleAddField koruması gerçek kayıt yapılmasını engeller.
             resetFieldForm();
             setFieldFormMessage('');
             setScreen('addField');
@@ -728,8 +710,6 @@ export default function App() {
         onContinue={() => {
           setScreen('home');
 
-          // Geliştirici YENİ KULLANICI önizlemesinde gerçek hesapta tarla olsa bile
-          // fragmanı 0 tarlalı yeni kullanıcı gibi zorla göster.
           if (isNewUserPreview) {
             window.setTimeout(() => setPusulaIntroOpen(true), 260);
           }
@@ -858,8 +838,10 @@ export default function App() {
   }
 
   const cmsDesktopMenuItems = cmsMenus.filter(item=>item.is_visible && item.show_desktop && (!item.admin_only || isAdmin)).sort((a,b)=>a.position-b.position).map(item=>({screen:((item.page_key || 'home') as Screen),icon:item.icon || '•',label:item.label,badge:item.badge_text || undefined}));
+  const baseDesktopMenuItems = cmsDesktopMenuItems.length ? cmsDesktopMenuItems : FALLBACK_DESKTOP_MENU_ITEMS;
   const desktopMenuItems: Array<{ screen: Screen; icon: string; label: string; badge?: string }> = [
-    ...(cmsDesktopMenuItems.length ? cmsDesktopMenuItems : FALLBACK_DESKTOP_MENU_ITEMS),
+    ...baseDesktopMenuItems,
+    ...(!baseDesktopMenuItems.some(item=>item.screen==='knowledgeHub') ? [{screen:'knowledgeHub' as Screen,icon:'▧',label:'Bilgi Merkezi',badge:'YENİ'}] : []),
     ...(isAdmin && !(cmsDesktopMenuItems.length && cmsDesktopMenuItems.some(item=>item.screen==='adminHub')) ? [{screen:'adminHub' as Screen,icon:'◆',label:'Yönetim',badge:'ADMIN'}] : []),
   ].map((item) =>
     String(item.screen) === 'supportHub'
@@ -874,7 +856,8 @@ export default function App() {
     const cmsCards=cmsBlocks.filter(item=>item.page_key===pageScreen && item.is_visible).sort((a,b)=>a.position-b.position).map(item=>item.title || item.block_key);
     placeholderMeta[pageScreen]={title:page.title || base.title,subtitle:page.subtitle || base.subtitle,icon:page.icon || base.icon,cards:cmsCards.length?cmsCards:base.cards};
   });
-    if (unifiedMapOpen) {
+
+  if (unifiedMapOpen) {
     return (
       <UnifiedMapScreen
         fields={realFields}
@@ -897,7 +880,7 @@ export default function App() {
     );
   }
 
-    if (sentinel1MapOpen) {
+  if (sentinel1MapOpen) {
     return (
       <UnifiedMapScreen
         fields={realFields}
@@ -909,7 +892,7 @@ export default function App() {
     );
   }
 
-    if (demMapOpen) {
+  if (demMapOpen) {
     return (
       <DemMapScreen
         fields={realFields}
@@ -928,7 +911,7 @@ export default function App() {
     );
   }
 
-    if (era5MapOpen) {
+  if (era5MapOpen) {
     return (
       <UnifiedMapScreen
         fields={realFields}
@@ -939,7 +922,6 @@ export default function App() {
       />
     );
   }
-
 
   const withGlobalDrawer = (
     content: ReactNode,
@@ -1009,7 +991,6 @@ export default function App() {
       />
     );
   }
-
 
   if (screen === 'inventoryHub') {
     return withGlobalDrawer(
@@ -1143,6 +1124,10 @@ export default function App() {
         setSideMenuOpen={setSideMenuOpen}
       />
     );
+  }
+
+  if (screen === 'knowledgeHub') {
+    return withGlobalDrawer(<KnowledgeCenterScreen />);
   }
 
   if (screen === 'nutritionHub') {

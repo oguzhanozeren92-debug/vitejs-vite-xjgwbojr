@@ -590,23 +590,28 @@ function cacheKey(userId: string) {
 
 export function loadInventoryCache(userId: string): InventoryProduct[] {
   try {
-    const raw = window.localStorage.getItem(cacheKey(userId));
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    window.localStorage.removeItem(cacheKey(userId));
   } catch {
-    return [];
+    // Eski stok cache'i temizlenemese bile canonical kaynak Supabase'dir.
   }
+  return [];
 }
 
 export function saveInventoryCache(
   userId: string,
   products: InventoryProduct[],
 ) {
+  // Stok için localStorage ikinci bir gerçeklik olamaz. Eski local-* kayıtlar
+  // React state'e eklenmeye çalışılırsa aynı dizi üzerinde ayıklanır.
+  const canonicalProducts = products.filter(
+    (product) => !String(product.id).startsWith('local-'),
+  );
+  products.splice(0, products.length, ...canonicalProducts);
+
   try {
-    window.localStorage.setItem(cacheKey(userId), JSON.stringify(products));
+    window.localStorage.removeItem(cacheKey(userId));
   } catch {
-    // localStorage kapalıysa Supabase ana kaynak olarak devam eder.
+    // Supabase tek stok otoritesi olarak devam eder.
   }
 }
 
@@ -670,7 +675,9 @@ function productToRow(userId: string, input: InventoryProductInput) {
 export async function fetchInventoryProducts(
   userId: string,
 ): Promise<InventoryProduct[]> {
-  if (!supabase) return loadInventoryCache(userId);
+  if (!supabase) {
+    throw new Error('Depo bağlantısı hazır değil. Stok verisi yalnızca Supabase üzerinde tutulur.');
+  }
 
   const { data, error } = await supabase
     .from('farm_inventory_products')
@@ -681,7 +688,6 @@ export async function fetchInventoryProducts(
   if (error) throw error;
 
   const products = (data ?? []).map(rowToProduct);
-  saveInventoryCache(userId, products);
   return products;
 }
 
@@ -690,17 +696,7 @@ export async function createInventoryProduct(
   input: InventoryProductInput,
 ): Promise<InventoryProduct> {
   if (!supabase) {
-    const now = new Date().toISOString();
-    return {
-      id:
-        typeof crypto !== 'undefined' && 'randomUUID' in crypto
-          ? crypto.randomUUID()
-          : `local-${Date.now()}`,
-      userId,
-      ...input,
-      createdAt: now,
-      updatedAt: now,
-    };
+    throw new Error('Depo bağlantısı hazır değil. Ürün yerel stok olarak oluşturulmadı.');
   }
 
   const { data, error } = await supabase
@@ -719,14 +715,7 @@ export async function updateInventoryProduct(
   input: InventoryProductInput,
 ): Promise<InventoryProduct> {
   if (!supabase) {
-    const now = new Date().toISOString();
-    return {
-      id,
-      userId,
-      ...input,
-      createdAt: now,
-      updatedAt: now,
-    };
+    throw new Error('Depo bağlantısı hazır değil. Stok değişikliği kaydedilmedi.');
   }
 
   const { data, error } = await supabase
@@ -745,7 +734,9 @@ export async function removeInventoryProduct(
   userId: string,
   id: string,
 ) {
-  if (!supabase) return;
+  if (!supabase) {
+    throw new Error('Depo bağlantısı hazır değil. Ürün silinmedi.');
+  }
 
   const { error } = await supabase
     .from('farm_inventory_products')
@@ -904,8 +895,7 @@ function normalizeBkuLookup(raw: any): BkuLookupResult | null {
         ? raw.matchedActiveIngredients.trim()
         : null,
     matchedFormulation:
-      typeof raw.matchedFormulation === 'string' &&
-      raw.matchedFormulation.trim()
+      typeof raw.matchedFormulation === 'string' && raw.matchedFormulation.trim()
         ? raw.matchedFormulation.trim()
         : null,
     matchedGroup:

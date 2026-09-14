@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TarlaPusula · 7 Günlük ET0 Kaynak Karşılaştırması</title>
+  <style>
+    :root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#020804;color:#e7f7eb;padding:24px}.wrap{width:min(1100px,100%);margin:0 auto}.card{background:rgba(6,19,8,.94);border:1px solid #1e3a24;border-radius:22px;padding:20px;box-shadow:0 0 40px rgba(34,197,94,.08)}h1{font-size:22px;margin:0 0 8px}.sub{color:#9fb4a4;line-height:1.5;font-size:14px}.status{margin:16px 0;padding:14px;border-radius:14px;border:1px solid #1e3a24;background:#041008;white-space:pre-wrap}.ok{border-color:#22c55e}.err{border-color:#ef4444}.summary{margin:16px 0;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.metric{padding:14px;border:1px solid #1e3a24;border-radius:16px;background:#041008}.metric b{display:block;font-size:20px}.metric span{font-size:12px;color:#8da394}.tableWrap{overflow:auto;border:1px solid #1e3a24;border-radius:16px}.table{min-width:980px;display:grid;grid-template-columns:110px 105px 110px 110px 110px 95px 100px 1fr}.table>div{padding:9px 10px;border-bottom:1px solid rgba(30,58,36,.55)}.head{font-weight:800;background:#07160b;position:sticky;top:0}.good{color:#4ade80}.warn{color:#fbbf24}.bad{color:#f87171}.muted{color:#7f9785}.note{margin-top:14px;font-size:12px;color:#7f9785;line-height:1.6}.callout{margin-top:16px;padding:14px;border:1px solid #1e3a24;border-radius:16px;background:#041008;line-height:1.55}.callout b{color:#b8d8bf}@media(max-width:760px){body{padding:12px}.summary{grid-template-columns:1fr 1fr}.card{padding:15px}}@media(max-width:460px){.summary{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<main class="wrap"><section class="card">
+  <h1>7 Günlük ET0 Kaynak Karşılaştırması</h1>
+  <div class="sub">ŞENO · Badem · 7–13 Eylül 2026. NASA POWER günlük LST meteorolojisi ile bağımsız FAO-56 kontrolü; Open-Meteo UTC ve Europe/Istanbul günlük ET0 değerleri karşılaştırılır. Eksik NASA günleri uydurulmaz, açıkça veri yok olarak bırakılır.</div>
+  <div id="status" class="status">Veriler alınıyor…</div>
+  <div id="summary" class="summary" hidden></div>
+  <div id="tableWrap" class="tableWrap" hidden><div id="table" class="table"></div></div>
+  <div id="callout" class="callout" hidden></div>
+  <div class="note">Önemli kontrol: mevcut shadow hattı NASA POWER için <b>LST (Local Solar Time)</b>, Open-Meteo baseline için <b>UTC</b> günlük pencere kullanıyor. Bu ekran Europe/Istanbul değerini de göstererek gün sınırı farkının etkisini ayırmaya çalışır. Europe/Istanbul, NASA LST ile birebir aynı değildir; yalnız daha yakın bir günlük pencere kontrolüdür. Bu sayfa teşhis amaçlıdır ve production sulama kararını değiştirmez.</div>
+</section></main>
+<script>
+(async()=>{
+  const LAT=38.9619998275862, LON=38.7569432758621, ELEVATION=855;
+  const START='2026-09-07', END='2026-09-13';
+  const dates=[]; for(let d=new Date(START+'T00:00:00Z'); d<=new Date(END+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+1)) dates.push(d.toISOString().slice(0,10));
+  const $=id=>document.getElementById(id), status=$('status'), summary=$('summary'), tableWrap=$('tableWrap'), table=$('table'), callout=$('callout');
+  const round=(v,d=2)=>v==null||!Number.isFinite(v)?null:Number(v.toFixed(d));
+  const valid=v=>{const n=Number(v);return Number.isFinite(n)&&n>-900?n:null};
+  const mean=a=>{const v=a.filter(Number.isFinite);return v.length?v.reduce((s,x)=>s+x,0)/v.length:null};
+  const compact=s=>s.replaceAll('-','');
+  const satVp=t=>0.6108*Math.exp((17.27*t)/(t+237.3));
+  const doy=iso=>{const d=new Date(iso+'T00:00:00Z'), y=new Date(Date.UTC(d.getUTCFullYear(),0,0));return Math.floor((d-y)/86400000)};
+  const wind10to2=u=>u*4.87/Math.log(67.8*10-5.42);
+  function fao56({date,tmax,tmin,dew,wind2,solar}){
+    const tmean=(tmax+tmin)/2, es=(satVp(tmax)+satVp(tmin))/2, ea=satVp(dew);
+    const delta=4098*satVp(tmean)/((tmean+237.3)**2), p=101.3*(((293-0.0065*ELEVATION)/293)**5.26), gamma=.000665*p;
+    const j=doy(date), phi=LAT*Math.PI/180, dr=1+.033*Math.cos((2*Math.PI/365)*j), sd=.409*Math.sin((2*Math.PI/365)*j-1.39);
+    const ws=Math.acos(Math.max(-1,Math.min(1,-Math.tan(phi)*Math.tan(sd))));
+    const ra=(24*60/Math.PI)*.0820*dr*(ws*Math.sin(phi)*Math.sin(sd)+Math.cos(phi)*Math.cos(sd)*Math.sin(ws));
+    const rso=(.75+2e-5*ELEVATION)*ra, rns=.77*solar, sigma=4.903e-9, tmaxK=tmax+273.16, tminK=tmin+273.16;
+    const cloud=rso>0?Math.max(.05,Math.min(1,solar/rso)):.05;
+    const rnl=sigma*((tmaxK**4+tminK**4)/2)*(.34-.14*Math.sqrt(Math.max(0,ea)))*(1.35*cloud-.35), rn=rns-rnl;
+    return Math.max(0,(.408*delta*rn+gamma*(900/(tmean+273))*wind2*(es-ea))/(delta+gamma*(1+.34*wind2)));
+  }
+  async function fetchJson(url){const r=await fetch(url);if(!r.ok)throw new Error('HTTP '+r.status+' · '+url.split('?')[0]);return r.json()}
+  function dailyOpen(payload,date){
+    const di=(payload?.daily?.time||[]).indexOf(date); if(di<0)return null;
+    const idx=[];(payload?.hourly?.time||[]).forEach((t,i)=>{if(String(t).startsWith(date))idx.push(i)});
+    const dew=idx.map(i=>valid(payload?.hourly?.dew_point_2m?.[i])).filter(Number.isFinite);
+    const wind=idx.map(i=>valid(payload?.hourly?.wind_speed_10m?.[i])).filter(Number.isFinite);
+    const rad=idx.map(i=>valid(payload?.hourly?.shortwave_radiation?.[i])).filter(Number.isFinite);
+    const tmax=valid(payload?.daily?.temperature_2m_max?.[di]), tmin=valid(payload?.daily?.temperature_2m_min?.[di]), published=valid(payload?.daily?.et0_fao_evapotranspiration?.[di]);
+    if(tmax==null||tmin==null||dew.length!==24||wind.length!==24||rad.length!==24)return {published,tmax,tmin,incomplete:true};
+    const day={tmax,tmin,dew:mean(dew),wind2:wind10to2(mean(wind)),solar:rad.reduce((s,x)=>s+x,0)*.0036,published,incomplete:false};
+    day.reconstructed=fao56({date,...day}); return day;
+  }
+  function nasaDay(p,date){
+    const k=compact(date), day={tmax:valid(p.T2M_MAX?.[k]),tmin:valid(p.T2M_MIN?.[k]),dew:valid(p.T2MDEW?.[k]),wind2:valid(p.WS2M?.[k]),solar:valid(p.ALLSKY_SFC_SW_DWN?.[k]),rain:valid(p.PRECTOTCORR?.[k])};
+    if(Object.values(day).some(v=>v==null))return null; day.et0=fao56({date,...day}); return day;
+  }
+  function strongest(n,o,date){
+    if(!n||!o||o.incomplete)return null;
+    const base=n.et0;
+    const cases=[['Rüzgâr',fao56({date,...n,wind2:o.wind2})],['Sıcaklık',fao56({date,...n,tmax:o.tmax,tmin:o.tmin})],['Çiy/nem',fao56({date,...n,dew:o.dew})],['Güneş',fao56({date,...n,solar:o.solar})]];
+    return cases.map(([name,val])=>({name,delta:val-base})).sort((a,b)=>Math.abs(b.delta)-Math.abs(a.delta))[0];
+  }
+  try{
+    const nasaUrl='https://power.larc.nasa.gov/api/temporal/daily/point?parameters=T2M_MAX,T2M_MIN,T2MDEW,WS2M,PRECTOTCORR,ALLSKY_SFC_SW_DWN&community=AG&longitude='+LON+'&latitude='+LAT+'&start='+compact(START)+'&end='+compact(END)+'&format=JSON&time-standard=LST';
+    const common='latitude='+LAT+'&longitude='+LON+'&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,et0_fao_evapotranspiration&hourly=dew_point_2m,wind_speed_10m,shortwave_radiation&start_date='+START+'&end_date='+END+'&wind_speed_unit=ms';
+    const [nasa,utc,ist]=await Promise.all([
+      fetchJson(nasaUrl),
+      fetchJson('https://api.open-meteo.com/v1/forecast?'+common+'&timezone=UTC'),
+      fetchJson('https://api.open-meteo.com/v1/forecast?'+common+'&timezone=Europe%2FIstanbul')
+    ]);
+    const p=nasa?.properties?.parameter||{};
+    const rows=dates.map(date=>{
+      const n=nasaDay(p,date), u=dailyOpen(utc,date), i=dailyOpen(ist,date), driver=strongest(n,u,date);
+      return {date,n,u,i,driver,delta:n&&u?.published!=null?u.published-n.et0:null,pct:n&&u?.published!=null&&n.et0?((u.published-n.et0)/n.et0)*100:null,boundary:u?.published!=null&&i?.published!=null?i.published-u.published:null};
+    });
+    const complete=rows.filter(r=>r.n&&r.u?.published!=null);
+    const avgN=mean(complete.map(r=>r.n.et0)), avgU=mean(complete.map(r=>r.u.published)), avgPct=mean(complete.map(r=>r.pct));
+    const openHigher=complete.filter(r=>r.delta>0).length;
+    const driverCounts={}; complete.forEach(r=>{if(r.driver)driverCounts[r.driver.name]=(driverCounts[r.driver.name]||0)+1});
+    const topDriver=Object.entries(driverCounts).sort((a,b)=>b[1]-a[1])[0]||null;
+    status.textContent=complete.length+' karşılaştırılabilir gün bulundu. Eksik NASA günleri karşılaştırmaya katılmadı.';status.className='status ok';
+    summary.innerHTML='<div class="metric"><b>'+complete.length+'/7</b><span>tam gün</span></div><div class="metric"><b>'+round(avgN,3)+' mm</b><span>NASA LST FAO-56 ort.</span></div><div class="metric"><b>'+round(avgU,3)+' mm</b><span>Open-Meteo UTC ET0 ort.</span></div><div class="metric"><b>'+(avgPct>=0?'+':'')+round(avgPct,1)+'%</b><span>ortalama UTC farkı</span></div>';summary.hidden=false;
+    table.innerHTML='<div class="head">Tarih</div><div class="head">NASA LST ET0</div><div class="head">Open UTC ET0</div><div class="head">Open IST ET0</div><div class="head">UTC−NASA</div><div class="head">Fark %</div><div class="head">IST−UTC</div><div class="head">En güçlü tek değişken</div>'+rows.map(r=>{
+      const noN=!r.n; const cls=r.pct==null?'muted':Math.abs(r.pct)>=25?'bad':Math.abs(r.pct)>=10?'warn':'good';
+      return '<div>'+r.date.slice(5).split('-').reverse().join('.')+'</div><div class="'+(noN?'muted':'')+'">'+(r.n?round(r.n.et0,3):'veri yok')+'</div><div>'+(r.u?.published??'veri yok')+'</div><div>'+(r.i?.published??'veri yok')+'</div><div>'+((r.delta==null)?'—':(r.delta>=0?'+':'')+round(r.delta,3))+'</div><div class="'+cls+'">'+((r.pct==null)?'—':(r.pct>=0?'+':'')+round(r.pct,1)+'%')+'</div><div>'+((r.boundary==null)?'—':(r.boundary>=0?'+':'')+round(r.boundary,3))+'</div><div>'+(r.driver?r.driver.name+' '+(r.driver.delta>=0?'+':'')+round(r.driver.delta,3)+' mm':'—')+'</div>';
+    }).join('');tableWrap.hidden=false;
+    const boundaryAbs=mean(complete.map(r=>Math.abs(r.boundary)).filter(Number.isFinite));
+    callout.innerHTML='<b>İlk okuma:</b> Open-Meteo '+openHigher+'/'+complete.length+' tam günde NASA kontrolünden daha yüksek. '+(topDriver?'<b>En sık baskın tek-değişken:</b> '+topDriver[0]+' ('+topDriver[1]+'/'+complete.length+' gün). ':'')+'<b>Gün sınırı kontrolü:</b> Open-Meteo Europe/Istanbul ile UTC günlük ET0 arasındaki ortalama mutlak fark '+round(boundaryAbs,3)+' mm. Bu değer büyükse önce LST↔UTC günlük pencere uyumsuzluğunu düzeltmek gerekir; küçükse kaynak meteorolojisi farkı daha baskındır.';callout.hidden=false;
+  }catch(e){status.textContent=String(e?.message||e);status.className='status err'}
+})();
+</script>
+</body>
+</html>

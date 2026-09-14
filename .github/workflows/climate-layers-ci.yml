@@ -1,0 +1,138 @@
+name: Climate Layers CI
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/field-climate-layers/**'
+      - 'supabase/functions/field-chirps-rain/**'
+      - 'src/features/map-data/services/**'
+      - 'src/features/map-data/hooks/useClimateLayerHistory.ts'
+      - 'src/features/map-data/components/ClimateLayerHistorySheet.tsx'
+      - 'src/features/map-data/components/ClimateLayerMapSurface.tsx'
+      - 'src/features/map-data/components/ClimateLayerPanel.tsx'
+      - 'src/features/map-data/components/ClimateLayerPusulaCard.tsx'
+      - 'src/features/map-data/components/UnifiedMapClimateHost.tsx'
+      - 'src/features/map-data/climateLayerRegistry.ts'
+      - 'src/main.tsx'
+      - '.github/workflows/climate-layers-ci.yml'
+  push:
+    branches:
+      - 'feat/open-source-engines-20260913'
+    paths:
+      - 'supabase/functions/field-climate-layers/**'
+      - 'supabase/functions/field-chirps-rain/**'
+      - 'src/features/map-data/services/**'
+      - 'src/features/map-data/hooks/useClimateLayerHistory.ts'
+      - 'src/features/map-data/components/ClimateLayerHistorySheet.tsx'
+      - 'src/features/map-data/components/ClimateLayerMapSurface.tsx'
+      - 'src/features/map-data/components/ClimateLayerPanel.tsx'
+      - 'src/features/map-data/components/ClimateLayerPusulaCard.tsx'
+      - 'src/features/map-data/components/UnifiedMapClimateHost.tsx'
+      - 'src/features/map-data/climateLayerRegistry.ts'
+      - 'src/main.tsx'
+      - '.github/workflows/climate-layers-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  trust-boundary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify server-authoritative climate adapters
+        run: |
+          grep -q "production_authority: false" supabase/functions/field-climate-layers/index.ts
+          grep -q "input_authority: 'server-derived'" supabase/functions/field-climate-layers/index.ts
+          grep -q "client_supplied_coordinates_accepted: false" supabase/functions/field-climate-layers/index.ts
+          grep -q "production_authority: false" supabase/functions/field-chirps-rain/index.ts
+          grep -q "input_authority: 'server-derived'" supabase/functions/field-chirps-rain/index.ts
+          grep -q "client_supplied_geometry_accepted: false" supabase/functions/field-chirps-rain/index.ts
+          grep -q "UCSB CHIRPS via SERVIR ClimateSERV" supabase/functions/field-chirps-rain/index.ts
+          grep -q "field_climate_layer_snapshots" supabase/functions/field-chirps-rain/index.ts
+          if grep -R "VITE_" supabase/functions/field-climate-layers supabase/functions/field-chirps-rain; then
+            echo "Client-side secret usage found in climate Edge Functions"
+            exit 1
+          fi
+      - name: Verify CHIRPS cannot accept client geometry
+        run: |
+          if grep -q "body?.geometry\|body.geometry" supabase/functions/field-chirps-rain/index.ts; then
+            echo "Client-controlled CHIRPS geometry was introduced"
+            exit 1
+          fi
+          grep -q "parcel_geometry" supabase/functions/field-chirps-rain/index.ts
+          grep -q "datatype: CHIRPS_DATATYPE" supabase/functions/field-chirps-rain/index.ts
+          grep -q "operationtype: AVERAGE_OPERATION" supabase/functions/field-chirps-rain/index.ts
+          grep -q "field-chirps-rain" src/features/map-data/services/chirpsRain.service.ts
+          grep -q "client_supplied_geometry_accepted" src/features/map-data/services/chirpsRain.service.ts
+      - name: Verify MODIS LST uses public NASA GIBS raster only
+        run: |
+          grep -q "MODIS_Terra_Land_Surface_Temp_Day" src/features/map-data/services/modisLstTiles.service.ts
+          grep -q "MODIS_Aqua_Land_Surface_Temp_Day" src/features/map-data/services/modisLstTiles.service.ts
+          grep -q "GoogleMapsCompatible_Level7" src/features/map-data/services/modisLstTiles.service.ts
+          grep -q "numericValuesAvailableFromTiles: false" src/features/map-data/services/modisLstTiles.service.ts
+          grep -q "productionAuthority: false" src/features/map-data/services/modisLstTiles.service.ts
+      - name: Verify historical climate selection uses persisted real sources
+        run: |
+          grep -q "field_climate_layer_snapshots" src/features/map-data/services/fieldClimateHistory.service.ts
+          grep -q "open_meteo_era5_land_et0" src/features/map-data/hooks/useClimateLayerHistory.ts
+          grep -q "open_meteo_era5_land_tmin" src/features/map-data/hooks/useClimateLayerHistory.ts
+          grep -q "climateserv_chirps" src/features/map-data/hooks/useClimateLayerHistory.ts
+          grep -q "createModisLstComparisonSources" src/features/map-data/hooks/useClimateLayerHistory.ts
+          grep -q "renderKind: 'dated-raster'" src/features/map-data/climateLayerRegistry.ts
+          grep -q "renderKind: 'field-value'" src/features/map-data/climateLayerRegistry.ts
+          grep -q "Yalnız daha önce gerçek kaynaktan alınmış" src/features/map-data/components/ClimateLayerHistorySheet.tsx
+          grep -q "Bölgesel değeri tarla içi yapay ısı haritasına çevirmiyoruz" src/features/map-data/components/ClimateLayerMapSurface.tsx
+          grep -q "ClimateLayerHistorySheet" src/features/map-data/components/ClimateLayerPanel.tsx
+          if grep -q "Math.random\|mock\|synthetic" src/features/map-data/hooks/useClimateLayerHistory.ts src/features/map-data/components/ClimateLayerMapSurface.tsx src/features/map-data/components/ClimateLayerPanel.tsx; then
+            echo "Synthetic climate map/history data introduced"
+            exit 1
+          fi
+      - name: Verify unified map climate host remains data-boundary safe
+        run: |
+          grep -q "ClimateLayerPanel" src/features/map-data/components/UnifiedMapClimateHost.tsx
+          grep -q "UnifiedMapClimateHost" src/main.tsx
+          grep -q "\.from('fields')" src/features/map-data/components/UnifiedMapClimateHost.tsx
+          if grep -q "Math.random\|synthetic\|mock" src/features/map-data/components/UnifiedMapClimateHost.tsx; then
+            echo "Synthetic unified map climate integration introduced"
+            exit 1
+          fi
+      - name: Verify Pusula climate interpretation never invents MODIS values
+        run: |
+          grep -q "interpretUnifiedMap" src/features/map-data/services/climatePusulaContext.service.ts
+          grep -q "MODIS GIBS LST katmanı gerçek tarihli rasterdır" src/features/map-data/services/climatePusulaContext.service.ts
+          grep -q "ET₀ referans evapotranspirasyondur" src/features/map-data/services/climatePusulaContext.service.ts
+          grep -q "ClimateLayerPusulaCard" src/features/map-data/components/ClimateLayerPanel.tsx
+          if grep -q "Math.random\|synthetic\|mock" src/features/map-data/services/climatePusulaContext.service.ts src/features/map-data/components/ClimateLayerPusulaCard.tsx; then
+            echo "Synthetic Pusula climate context introduced"
+            exit 1
+          fi
+
+  frontend-client:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Lint climate layer clients
+        run: >-
+          npx oxlint
+          src/features/map-data/services/fieldClimateLayers.service.ts
+          src/features/map-data/services/chirpsRain.service.ts
+          src/features/map-data/services/modisLstTiles.service.ts
+          src/features/map-data/services/fieldClimateHistory.service.ts
+          src/features/map-data/services/climatePusulaContext.service.ts
+          src/features/map-data/hooks/useClimateLayerHistory.ts
+          src/features/map-data/components/ClimateLayerHistorySheet.tsx
+          src/features/map-data/components/ClimateLayerMapSurface.tsx
+          src/features/map-data/components/ClimateLayerPanel.tsx
+          src/features/map-data/components/ClimateLayerPusulaCard.tsx
+          src/features/map-data/components/UnifiedMapClimateHost.tsx
+          src/features/map-data/climateLayerRegistry.ts
+          src/main.tsx
+      - name: Build frontend
+        run: npm run build

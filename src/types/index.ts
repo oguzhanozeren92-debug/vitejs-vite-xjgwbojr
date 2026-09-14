@@ -19,6 +19,7 @@ export type Screen =
   | 'marketHub'
   | 'supportHub'
   | 'agendaHub'
+  | 'knowledgeHub'
   | 'nutritionHub'
   | 'pestGuideHub'
   | 'producerMarketHub'
@@ -31,6 +32,8 @@ export type Screen =
 export type FieldStatus = 'good' | 'check' | 'urgent';
 
 export type CropCycle = 'annual' | 'perennial';
+
+export type IrrigationStatus = 'sulu' | 'susuz' | 'kismi';
 
 export type LocationOption = {
   id: number;
@@ -60,6 +63,7 @@ export type Field = {
   cropCycle?: CropCycle;
   plantingYear?: number | null;
   bearing?: boolean | null;
+  irrigationStatus?: IrrigationStatus | null;
 };
 
 export type FieldSection = {

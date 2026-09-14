@@ -1,4 +1,5 @@
 import { supabase } from '../supabaseClient';
+import { canonicalBiodiversityOptions } from '../features/data-bridge/dataAuthority';
 
 export type GbifPestObservation = {
   gbifId: string;
@@ -46,19 +47,29 @@ export async function fetchFieldBiodiversityContext(
     lookbackYears?: number;
     scientificNames?: string[];
     cropName?: string;
+    forceRefresh?: boolean;
   },
 ): Promise<FieldBiodiversityContextResponse> {
+  if (!supabase) {
+    throw new Error('GBIF saha bağlamı için Supabase bağlantısı hazır değil.');
+  }
+
+  const canonical = canonicalBiodiversityOptions(options);
+
   const { data, error } = await supabase.functions.invoke<
     FieldBiodiversityContextResponse | FailedResponse
   >('field-biodiversity-context', {
     body: {
       latitude,
       longitude,
-      radiusKm: options?.radiusKm ?? 25,
-      lookbackYears: options?.lookbackYears ?? 5,
-      scientificNames: options?.scientificNames?.slice(0, 8),
-      cropName: options?.cropName?.trim() || undefined,
+      radiusKm: canonical.radiusKm,
+      lookbackYears: canonical.lookbackYears,
+      scientificNames: canonical.scientificNames,
+      cropName: canonical.cropName,
     },
+    headers: options?.forceRefresh
+      ? { 'x-tp-force-refresh': '1' }
+      : undefined,
   });
 
   if (error) {

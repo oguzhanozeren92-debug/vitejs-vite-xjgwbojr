@@ -27,12 +27,18 @@ export function useFieldSatellite() {
       ...current,
       [key]: {
         status: 'loading',
+        // Son doğru snapshot yükleme sırasında silinmez.
+        // Böylece harita renkleri yeniden veri beklerken kaybolmaz.
         data: current[key]?.data,
       },
     }));
 
     try {
-      const data = await analyzeFieldSatellite(field.parcelGeometry);
+      const data = await analyzeFieldSatellite(
+        field.parcelGeometry,
+        { forceRefresh: force },
+      );
+
       setSatelliteByField((current) => ({
         ...current,
         [key]: { status: 'ready', data },
@@ -42,6 +48,7 @@ export function useFieldSatellite() {
         ...current,
         [key]: {
           status: 'error',
+          // Ağ hatasında da son doğru snapshot tutulur.
           data: current[key]?.data,
           message: error instanceof Error ? error.message : 'Uydu analizi yüklenemedi.',
         },

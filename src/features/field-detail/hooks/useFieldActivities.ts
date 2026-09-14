@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Dispatch, FormEvent, SetStateAction } from 'react';
 import { supabase } from '../../../supabaseClient';
 import { addPoints } from '../../../gamification/useGamificationStore';
@@ -12,6 +12,12 @@ import type {
   Screen,
 } from '../../../types';
 import type { UnifiedClimateContext } from '../../weather/hooks/useAppWeatherData';
+import {
+  createFieldOperation,
+  deleteFieldOperation,
+} from '../../field-operations/services/fieldOperation.service';
+import { openFieldOperation } from '../../field-operations/services/openFieldOperation';
+import { normalizeFieldOperationType } from '../../field-operations/types/fieldOperation';
 
 type UseFieldActivitiesOptions = {
   selectedField: Field | null;
@@ -225,12 +231,13 @@ export function useFieldActivities({
   };
 
   const resetActivityForm = (type = 'Saha Kontrolü') => {
-    setActivityType(type);
+    const canonicalType = normalizeFieldOperationType(type);
+    setActivityType(canonicalType);
     setActivityDate(new Date().toISOString().slice(0, 10));
     setActivityProductName('');
     setActivityQuantity('');
     setActivityUnit('');
-    setActivityDoseMode(type === 'Gübreleme' || type === 'İlaçlama' ? 'per_decare' : 'total');
+    setActivityDoseMode(canonicalType === 'Gübreleme' || canonicalType === 'İlaçlama' ? 'per_decare' : 'total');
     setActivityWaterM3('');
     setActivityDurationHours('');
     setActivityCost('');
@@ -278,7 +285,7 @@ export function useFieldActivities({
 
           return {
             id: String(item.id),
-            type: item.activity_type ?? 'Diğer',
+            type: normalizeFieldOperationType(item.activity_type ?? 'Diğer'),
             title: item.title ?? item.activity_type ?? 'Tarla işlemi',
             activityDate: item.activity_date,
             productName: item.product_name ?? null,
@@ -301,29 +308,58 @@ export function useFieldActivities({
     }
   };
 
+  useEffect(() => {
+    if (!selectedField || selectedField.demo) return;
+
+    const refresh = (event: Event) => {
+      const fieldId = String((event as CustomEvent)?.detail?.fieldId ?? '');
+      if (fieldId && fieldId !== String(selectedField.id)) return;
+      void loadFieldActivities(selectedField);
+    };
+
+    window.addEventListener('tp:field-operation-saved', refresh);
+    window.addEventListener('tp:field-operation-deleted', refresh);
+
+    return () => {
+      window.removeEventListener('tp:field-operation-saved', refresh);
+      window.removeEventListener('tp:field-operation-deleted', refresh);
+    };
+  }, [selectedField?.id, selectedField?.demo]);
+
   const openActivityForm = (type: string) => {
     if (!selectedField || selectedField.demo) {
       alert('Örnek tarlaya gerçek işlem kaydı eklenmez.');
       return;
     }
-    resetActivityForm(type);
-    setActivityFormOpen(true);
-    setTimeout(() => {
-      document.querySelector('.tp-activity-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 50);
+
+    const canonicalType = normalizeFieldOperationType(type);
+    setActivityFormOpen(false);
+    setActivityMessage('');
+
+    openFieldOperation({
+      fieldId: String(selectedField.id),
+      fieldName: selectedField.name,
+      type: canonicalType,
+      source: 'field-detail',
+    });
   };
 
+  /**
+   * Legacy activity form hâlâ bazı eski prop zincirlerinde mevcut olabilir.
+   * Kullanılırsa bile doğrudan tabloya yazmaz; aynı canonical service'e gider.
+   */
   const handleAddActivity = async (event?: FormEvent) => {
     event?.preventDefault();
     if (!selectedField || selectedField.demo) return;
 
+    const canonicalType = normalizeFieldOperationType(activityType);
     const quantityValue = activityQuantity.trim() ? Number(activityQuantity.replace(',', '.')) : null;
     const costValue = activityCost.trim() ? Number(activityCost.replace(',', '.')) : null;
     const waterM3Value = activityWaterM3.trim() ? Number(activityWaterM3.replace(',', '.')) : null;
     const durationHoursValue = activityDurationHours.trim()
       ? Number(activityDurationHours.replace(',', '.'))
       : null;
-    const isDoseActivity = activityType === 'Gübreleme' || activityType === 'İlaçlama';
+    const isDoseActivity = canonicalType === 'Gübreleme' || canonicalType === 'İlaçlama';
 
     const calculatedTotalQuantity =
       isDoseActivity && quantityValue !== null && activityDoseMode === 'per_decare' && selectedField.area > 0
@@ -353,12 +389,13 @@ export function useFieldActivities({
 
     setActivityFormLoading(true);
     setActivityMessage('');
+    let uploadedPhotoPath: string | null = null;
+
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
       if (userError) throw userError;
       if (!user) throw new Error('Oturum bulunamadı.');
 
-      let uploadedPhotoPath: string | null = null;
       if (activityPhoto) {
         setActivityMessage('Fotoğraf hazırlanıyor...');
         const compressedPhoto = await compressActivityPhoto(activityPhoto);
@@ -386,7 +423,7 @@ export function useFieldActivities({
           );
         }
       }
-      if (activityType === 'Sulama') {
+      if (canonicalType === 'Sulama') {
         if (waterM3Value !== null) {
           automaticDetails.push(`Toplam sulama suyu: ${waterM3Value} m³`);
           if (selectedField.area > 0) {
@@ -397,34 +434,41 @@ export function useFieldActivities({
       }
 
       const combinedNotes = [...automaticDetails, activityNotes.trim()].filter(Boolean).join(' • ');
-      const { error } = await supabase.from('activities').insert({
-        user_id: user.id,
-        field_id: String(selectedField.id),
-        field_section_id: null,
-        activity_type: activityType,
-        title: activityType,
-        activity_date: activityDate,
-        product_name: activityProductName.trim() || null,
-        quantity: isDoseActivity ? calculatedTotalQuantity : quantityValue,
-        unit: activityType === 'Sulama' && waterM3Value !== null ? 'm³' : activityUnit.trim() || null,
+
+      await createFieldOperation({
+        fieldId: String(selectedField.id),
+        type: canonicalType,
+        date: activityDate,
+        productName: activityProductName.trim() || null,
+        quantity:
+          canonicalType === 'Sulama' && waterM3Value !== null
+            ? waterM3Value
+            : isDoseActivity
+              ? calculatedTotalQuantity
+              : quantityValue,
+        unit:
+          canonicalType === 'Sulama' && waterM3Value !== null
+            ? 'm³'
+            : activityUnit.trim() || null,
         cost: costValue,
         notes: combinedNotes || null,
-        photo_path: uploadedPhotoPath,
-        ai_analysis: aiAnalysis,
-        ai_analyzed_at: aiAnalysis ? new Date().toISOString() : null,
+        photoPath: uploadedPhotoPath,
+        aiAnalysis,
+        aiAnalyzedAt: aiAnalysis ? new Date().toISOString() : null,
       });
 
-      if (error) {
-        if (uploadedPhotoPath) {
-          await supabase.storage.from('field-activity-photos').remove([uploadedPhotoPath]);
-        }
-        throw error;
-      }
-
+      uploadedPhotoPath = null;
       resetActivityForm();
       setActivityFormOpen(false);
       await loadFieldActivities(selectedField);
     } catch (error) {
+      if (uploadedPhotoPath) {
+        try {
+          await supabase.storage.from('field-activity-photos').remove([uploadedPhotoPath]);
+        } catch {
+          // Kayıt başarısız olsa da asıl hata kullanıcıya gösterilir.
+        }
+      }
       console.error('Tarla işlemi kaydedilemedi:', error);
       setActivityMessage(error instanceof Error ? error.message : 'Tarla işlemi kaydedilemedi.');
     } finally {
@@ -437,21 +481,7 @@ export function useFieldActivities({
     if (!window.confirm('Bu işlem kaydını silmek istiyor musun?')) return;
 
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError) throw userError;
-      if (!user) throw new Error('Oturum bulunamadı.');
-
-      const activityToDelete = activities.find((item) => item.id === id);
-      const { error } = await supabase
-        .from('activities')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user.id);
-      if (error) throw error;
-
-      if (activityToDelete?.photoPath) {
-        await supabase.storage.from('field-activity-photos').remove([activityToDelete.photoPath]);
-      }
+      await deleteFieldOperation(id);
       await loadFieldActivities(selectedField);
     } catch (error) {
       setActivityMessage(error instanceof Error ? error.message : 'İşlem kaydı silinemedi.');
