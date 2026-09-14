@@ -8,6 +8,7 @@ const corsHeaders = {
 };
 
 const INITIAL_WATER_MAX_AGE_DAYS = 14;
+const REQUIRED_INITIAL_WATER_DEPTH_CM = 200;
 const AQUACROP_UPSTREAM_COMMIT = '36cc20e44644ed1704398889312435c85e04a2f3';
 
 const CROP_MODEL_MAP: Record<string, string> = {
@@ -207,6 +208,72 @@ function resolveCropAdapter(field: any, season: any) {
   };
 }
 
+function buildInitialWaterAdapter(rows: any[]) {
+  const validSegments = (Array.isArray(rows) ? rows : [])
+    .map((row) => {
+      const water = finite(row?.volumetric_water_content);
+      const from = finite(row?.depth_from_cm);
+      const to = finite(row?.depth_to_cm);
+      const age = ageDays(row?.measured_at);
+      const valid = Boolean(
+        water !== null && water > 0 && water < 1 &&
+        from !== null && from >= 0 &&
+        to !== null && to > from && to <= 300 &&
+        age !== null && age <= INITIAL_WATER_MAX_AGE_DAYS,
+      );
+      return valid
+        ? {
+            id: String(row.id),
+            measuredAt: String(row.measured_at),
+            ageDays: Number(age!.toFixed(2)),
+            volumetricWaterContent: water!,
+            depthFromCm: from!,
+            depthToCm: to!,
+            source: String(row.source),
+          }
+        : null;
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null)
+    .sort((a, b) => a.depthFromCm - b.depthFromCm || b.depthToCm - a.depthToCm || a.ageDays - b.ageDays);
+
+  const selected: typeof validSegments = [];
+  let coveredToCm = 0;
+  const epsilon = 0.01;
+
+  while (coveredToCm < REQUIRED_INITIAL_WATER_DEPTH_CM) {
+    const candidates = validSegments.filter(
+      (segment) => segment.depthFromCm <= coveredToCm + epsilon && segment.depthToCm > coveredToCm + epsilon,
+    );
+    if (!candidates.length) break;
+    candidates.sort((a, b) => b.depthToCm - a.depthToCm || a.ageDays - b.ageDays);
+    const best = candidates[0];
+    if (!selected.some((item) => item.id === best.id)) selected.push(best);
+    coveredToCm = Math.max(coveredToCm, best.depthToCm);
+  }
+
+  const modelReady = coveredToCm >= REQUIRED_INITIAL_WATER_DEPTH_CM;
+  return {
+    available: modelReady,
+    modelReady,
+    source: selected.length ? 'field_water_measurements' : null,
+    requiredDepthCm: REQUIRED_INITIAL_WATER_DEPTH_CM,
+    coveredDepthCm: Number(Math.min(coveredToCm, REQUIRED_INITIAL_WATER_DEPTH_CM).toFixed(2)),
+    maxAgeDays: INITIAL_WATER_MAX_AGE_DAYS,
+    segments: selected,
+    allValidSegmentCount: validSegments.length,
+    wcType: modelReady ? 'Num' : null,
+    method: modelReady ? 'Depth' : null,
+    depthPointsM: modelReady
+      ? selected.flatMap((segment) => [segment.depthFromCm / 100, segment.depthToCm / 100])
+      : [],
+    detail: modelReady
+      ? 'Doğrulanmış ve taze toprak su ölçümleri 0–200 cm profili kesintisiz kapsıyor.'
+      : validSegments.length
+        ? `Taze ölçümler yalnız 0–${Number(coveredToCm.toFixed(1))} cm kesintisiz kapsıyor; AquaCrop başlangıç suyu için 0–${REQUIRED_INITIAL_WATER_DEPTH_CM} cm gerekli.`
+        : 'Son 14 günde doğrulanmış ve geçerli toprak su ölçümü yok.',
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return json({ ok: false, error: 'Yalnız POST desteklenir.' }, 405);
@@ -235,6 +302,8 @@ Deno.serve(async (req) => {
       .limit(1);
     if (Number.isInteger(Number(field.season))) seasonQuery = seasonQuery.eq('year', Number(field.season));
 
+    const recentWaterSince = new Date(Date.now() - INITIAL_WATER_MAX_AGE_DAYS * 86400000).toISOString();
+
     const [seasonResult, waterResult, managementResult, soilProfile] = await Promise.all([
       seasonQuery.maybeSingle(),
       serviceClient
@@ -242,9 +311,9 @@ Deno.serve(async (req) => {
         .select('id,measured_at,volumetric_water_content,depth_from_cm,depth_to_cm,source')
         .eq('user_id', user.id)
         .eq('field_id', fieldId)
+        .gte('measured_at', recentWaterSince)
         .order('measured_at', { ascending: false })
-        .limit(1)
-        .maybeSingle(),
+        .limit(30),
       serviceClient
         .from('field_aquacrop_management')
         .select('id,mode,settings,source,verified_at,updated_at')
@@ -259,37 +328,7 @@ Deno.serve(async (req) => {
     }
 
     const cropParameters = resolveCropAdapter(field, seasonResult.data);
-
-    const water = waterResult.data;
-    const waterAgeDays = ageDays(water?.measured_at);
-    const waterValue = finite(water?.volumetric_water_content);
-    const waterDepthFrom = finite(water?.depth_from_cm);
-    const waterDepthTo = finite(water?.depth_to_cm);
-    const waterValid = Boolean(
-      water && waterValue !== null && waterValue > 0 && waterValue < 1 &&
-      waterDepthFrom !== null && waterDepthTo !== null && waterDepthTo > waterDepthFrom &&
-      waterAgeDays !== null && waterAgeDays <= INITIAL_WATER_MAX_AGE_DAYS,
-    );
-    const initialWater = waterValid
-      ? {
-          available: true,
-          source: 'field_water_measurements',
-          measuredAt: String(water.measured_at),
-          ageDays: Number(waterAgeDays!.toFixed(2)),
-          volumetricWaterContent: waterValue,
-          depthFromCm: waterDepthFrom,
-          depthToCm: waterDepthTo,
-          measurementSource: String(water.source),
-        }
-      : {
-          available: false,
-          source: water ? 'field_water_measurements' : null,
-          measuredAt: water?.measured_at ? String(water.measured_at) : null,
-          ageDays: waterAgeDays === null ? null : Number(waterAgeDays.toFixed(2)),
-          detail: water
-            ? `Toprak su ölçümü geçersiz veya ${INITIAL_WATER_MAX_AGE_DAYS} günlük pilot tazelik sınırının dışında.`
-            : 'Doğrulanmış toprak su ölçümü yok.',
-        };
+    const initialWater = buildInitialWaterAdapter(waterResult.data ?? []);
 
     const irrigationStatus = normalizeKey(field.irrigation_status);
     const isRainfed = ['rainfed', 'susuz', 'dryland'].includes(irrigationStatus);
@@ -324,7 +363,7 @@ Deno.serve(async (req) => {
     const availableInputs: string[] = [];
     if (cropParameters.available) availableInputs.push('crop_parameters');
     if (soilProfile.modelReady) availableInputs.push('soil_profile');
-    if (initialWater.available) availableInputs.push('initial_water_content');
+    if (initialWater.modelReady) availableInputs.push('initial_water_content');
     if (irrigationManagement.available) availableInputs.push('irrigation_management');
 
     const missingInputs = ['crop_parameters', 'soil_profile', 'initial_water_content', 'irrigation_management']
@@ -351,7 +390,7 @@ Deno.serve(async (req) => {
         crop_identity: seasonResult.data?.crop ?? field.crop ?? null,
       },
       note: missingInputs.length === 0
-        ? 'AquaCrop pilot için ürün, 0–200 cm toprak profili, başlangıç suyu ve sulama yönetimi gerçek/server-derived kaynaklarla hazır.'
+        ? 'AquaCrop pilot için ürün, 0–200 cm toprak profili, 0–200 cm başlangıç suyu ve sulama yönetimi gerçek/server-derived kaynaklarla hazır.'
         : 'Eksik AquaCrop girdileri için sentetik tarımsal değer üretilmedi; pilot bloklu kalır.',
     });
   } catch (error) {
