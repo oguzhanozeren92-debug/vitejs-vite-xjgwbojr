@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import ClimateLayerHistorySheet from './ClimateLayerHistorySheet';
 import ClimateLayerMapSurface from './ClimateLayerMapSurface';
+import ClimateLayerPusulaCard from './ClimateLayerPusulaCard';
 import { CLIMATE_MAP_LAYERS, getClimateMapLayerDefinition } from '../climateLayerRegistry';
 import {
   useClimateLayerHistory,
@@ -12,6 +13,7 @@ import type { ModisLstPlatform } from '../services/modisLstTiles.service';
 type Props = {
   fieldId: string;
   fieldName: string;
+  crop?: string;
   geometry: unknown;
   latitude?: number | null;
   longitude?: number | null;
@@ -55,6 +57,7 @@ function modeValue(data: ReturnType<typeof useClimateLayerHistory>['data']) {
 export default function ClimateLayerPanel({
   fieldId,
   fieldName,
+  crop,
   geometry,
   latitude,
   longitude,
@@ -167,6 +170,14 @@ export default function ClimateLayerPanel({
           sourceLabel={effectiveSource || definition?.sourceLabel || ''}
         />
       ) : null}
+
+      <ClimateLayerPusulaCard
+        fieldId={fieldId}
+        fieldName={fieldName}
+        crop={crop}
+        mode={mode}
+        periodDays={periodDays}
+      />
 
       <ClimateLayerHistorySheet
         open={historyOpen}
