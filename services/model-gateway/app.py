@@ -10,6 +10,7 @@ from typing import Any
 from fastapi import FastAPI, Header, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
+from aquacrop_runner import AquaCropPilotRequest, run_aquacrop_pilot
 from engine_registry import ENGINE_REGISTRY
 
 MAX_FIELD_ID_LENGTH = 128
@@ -19,7 +20,7 @@ IS_DEVELOPMENT = os.getenv("MODEL_GATEWAY_ENV", "production").strip().lower() ==
 
 app = FastAPI(
     title="TarlaPusula Model Gateway",
-    version="0.2.4",
+    version="0.3.0",
     docs_url="/docs" if IS_DEVELOPMENT else None,
     redoc_url="/redoc" if IS_DEVELOPMENT else None,
     openapi_url="/openapi.json" if IS_DEVELOPMENT else None,
@@ -399,3 +400,19 @@ def aquacrop_readiness(
 ) -> dict[str, Any]:
     _authorize(x_model_gateway_key)
     return _readiness("aquacrop", payload, REQUIRED_AQUACROP_INPUTS)
+
+
+@app.post("/v1/scenario/aquacrop/pilot")
+def aquacrop_pilot(
+    payload: AquaCropPilotRequest,
+    x_model_gateway_key: str | None = Header(default=None),
+) -> dict[str, Any]:
+    _authorize(x_model_gateway_key)
+    if ENGINE_REGISTRY["aquacrop"]["rollout"] not in {"pilot", "production"}:
+        raise HTTPException(status_code=409, detail="AquaCrop pilot rollout is disabled")
+    try:
+        return run_aquacrop_pilot(payload)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=f"AquaCrop pilot failed: {exc}") from exc
