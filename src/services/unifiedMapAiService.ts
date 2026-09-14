@@ -1,5 +1,10 @@
 import { supabase } from '../supabaseClient';
 import { getFieldPhenologySnapshot } from '../features/phenology/services/fieldPhenologySnapshot.service';
+import {
+  compactRiskRadarForPusula,
+  fetchFieldRiskRadar,
+  type RiskRadarResult,
+} from './riskRadarService';
 
 export type UnifiedMapActiveLayer =
   | 'vegetation'
@@ -58,7 +63,7 @@ export type FieldSynthesisLikelyCause = {
 };
 
 export type FieldSynthesisEvidence = {
-  layer: UnifiedMapActiveLayer | 'phenology';
+  layer: UnifiedMapActiveLayer | 'phenology' | 'risk-radar';
   layerLabel: string;
   finding: string;
   status: 'normal' | 'dikkat' | 'kontrol';
@@ -98,6 +103,7 @@ export type FieldSynthesisResult = {
   generatedAt: string;
   model?: string;
   lifecycle?: FieldSynthesisLifecycle | null;
+  riskRadar?: ReturnType<typeof compactRiskRadarForPusula> | null;
   memorySaved?: boolean;
   memoryObservationId?: string | null;
   memoryError?: string | null;
@@ -321,6 +327,133 @@ async function getSynthesisPhenologySnapshot(input: FieldSynthesisInput) {
   }
 }
 
+function riskRadarStatus(
+  result: RiskRadarResult,
+): 'normal' | 'dikkat' | 'kontrol' {
+  if (
+    result.overall?.level === 'critical' ||
+    result.overall?.level === 'high'
+  ) {
+    return 'kontrol';
+  }
+
+  if (result.overall?.level === 'moderate') {
+    return 'dikkat';
+  }
+
+  return 'normal';
+}
+
+function riskRadarProbability(
+  score: number,
+): 'dusuk' | 'orta' | 'yuksek' {
+  if (score >= 65) return 'yuksek';
+  if (score >= 30) return 'orta';
+  return 'dusuk';
+}
+
+function applyRiskRadarToFieldSynthesis(
+  synthesis: FieldSynthesisResult,
+  risk: RiskRadarResult | null,
+): FieldSynthesisResult {
+  const compact = compactRiskRadarForPusula(risk);
+
+  if (
+    !risk?.supported ||
+    !risk.overall ||
+    !risk.threats?.length
+  ) {
+    return {
+      ...synthesis,
+      riskRadar: compact,
+    };
+  }
+
+  const top = risk.threats[0];
+  const radarStatus = riskRadarStatus(risk);
+
+  const mergedStatus: FieldSynthesisResult['status'] =
+    radarStatus === 'kontrol'
+      ? 'kontrol'
+      : radarStatus === 'dikkat' && synthesis.status === 'normal'
+        ? 'dikkat'
+        : synthesis.status;
+
+  const evidence: FieldSynthesisEvidence[] = [
+    {
+      layer: 'risk-radar',
+      layerLabel: 'Pusula Risk Radarı',
+      finding: [
+        `${top.displayName} riski %${Math.round(top.score)} (${top.levelLabel}).`,
+        top.peakScore7d > top.score
+          ? `7 günlük tepe risk %${Math.round(top.peakScore7d)}${
+              top.peakDate ? ` (${top.peakDate})` : ''
+            }.`
+          : '',
+        top.reasons?.[0] ?? '',
+      ]
+        .filter(Boolean)
+        .join(' '),
+      status: radarStatus,
+    },
+    ...(Array.isArray(synthesis.evidence) ? synthesis.evidence : []),
+  ].slice(0, 9);
+
+  const likelyCauses: FieldSynthesisLikelyCause[] = [
+    ...(top.score >= 30
+      ? [
+          {
+            title: `${top.displayName} için iklimsel risk`,
+            probability: riskRadarProbability(top.score),
+            reason:
+              top.reasons?.join(' ') ||
+              `Risk skoru %${Math.round(top.score)}.`,
+          } as FieldSynthesisLikelyCause,
+        ]
+      : []),
+    ...(Array.isArray(synthesis.likelyCauses)
+      ? synthesis.likelyCauses
+      : []),
+  ].slice(0, 4);
+
+  let headline = synthesis.headline;
+  let summary = synthesis.summary;
+  let action = synthesis.action;
+
+  if (
+    top.level === 'critical' ||
+    top.level === 'high'
+  ) {
+    headline = `${top.displayName} riski yüksek · saha kontrolü`;
+    summary = `${risk.overall.headline}. ${synthesis.summary}`;
+    action = `${top.action} ${synthesis.action}`;
+  } else if (top.level === 'moderate') {
+    headline = `${top.displayName} riski takip edilmeli`;
+    summary = `${risk.overall.headline}. ${synthesis.summary}`;
+    action = `${top.action} ${synthesis.action}`;
+  }
+
+  const caution = [
+    synthesis.caution,
+    risk.provenance?.note ??
+      'Risk skoru erken uyarıdır; kesin teşhis veya ilaçlama talimatı değildir.',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  return {
+    ...synthesis,
+    status: mergedStatus,
+    headline,
+    summary,
+    likelyCauses,
+    evidence,
+    action,
+    caution,
+    riskRadar: compact,
+  };
+}
+
 export async function interpretUnifiedMap(
   input: UnifiedMapAiInput,
 ): Promise<UnifiedMapAiResult> {
@@ -405,8 +538,22 @@ export async function synthesizeFieldObservations(
   }
 
   try {
-    const phenologySnapshot =
-      await getSynthesisPhenologySnapshot(input);
+    const [phenologySnapshot, riskRadarResult] = await Promise.all([
+      getSynthesisPhenologySnapshot(input),
+      fetchFieldRiskRadar(
+        input.fieldId,
+        {
+          seasonStartDate:
+            input.lifecycleContext?.plantingDate ?? null,
+        },
+      ).catch((error) => {
+        console.warn(
+          '[Pusula] Risk Radarı genel senteze eklenemedi:',
+          error,
+        );
+        return null;
+      }),
+    ]);
 
     const lifecycleContext = {
       ...(input.lifecycleContext ?? {}),
@@ -430,6 +577,8 @@ export async function synthesizeFieldObservations(
         phenologySnapshot?.climateShift?.shiftDays ?? 0,
       climateAnomalyC:
         phenologySnapshot?.climateShift?.anomalyC ?? null,
+      riskRadar:
+        compactRiskRadarForPusula(riskRadarResult),
     };
 
     const { data, error } = await supabase.functions.invoke(
@@ -451,6 +600,8 @@ export async function synthesizeFieldObservations(
           weatherContext: input.weatherContext ?? null,
           climateContext: input.climateContext ?? null,
           lifecycleContext,
+          riskRadarContext:
+            compactRiskRadarForPusula(riskRadarResult),
         },
       },
     );
@@ -506,9 +657,14 @@ export async function synthesizeFieldObservations(
         typeof data.memoryError === 'string' ? data.memoryError : null,
     };
 
-    return applyPhenologyToFieldSynthesis(
+    const withPhenology = applyPhenologyToFieldSynthesis(
       normalized,
       phenologySnapshot,
+    );
+
+    return applyRiskRadarToFieldSynthesis(
+      withPhenology,
+      riskRadarResult,
     );
   } catch (error) {
     const message = normalizeErrorMessage(error);
