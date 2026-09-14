@@ -6,11 +6,6 @@ import type {
   PhenologyClimateShiftResult,
 } from '../types/phenologyClimateShift';
 
-type Coordinate = {
-  latitude: number;
-  longitude: number;
-};
-
 function finiteNumber(
   value: unknown,
 ): number | null {
@@ -22,191 +17,6 @@ function finiteNumber(
   )
     ? number
     : null;
-}
-
-function walkCoordinates(
-  value: any,
-  sink:
-    Array<
-      [
-        number,
-        number,
-      ]
-    >,
-) {
-  if (!Array.isArray(value)) {
-    return;
-  }
-
-  if (
-    value.length >= 2 &&
-    Number.isFinite(
-      Number(value[0]),
-    ) &&
-    Number.isFinite(
-      Number(value[1]),
-    )
-  ) {
-    const longitude =
-      Number(value[0]);
-
-    const latitude =
-      Number(value[1]);
-
-    if (
-      longitude >= -180 &&
-      longitude <= 180 &&
-      latitude >= -90 &&
-      latitude <= 90
-    ) {
-      sink.push([
-        longitude,
-        latitude,
-      ]);
-    }
-
-    return;
-  }
-
-  for (
-    const child
-    of value
-  ) {
-    walkCoordinates(
-      child,
-      sink,
-    );
-  }
-}
-
-function geometryCenter(
-  parcelGeometry: any,
-): Coordinate | null {
-  const geometry =
-    parcelGeometry
-      ?.geometry ??
-    parcelGeometry;
-
-  const coordinates =
-    geometry?.coordinates;
-
-  if (!coordinates) {
-    return null;
-  }
-
-  const points:
-    Array<
-      [
-        number,
-        number,
-      ]
-    > = [];
-
-  walkCoordinates(
-    coordinates,
-    points,
-  );
-
-  if (!points.length) {
-    return null;
-  }
-
-  let west =
-    Infinity;
-  let east =
-    -Infinity;
-  let south =
-    Infinity;
-  let north =
-    -Infinity;
-
-  for (
-    const [
-      longitude,
-      latitude,
-    ]
-    of points
-  ) {
-    west =
-      Math.min(
-        west,
-        longitude,
-      );
-
-    east =
-      Math.max(
-        east,
-        longitude,
-      );
-
-    south =
-      Math.min(
-        south,
-        latitude,
-      );
-
-    north =
-      Math.max(
-        north,
-        latitude,
-      );
-  }
-
-  return {
-    longitude:
-      (west + east) /
-      2,
-
-    latitude:
-      (south + north) /
-      2,
-  };
-}
-
-function fieldCenter(
-  field: any,
-): Coordinate {
-  const latitude =
-    finiteNumber(
-      field?.parcelCentroidLat ??
-      field?.parcel_centroid_lat ??
-      field?.latitude,
-    );
-
-  const longitude =
-    finiteNumber(
-      field?.parcelCentroidLng ??
-      field?.parcel_centroid_lng ??
-      field?.longitude,
-    );
-
-  if (
-    latitude !== null &&
-    longitude !== null &&
-    latitude >= -90 &&
-    latitude <= 90 &&
-    longitude >= -180 &&
-    longitude <= 180
-  ) {
-    return {
-      latitude,
-      longitude,
-    };
-  }
-
-  const fromGeometry =
-    geometryCenter(
-      field?.parcelGeometry ??
-      field?.parcel_geometry,
-    );
-
-  if (fromGeometry) {
-    return fromGeometry;
-  }
-
-  throw new Error(
-    'Fenoloji iklim düzeltmesi için tarla konumu bulunamadı.',
-  );
 }
 
 function normalizeResult(
@@ -341,6 +151,110 @@ function normalizeResult(
   };
 }
 
+async function readFunctionError(
+  error: any,
+) {
+  try {
+    const context =
+      error?.context;
+
+    if (
+      context instanceof
+      Response
+    ) {
+      const text =
+        await context
+          .clone()
+          .text();
+
+      if (text) {
+        try {
+          const parsed =
+            JSON.parse(
+              text,
+            );
+
+          if (
+            typeof parsed?.error ===
+              'string' &&
+            parsed.error.trim()
+          ) {
+            return parsed.error.trim();
+          }
+        } catch {
+          return text.slice(
+            0,
+            500,
+          );
+        }
+      }
+    }
+  } catch {
+    // no-op
+  }
+
+  return (
+    error?.message ||
+    'Fenoloji iklim düzeltmesi alınamadı.'
+  );
+}
+
+function fieldId(
+  field: any,
+) {
+  const id =
+    String(
+      field?.id ??
+      '',
+    ).trim();
+
+  if (!id) {
+    throw new Error(
+      'Fenoloji iklim düzeltmesi için tarla kimliği bulunamadı.',
+    );
+  }
+
+  return id;
+}
+
+function normalizeCurrentDate(
+  value:
+    | string
+    | Date
+    | null
+    | undefined,
+) {
+  if (!value) {
+    return undefined;
+  }
+
+  const date =
+    value instanceof Date
+      ? value
+      : new Date(value);
+
+  if (
+    Number.isNaN(
+      date.getTime(),
+    )
+  ) {
+    return undefined;
+  }
+
+  return date
+    .toISOString()
+    .slice(0, 10);
+}
+
+/**
+ * Fenoloji iklim sinyalinde koordinat, ürün ve sezon bilgisi artık
+ * tarayıcıdan gönderilmez. Edge Function yalnızca field_id kabul eder,
+ * kullanıcı sahipliğini doğrular ve konum/ürün/sezon kaydını sunucuda çözer.
+ *
+ * Böylece Pusula sentezi aynı tarla için client state'e göre değişen ikinci
+ * bir gerçeklik üretmez. Termal çıktı yine yalnız iklim kaydırma sinyalidir;
+ * BBCH/gelişim evresi bu servis tarafından uydurulmaz.
+ */
 export async function fetchPhenologyClimateShift(
   field: any,
   options?: {
@@ -350,68 +264,60 @@ export async function fetchPhenologyClimateShift(
       | null;
   },
 ): Promise<PhenologyClimateShiftResult> {
-  const {
-    latitude,
-    longitude,
-  } =
-    fieldCenter(
-      field,
+  if (!supabase) {
+    throw new Error(
+      'Fenoloji iklim bağlantısı hazır değil.',
     );
-
-  const cropName =
-    String(
-      field?.cropName ??
-      field?.crop ??
-      '',
-    ).trim();
-
-  const currentDate =
-    options?.currentDate instanceof
-    Date
-      ? options.currentDate
-          .toISOString()
-      : options?.currentDate
-        ? String(
-            options.currentDate,
-          )
-        : undefined;
+  }
 
   const {
     data,
     error,
   } =
     await supabase.functions.invoke(
-      'phenology-climate-shift',
+      'field-phenology-context',
       {
         body: {
-          latitude,
-          longitude,
+          field_id:
+            fieldId(field),
 
-          /*
-            Edge Function cropKey'i şimdilik yalnızca izlenebilirlik için
-            taşıyor. Fenoloji evresini sıcaklık servisi üretmez.
-          */
-          cropKey:
-            cropName ||
-            null,
-
-          currentDate,
+          current_date:
+            normalizeCurrentDate(
+              options?.currentDate,
+            ),
         },
       },
     );
 
   if (error) {
-    throw error;
+    throw new Error(
+      await readFunctionError(
+        error,
+      ),
+    );
   }
 
-  if (!data?.success) {
+  if (!data?.ok) {
     throw new Error(
-      data?.message ??
+      data?.error ??
+      'Fenoloji bağlamı alınamadı.',
+    );
+  }
+
+  const climate =
+    data?.thermal_calendar;
+
+  if (
+    !climate ||
+    climate?.success === false
+  ) {
+    throw new Error(
+      climate?.message ??
       'Fenoloji iklim düzeltmesi alınamadı.',
     );
   }
 
   return normalizeResult(
-    data,
+    climate,
   );
 }
