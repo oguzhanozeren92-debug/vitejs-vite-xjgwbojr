@@ -96,6 +96,7 @@ jobs:
           src/features/model-engines/services/aquacropPilotInputs.service.ts
           src/features/model-engines/services/aquacropInputRecords.service.ts
           src/features/model-engines/services/aquacropPilotRun.service.ts
+          src/features/model-engines/services/modelEngineRuns.service.ts
           src/features/irrigation/hooks/useIrrigationSchedulingPilot.ts
           src/features/irrigation/services/historicalKcReconstruction.service.ts
           src/features/irrigation/services/irrigationSchedulingPilot.service.ts
