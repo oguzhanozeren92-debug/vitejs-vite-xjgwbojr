@@ -1,0 +1,52 @@
+name: Field Observations CI
+
+on:
+  pull_request:
+    paths:
+      - 'src/features/field-observations/**'
+      - '.github/workflows/field-observations-ci.yml'
+  push:
+    branches:
+      - 'feat/open-source-engines-20260913'
+    paths:
+      - 'src/features/field-observations/**'
+      - '.github/workflows/field-observations-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  observation-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify trend uses only persisted observation history
+        run: |
+          grep -q "real_observation_history" src/features/field-observations/services/fieldObservationTrend.service.ts
+          grep -q "productionAuthority: false" src/features/field-observations/services/fieldObservationTrend.service.ts
+          grep -q "field_observation_photos" src/features/field-observations/services/fieldObservationTrend.service.ts
+          grep -q "field_observation_comparisons" src/features/field-observations/services/fieldObservationTrend.service.ts
+          grep -q "field_observation_points" src/features/field-observations/services/fieldObservationTrend.service.ts
+          if grep -R "Math.random\|synthetic\|mock" src/features/field-observations/services/fieldObservationTrend.service.ts src/features/field-observations/hooks/useFieldObservationTrend.ts; then
+            echo "Synthetic field-observation trend data introduced"
+            exit 1
+          fi
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint field observation trend files
+        run: >-
+          npx oxlint
+          src/features/field-observations/types/fieldObservationTrend.ts
+          src/features/field-observations/services/fieldObservationTrend.service.ts
+          src/features/field-observations/hooks/useFieldObservationTrend.ts
+      - name: Build frontend
+        run: npm run build
