@@ -10,6 +10,7 @@ on:
       - 'src/features/map-data/components/ClimateLayerHistorySheet.tsx'
       - 'src/features/map-data/components/ClimateLayerMapSurface.tsx'
       - 'src/features/map-data/components/ClimateLayerPanel.tsx'
+      - 'src/features/map-data/components/ClimateLayerPusulaCard.tsx'
       - 'src/features/map-data/components/UnifiedMapClimateHost.tsx'
       - 'src/features/map-data/climateLayerRegistry.ts'
       - 'src/main.tsx'
@@ -25,6 +26,7 @@ on:
       - 'src/features/map-data/components/ClimateLayerHistorySheet.tsx'
       - 'src/features/map-data/components/ClimateLayerMapSurface.tsx'
       - 'src/features/map-data/components/ClimateLayerPanel.tsx'
+      - 'src/features/map-data/components/ClimateLayerPusulaCard.tsx'
       - 'src/features/map-data/components/UnifiedMapClimateHost.tsx'
       - 'src/features/map-data/climateLayerRegistry.ts'
       - 'src/main.tsx'
@@ -95,6 +97,16 @@ jobs:
             echo "Synthetic unified map climate integration introduced"
             exit 1
           fi
+      - name: Verify Pusula climate interpretation never invents MODIS values
+        run: |
+          grep -q "interpretUnifiedMap" src/features/map-data/services/climatePusulaContext.service.ts
+          grep -q "MODIS GIBS LST katmanı gerçek tarihli rasterdır" src/features/map-data/services/climatePusulaContext.service.ts
+          grep -q "ET₀ referans evapotranspirasyondur" src/features/map-data/services/climatePusulaContext.service.ts
+          grep -q "ClimateLayerPusulaCard" src/features/map-data/components/ClimateLayerPanel.tsx
+          if grep -q "Math.random\|synthetic\|mock" src/features/map-data/services/climatePusulaContext.service.ts src/features/map-data/components/ClimateLayerPusulaCard.tsx; then
+            echo "Synthetic Pusula climate context introduced"
+            exit 1
+          fi
 
   frontend-client:
     runs-on: ubuntu-latest
@@ -113,10 +125,12 @@ jobs:
           src/features/map-data/services/chirpsRain.service.ts
           src/features/map-data/services/modisLstTiles.service.ts
           src/features/map-data/services/fieldClimateHistory.service.ts
+          src/features/map-data/services/climatePusulaContext.service.ts
           src/features/map-data/hooks/useClimateLayerHistory.ts
           src/features/map-data/components/ClimateLayerHistorySheet.tsx
           src/features/map-data/components/ClimateLayerMapSurface.tsx
           src/features/map-data/components/ClimateLayerPanel.tsx
+          src/features/map-data/components/ClimateLayerPusulaCard.tsx
           src/features/map-data/components/UnifiedMapClimateHost.tsx
           src/features/map-data/climateLayerRegistry.ts
           src/main.tsx
