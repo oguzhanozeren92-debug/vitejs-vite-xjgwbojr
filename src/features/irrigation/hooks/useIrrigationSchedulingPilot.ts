@@ -1,10 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { IrrigationSchedulingPilotResult } from '../types/irrigationSchedulingPilot';
+import type { AquaCropPilotRunResponse } from '../../model-engines/services/aquacropPilotRun.service';
 
 type PilotState = {
   fieldKey: string;
   status: 'idle' | 'loading' | 'ready' | 'error';
   data: IrrigationSchedulingPilotResult | null;
+  error: string | null;
+};
+
+type RunState = {
+  fieldKey: string;
+  status: 'idle' | 'running' | 'completed' | 'blocked' | 'error';
+  data: AquaCropPilotRunResponse | null;
   error: string | null;
 };
 
@@ -15,21 +23,31 @@ const INITIAL_STATE: PilotState = {
   error: null,
 };
 
+const INITIAL_RUN_STATE: RunState = {
+  fieldKey: '',
+  status: 'idle',
+  data: null,
+  error: null,
+};
+
 /**
  * AquaCrop readiness + mevcut Irrigation Engine sonucunu tek pilot kontratta toplar.
- * Bu hook production sulama kararini degistirmez ve UI'ya sahte fallback veri vermez.
+ * Gercek AquaCrop calismasi otomatik tetiklenmez; runAquaCropPilot acikca cagrilmalidir.
+ * Production sulama karari degismez ve sahte fallback veri uretilmez.
  */
 export function useIrrigationSchedulingPilot(field: any | null | undefined) {
   const fieldKey = field?.id != null ? String(field.id) : '';
   const isDemo = Boolean(field?.demo);
   const [refreshKey, setRefreshKey] = useState(0);
   const [state, setState] = useState<PilotState>(INITIAL_STATE);
+  const [runState, setRunState] = useState<RunState>(INITIAL_RUN_STATE);
 
   useEffect(() => {
     let cancelled = false;
 
     if (!fieldKey || isDemo) {
       setState(INITIAL_STATE);
+      setRunState(INITIAL_RUN_STATE);
       return () => {
         cancelled = true;
       };
@@ -105,6 +123,7 @@ export function useIrrigationSchedulingPilot(field: any | null | undefined) {
       }
 
       setRefreshKey((value) => value + 1);
+      setRunState(INITIAL_RUN_STATE);
     };
 
     window.addEventListener(
@@ -123,9 +142,35 @@ export function useIrrigationSchedulingPilot(field: any | null | undefined) {
   const refresh = useCallback(() => {
     if (!fieldKey || isDemo) return;
     setRefreshKey((value) => value + 1);
+    setRunState(INITIAL_RUN_STATE);
+  }, [fieldKey, isDemo]);
+
+  const runAquaCropPilot = useCallback(async () => {
+    if (!fieldKey || isDemo) {
+      throw new Error('AquaCrop pilotu icin gercek bir tarla gerekli.');
+    }
+
+    setRunState({ fieldKey, status: 'running', data: null, error: null });
+
+    try {
+      const module = await import('../../model-engines/services/aquacropPilotRun.service');
+      const result = await module.runAquaCropPilot(fieldKey);
+      setRunState({
+        fieldKey,
+        status: result.blocked ? 'blocked' : 'completed',
+        data: result,
+        error: null,
+      });
+      return result;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'AquaCrop pilotu calistirilamadi.';
+      setRunState({ fieldKey, status: 'error', data: null, error: message });
+      throw error;
+    }
   }, [fieldKey, isDemo]);
 
   const stateBelongsToField = state.fieldKey === fieldKey;
+  const runStateBelongsToField = runState.fieldKey === fieldKey;
 
   return {
     result: stateBelongsToField ? state.data : null,
@@ -133,5 +178,10 @@ export function useIrrigationSchedulingPilot(field: any | null | undefined) {
     loading: stateBelongsToField ? state.status === 'loading' : Boolean(fieldKey),
     error: stateBelongsToField ? state.error : null,
     refresh,
+    runAquaCropPilot,
+    aquaCropRun: runStateBelongsToField ? runState.data : null,
+    aquaCropRunStatus: runStateBelongsToField ? runState.status : 'idle',
+    aquaCropRunLoading: runStateBelongsToField && runState.status === 'running',
+    aquaCropRunError: runStateBelongsToField ? runState.error : null,
   };
 }
