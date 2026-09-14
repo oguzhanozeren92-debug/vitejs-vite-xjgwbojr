@@ -14,6 +14,7 @@ on:
       - 'supabase/functions/aquacrop-pilot-inputs/**'
       - 'supabase/functions/aquacrop-pilot-run/**'
       - 'supabase/functions/aquacrop-soil-profile/**'
+      - 'supabase/functions/pcse-pilot-inputs/**'
       - 'tools/check-model-engine-contracts.py'
       - '.github/workflows/model-gateway-ci.yml'
   push:
@@ -31,6 +32,7 @@ on:
       - 'supabase/functions/aquacrop-pilot-inputs/**'
       - 'supabase/functions/aquacrop-pilot-run/**'
       - 'supabase/functions/aquacrop-soil-profile/**'
+      - 'supabase/functions/pcse-pilot-inputs/**'
       - 'tools/check-model-engine-contracts.py'
       - '.github/workflows/model-gateway-ci.yml'
 
@@ -78,6 +80,16 @@ jobs:
             echo "Client secret leaked into AquaCrop pilot runner"
             exit 1
           fi
+      - name: Verify PCSE pilot input trust boundary
+        run: |
+          grep -q "production_authority: false" supabase/functions/pcse-pilot-inputs/index.ts
+          grep -q "input_authority: 'server-derived'" supabase/functions/pcse-pilot-inputs/index.ts
+          grep -q "client_supplied_agricultural_values_accepted: false" supabase/functions/pcse-pilot-inputs/index.ts
+          grep -q "field_pcse_parameter_sets" supabase/functions/pcse-pilot-inputs/index.ts
+          if grep -q "VITE_" supabase/functions/pcse-pilot-inputs/index.ts; then
+            echo "Client secret leaked into PCSE pilot adapter"
+            exit 1
+          fi
 
   frontend-shadow-integration:
     runs-on: ubuntu-latest
@@ -96,6 +108,7 @@ jobs:
           src/features/model-engines/services/aquacropPilotInputs.service.ts
           src/features/model-engines/services/aquacropInputRecords.service.ts
           src/features/model-engines/services/aquacropPilotRun.service.ts
+          src/features/model-engines/services/pcsePilotInputs.service.ts
           src/features/model-engines/services/modelEngineRuns.service.ts
           src/features/irrigation/hooks/useIrrigationSchedulingPilot.ts
           src/features/irrigation/services/historicalKcReconstruction.service.ts
