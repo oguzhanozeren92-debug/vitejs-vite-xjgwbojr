@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { HOME_REFERENCE_ASSETS } from '../../home/homeAssets';
 import { useRecentFieldOperations } from '../../field-operations/hooks/useRecentFieldOperations';
 import { buildHomeDecisionEvents } from '../services/homeDecisionEngine';
+import { buildRiskRadarDecision } from '../services/buildRiskRadarDecision';
 import type {
   HomeDecisionEngineInput,
   HomeDecisionEvent,
@@ -93,7 +94,7 @@ function toNotification(event: HomeDecisionEvent): HomeSystemNotification | null
  * Home kararlarının tek React giriş noktası.
  *
  * Tarımsal eşikler HomeScreen, Today veya Notifications içine eklenmez.
- * Yeni kararlar homeDecisionEngine.ts içinde oluşur ve buradan dağıtılır.
+ * Yeni kararlar decision service katmanında oluşur ve buradan dağıtılır.
  */
 export function useHomeDecisionEngine(input: HomeDecisionEngineInput) {
   const recentOperations = useRecentFieldOperations(input.homeFieldId, 30);
@@ -105,9 +106,32 @@ export function useHomeDecisionEngine(input: HomeDecisionEngineInput) {
     }),
     [input, recentOperations.operations],
   );
-  const events = useMemo(
-    () => buildHomeDecisionEvents(resolvedInput),
-    [
+  const events = useMemo(() => {
+    const baseEvents = buildHomeDecisionEvents(resolvedInput);
+    const riskEvent = buildRiskRadarDecision(
+      input.homeFieldId,
+      input.fieldSynthesis?.riskRadar ?? null,
+      input.now ?? new Date(),
+    );
+
+    if (!riskEvent) return baseEvents;
+
+    // Risk Radar genel Pusula sentezine de işlendiği için yalnızca aynı riskten
+    // doğan genel Pusula kartını bastır. Haritada gerçek bir önemli alan varsa
+    // uzamsal Pusula uyarısını ayrıca koru.
+    const hasSpatialAlert = Boolean(
+      String(input.fieldSynthesis?.importantArea?.area ?? '').trim(),
+    );
+    const withoutDuplicateRisk = hasSpatialAlert
+      ? baseEvents
+      : baseEvents.filter(
+          (event) => !(event.group === 'pusula' && event.source === 'pusula'),
+        );
+
+    return [riskEvent, ...withoutDuplicateRisk].sort(
+      (a, b) => b.priority - a.priority,
+    );
+  }, [
       input.fieldKey,
       input.activeHomeLayer,
       input.weatherStatus,
@@ -152,6 +176,7 @@ export function useHomeDecisionEngine(input: HomeDecisionEngineInput) {
       input.resolvedHomeSatelliteDate,
       input.homeFieldId,
       input.homeFieldCrop,
+      input.now,
       recentOperations.signature,
     ],
   );
