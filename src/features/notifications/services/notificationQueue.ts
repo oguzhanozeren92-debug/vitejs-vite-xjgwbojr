@@ -1,4 +1,4 @@
-import type { HomeSystemNotification } from '../hooks/useHomeNotifications';
+import type { HomeSystemNotification } from '../../decision/types/homeDecision';
 
 const STORAGE_KEY = 'tp_system_notifications_v1';
 
@@ -19,11 +19,16 @@ export function persistHomeNotifications(input: {
 
     previousItems.forEach((item: any) => {
       if (!item?.id) return;
-      // Canlı uydu/besin sinyali ortadan kalktıysa eski uyarıyı aktif listede tutma.
-      if (String(item.fieldId ?? '') === input.fieldId && !activeIds.has(String(item.id)) && (
-        item.source === 'satellite' || item.source === 'nutrition' ||
-        (item.source === 'weather' && /:spray-(?:window|hourly-risk):/.test(String(item.id)))
-      )) return;
+      if (
+        String(item.fieldId ?? '') === input.fieldId &&
+        !activeIds.has(String(item.id)) &&
+        (
+          item.source === 'satellite' ||
+          item.source === 'nutrition' ||
+          item.source === 'risk-radar' ||
+          (item.source === 'weather' && /:spray-(?:window|hourly-risk):/.test(String(item.id)))
+        )
+      ) return;
       byId.set(String(item.id), item);
     });
 
