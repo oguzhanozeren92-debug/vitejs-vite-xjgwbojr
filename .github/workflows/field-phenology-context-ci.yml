@@ -1,0 +1,53 @@
+name: Field Phenology Context CI
+
+on:
+  pull_request:
+    paths:
+      - 'src/features/phenology/**'
+      - 'supabase/functions/field-phenology-context/**'
+      - '.github/workflows/field-phenology-context-ci.yml'
+  push:
+    branches:
+      - 'feat/field-phenology-context-20260915'
+    paths:
+      - 'src/features/phenology/**'
+      - 'supabase/functions/field-phenology-context/**'
+      - '.github/workflows/field-phenology-context-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  trust-boundary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify server-grounded phenology inputs
+        run: |
+          grep -q "client_supplied_coordinates_accepted: false" supabase/functions/field-phenology-context/index.ts
+          grep -q "'latitude' in body" supabase/functions/field-phenology-context/index.ts
+          grep -q "'crop' in body" supabase/functions/field-phenology-context/index.ts
+          grep -q "field-phenology-context" src/features/phenology/services/phenologyClimateShift.service.ts
+          if grep -q "phenology-climate-shift" src/features/phenology/services/phenologyClimateShift.service.ts; then
+            echo "Browser still calls raw coordinate phenology climate function"
+            exit 1
+          fi
+          if grep -R "Math.random\|synthetic\|mock" supabase/functions/field-phenology-context src/features/phenology/services/phenologyClimateShift.service.ts; then
+            echo "Synthetic phenology data introduced"
+            exit 1
+          fi
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint touched phenology service
+        run: npx oxlint src/features/phenology/services/phenologyClimateShift.service.ts
+      - name: Build frontend
+        run: npm run build
