@@ -40,7 +40,11 @@ jobs:
       - name: Capture proactive dispatcher typecheck
         id: dispatcher-check
         continue-on-error: true
-        run: deno check supabase/functions/risk-radar-dispatch/index.ts > dispatcher-check.log 2>&1
+        run: >-
+          deno check
+          --config supabase/functions/risk-radar-dispatch/deno.json
+          supabase/functions/risk-radar-dispatch/index.ts
+          > dispatcher-check.log 2>&1
       - name: Print dispatcher diagnostics
         if: always()
         run: cat dispatcher-check.log || true
