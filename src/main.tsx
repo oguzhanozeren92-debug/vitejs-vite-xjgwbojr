@@ -15,6 +15,7 @@ import './styles/MobileAiUtilityFixes.css';
 import './styles/MobileMapViewportFixes.css';
 import './styles/TarlaPusulaProfessionalSystem.css';
 import './styles/TarlaPusulaProfessionalRoutes.css';
+import './styles/UiRegressionFixes.css';
 
 // Eski componentlerde kalan ikinci harita-veri fallback yolları uygulama başında
 // devre dışı bırakılır. Her metrik yalnız merkezi data bridge/otoritesini kullanır.
