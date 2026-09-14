@@ -3,6 +3,7 @@ import { CalendarDays, Check, X } from 'lucide-react';
 import type { FieldClimateHistoryDate } from '../services/fieldClimateHistory.service';
 import type { ClimateHistoryMode } from '../hooks/useClimateLayerHistory';
 import { getClimateMapLayerDefinition } from '../climateLayerRegistry';
+import './SatelliteHistorySheet.css';
 
 type Props = {
   open: boolean;
