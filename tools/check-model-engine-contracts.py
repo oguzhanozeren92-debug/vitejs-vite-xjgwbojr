@@ -9,6 +9,12 @@ PY_REGISTRY_PATH = ROOT / "services/model-gateway/engine_registry.py"
 TS_REGISTRY_PATH = ROOT / "src/features/model-engines/modelRegistry.ts"
 GATEWAY_PATH = ROOT / "services/model-gateway/app.py"
 EDGE_PATH = ROOT / "supabase/functions/model-engine-shadow/index.ts"
+IRRIGATION_PILOT_PATH = (
+    ROOT / "src/features/irrigation/services/irrigationSchedulingPilot.service.ts"
+)
+IRRIGATION_PILOT_TYPE_PATH = (
+    ROOT / "src/features/irrigation/types/irrigationSchedulingPilot.ts"
+)
 
 
 def fail(message: str) -> None:
@@ -146,9 +152,32 @@ def main() -> None:
         if marker not in edge_source:
             fail(f"edge safety marker missing: {marker}")
 
+    if not IRRIGATION_PILOT_PATH.exists() or not IRRIGATION_PILOT_TYPE_PATH.exists():
+        fail("irrigation scheduling pilot contract is missing")
+
+    pilot_source = IRRIGATION_PILOT_PATH.read_text(encoding="utf-8")
+    pilot_type_source = IRRIGATION_PILOT_TYPE_PATH.read_text(encoding="utf-8")
+
+    required_pilot_markers = (
+        "calculateIrrigationDecision",
+        "checkCropModelReadiness('aquacrop'",
+        "productionAuthority: false",
+        "blocked_missing_real_inputs",
+    )
+    for marker in required_pilot_markers:
+        if marker not in pilot_source:
+            fail(f"irrigation scheduling pilot safety marker missing: {marker}")
+
+    if "productionAuthority: false" not in pilot_type_source:
+        fail("irrigation scheduling pilot type lost non-authoritative contract")
+
+    if "productionAuthority: true" in pilot_source or "productionAuthority: true" in pilot_type_source:
+        fail("irrigation scheduling pilot unexpectedly claims production authority")
+
     print(
         "model-engine contract guard ok: "
-        f"{len(gateway_keys)} engines synchronized; production authority unchanged"
+        f"{len(gateway_keys)} engines synchronized; production authority unchanged; "
+        "irrigation scheduling pilot remains non-authoritative"
     )
 
 
