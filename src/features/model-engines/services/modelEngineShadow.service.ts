@@ -1,10 +1,19 @@
 import { supabase } from '../../../supabaseClient';
+import {
+  reconstructHistoricalKcSnapshotForShadow,
+  type HistoricalKcReconstructionResult,
+} from '../../irrigation/services/historicalKcReconstruction.service';
 import type {
   ModelReadinessResult,
   PyFao56FieldShadowResult,
   PyFao56ShadowComparison,
   PyFao56ShadowResult,
 } from '../types';
+
+export type HistoricalPyFao56FieldShadowResult = {
+  reconstruction: HistoricalKcReconstructionResult;
+  shadow: PyFao56FieldShadowResult;
+};
 
 function requireSupabase() {
   if (!supabase) {
@@ -178,6 +187,27 @@ export async function runPyFao56FieldShadow(
   fieldId: string,
 ): Promise<PyFao56FieldShadowResult> {
   return invokeFieldShadow(fieldId, 'shadow-run-field');
+}
+
+/**
+ * Reconstruct one past Kc snapshot from real field/calendar context and immediately
+ * feed it into the existing authenticated pyfao56 shadow pipeline. The reconstructed
+ * snapshot is explicitly marked historical and never replaces production authority.
+ */
+export async function runHistoricalPyFao56FieldShadow(
+  fieldId: string,
+  targetDate: string,
+): Promise<HistoricalPyFao56FieldShadowResult> {
+  const reconstruction = await reconstructHistoricalKcSnapshotForShadow(
+    fieldId,
+    targetDate,
+  );
+  const shadow = await invokeFieldShadow(fieldId, 'shadow-run-field');
+
+  return {
+    reconstruction,
+    shadow,
+  };
 }
 
 export async function checkCropModelReadiness(
