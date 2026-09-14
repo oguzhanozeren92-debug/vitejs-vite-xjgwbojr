@@ -92,12 +92,22 @@ export type PyFao56FieldShadowResult = {
   comparison: PyFao56ShadowComparison | null;
 };
 
+export type ModelReadinessEvidence = {
+  available: boolean;
+  source: string | null;
+  detail?: string | null;
+};
+
 export type ModelReadinessResult = {
   ok: true;
   engine: 'pcse' | 'aquacrop';
   fieldId: string;
   ready: boolean;
+  availableInputs: string[];
   missingInputs: string[];
+  evidence: Record<string, ModelReadinessEvidence>;
+  context: Record<string, unknown>;
+  inputAuthority: 'server-derived';
   rollout: 'off' | 'shadow' | 'pilot' | 'production';
   productionAuthority: false;
   note: string;
