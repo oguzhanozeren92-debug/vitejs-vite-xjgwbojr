@@ -27,8 +27,12 @@ jobs:
           grep -q "field_observation_photos" src/features/field-observations/services/fieldObservationTrend.service.ts
           grep -q "field_observation_comparisons" src/features/field-observations/services/fieldObservationTrend.service.ts
           grep -q "field_observation_points" src/features/field-observations/services/fieldObservationTrend.service.ts
-          if grep -R "Math.random\|synthetic\|mock" src/features/field-observations/services/fieldObservationTrend.service.ts src/features/field-observations/hooks/useFieldObservationTrend.ts; then
-            echo "Synthetic field-observation trend data introduced"
+          grep -q "persisted_field_observations" src/features/field-observations/services/fieldObservationEvidence.service.ts
+          grep -q "productionAuthority: false" src/features/field-observations/services/fieldObservationEvidence.service.ts
+          grep -q "listFieldObservationPoints" src/features/field-observations/services/fieldObservationEvidence.service.ts
+          grep -q "loadFieldObservationTrend" src/features/field-observations/services/fieldObservationEvidence.service.ts
+          if grep -R "Math.random\|synthetic\|mock" src/features/field-observations/services/fieldObservationTrend.service.ts src/features/field-observations/services/fieldObservationEvidence.service.ts src/features/field-observations/hooks/useFieldObservationTrend.ts; then
+            echo "Synthetic field-observation trend/evidence data introduced"
             exit 1
           fi
 
@@ -47,6 +51,7 @@ jobs:
           npx oxlint
           src/features/field-observations/types/fieldObservationTrend.ts
           src/features/field-observations/services/fieldObservationTrend.service.ts
+          src/features/field-observations/services/fieldObservationEvidence.service.ts
           src/features/field-observations/hooks/useFieldObservationTrend.ts
       - name: Build frontend
         run: npm run build
