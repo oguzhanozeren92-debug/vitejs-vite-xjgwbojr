@@ -12,6 +12,7 @@ on:
       - 'supabase/functions/model-engine-shadow/**'
       - 'supabase/functions/model-engine-readiness/**'
       - 'supabase/functions/aquacrop-pilot-inputs/**'
+      - 'supabase/functions/aquacrop-pilot-run/**'
       - 'supabase/functions/aquacrop-soil-profile/**'
       - 'tools/check-model-engine-contracts.py'
       - '.github/workflows/model-gateway-ci.yml'
@@ -28,6 +29,7 @@ on:
       - 'supabase/functions/model-engine-shadow/**'
       - 'supabase/functions/model-engine-readiness/**'
       - 'supabase/functions/aquacrop-pilot-inputs/**'
+      - 'supabase/functions/aquacrop-pilot-run/**'
       - 'supabase/functions/aquacrop-soil-profile/**'
       - 'tools/check-model-engine-contracts.py'
       - '.github/workflows/model-gateway-ci.yml'
@@ -65,6 +67,17 @@ jobs:
           grep -q "production_authority: false" supabase/functions/aquacrop-soil-profile/index.ts
           grep -q "input_authority: 'server-derived'" supabase/functions/aquacrop-soil-profile/index.ts
           grep -q "model_ready: modelReady" supabase/functions/aquacrop-soil-profile/index.ts
+      - name: Verify AquaCrop pilot runner trust boundary
+        run: |
+          grep -q "MODEL_GATEWAY_URL" supabase/functions/aquacrop-pilot-run/index.ts
+          grep -q "MODEL_GATEWAY_SHARED_KEY" supabase/functions/aquacrop-pilot-run/index.ts
+          grep -q "production_authority: false" supabase/functions/aquacrop-pilot-run/index.ts
+          grep -q "initial_water_not_measured_near_planting" supabase/functions/aquacrop-pilot-run/index.ts
+          grep -q "Open-Meteo Archive" supabase/functions/aquacrop-pilot-run/index.ts
+          if grep -q "VITE_" supabase/functions/aquacrop-pilot-run/index.ts; then
+            echo "Client secret leaked into AquaCrop pilot runner"
+            exit 1
+          fi
 
   frontend-shadow-integration:
     runs-on: ubuntu-latest
@@ -110,7 +123,7 @@ jobs:
       - name: Verify dependency consistency
         run: pip check
       - name: Compile gateway
-        run: python -m py_compile app.py engine_registry.py smoke_test.py
+        run: python -m py_compile app.py engine_registry.py aquacrop_runner.py smoke_test.py
       - name: Run shadow smoke test
         run: python smoke_test.py
 
@@ -132,8 +145,8 @@ jobs:
         run: pip install -r requirements.txt -r requirements-pilot.txt
       - name: Verify pilot dependency consistency
         run: pip check
-      - name: Import pilot engines
-        run: python -c "import pcse, aquacrop; print('pilot imports ok')"
+      - name: Import pilot engines and runner
+        run: python -c "import pcse, aquacrop; from aquacrop_runner import AquaCropPilotRequest, run_aquacrop_pilot; print('pilot imports ok')"
       - name: Verify AquaCrop built-in crop aliases
         run: >-
           python -c "from aquacrop.entities.crops.crop_params import crop_params;
