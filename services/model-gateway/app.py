@@ -8,39 +8,54 @@ import os
 from typing import Any
 
 from fastapi import FastAPI, Header, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from engine_registry import ENGINE_REGISTRY
 
-app = FastAPI(title="TarlaPusula Model Gateway", version="0.2.2")
+MAX_FIELD_ID_LENGTH = 128
+MAX_SHADOW_DAYS = 14
+MAX_READINESS_INPUTS = 32
+IS_DEVELOPMENT = os.getenv("MODEL_GATEWAY_ENV", "production").strip().lower() == "development"
+
+app = FastAPI(
+    title="TarlaPusula Model Gateway",
+    version="0.2.3",
+    docs_url="/docs" if IS_DEVELOPMENT else None,
+    redoc_url="/redoc" if IS_DEVELOPMENT else None,
+    openapi_url="/openapi.json" if IS_DEVELOPMENT else None,
+)
 
 
-class WeatherDay(BaseModel):
+class GatewayModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class WeatherDay(GatewayModel):
     date: date
-    solar_radiation_mj_m2: float = Field(ge=0)
-    tmax_c: float
-    tmin_c: float
-    dew_point_c: float
-    wind_m_s: float = Field(ge=0)
-    rain_mm: float = Field(default=0.0, ge=0)
+    solar_radiation_mj_m2: float = Field(ge=0, le=60)
+    tmax_c: float = Field(ge=-80, le=70)
+    tmin_c: float = Field(ge=-80, le=70)
+    dew_point_c: float = Field(ge=-100, le=70)
+    wind_m_s: float = Field(ge=0, le=100)
+    rain_mm: float = Field(default=0.0, ge=0, le=1000)
     kc: float = Field(gt=0, le=3)
 
 
-class StationInput(BaseModel):
+class StationInput(GatewayModel):
     latitude: float = Field(ge=-90, le=90)
-    elevation_m: float
-    wind_height_m: float = Field(default=2.0, gt=0)
+    elevation_m: float = Field(ge=-500, le=9000)
+    wind_height_m: float = Field(default=2.0, gt=0, le=100)
 
 
-class PyFao56Request(BaseModel):
-    field_id: str = Field(min_length=1)
+class PyFao56Request(GatewayModel):
+    field_id: str = Field(min_length=1, max_length=MAX_FIELD_ID_LENGTH)
     station: StationInput
-    days: list[WeatherDay] = Field(min_length=1)
+    days: list[WeatherDay] = Field(min_length=1, max_length=MAX_SHADOW_DAYS)
 
 
-class EngineReadinessRequest(BaseModel):
-    field_id: str = Field(min_length=1)
-    available_inputs: list[str] = Field(default_factory=list)
+class EngineReadinessRequest(GatewayModel):
+    field_id: str = Field(min_length=1, max_length=MAX_FIELD_ID_LENGTH)
+    available_inputs: list[str] = Field(default_factory=list, max_length=MAX_READINESS_INPUTS)
 
 
 REQUIRED_PCSE_INPUTS = {
@@ -150,6 +165,17 @@ def run_pyfao56_shadow(
     if ENGINE_REGISTRY["pyfao56"]["rollout"] not in {"shadow", "pilot", "production"}:
         raise HTTPException(status_code=409, detail="pyfao56 rollout is disabled")
 
+    duplicate_dates = sorted(
+        date_value.isoformat()
+        for date_value in {item.date for item in payload.days}
+        if sum(1 for item in payload.days if item.date == date_value) > 1
+    )
+    if duplicate_dates:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Duplicate weather dates are not allowed: {', '.join(duplicate_dates)}",
+        )
+
     try:
         import pyfao56 as fao
 
@@ -166,6 +192,11 @@ def run_pyfao56_shadow(
                 raise HTTPException(
                     status_code=422,
                     detail=f"Invalid temperature range for {item.date.isoformat()}",
+                )
+            if item.dew_point_c > item.tmax_c:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Invalid dew point for {item.date.isoformat()}",
                 )
 
             key = f"{item.date.year}-{item.date.timetuple().tm_yday:03d}"
