@@ -6,6 +6,8 @@ on:
       - 'services/model-gateway/**'
       - 'src/features/model-engines/**'
       - 'src/features/irrigation/services/historicalKcReconstruction.service.ts'
+      - 'supabase/functions/model-engine-shadow/**'
+      - 'tools/check-model-engine-contracts.py'
       - '.github/workflows/model-gateway-ci.yml'
   push:
     branches:
@@ -14,12 +16,24 @@ on:
       - 'services/model-gateway/**'
       - 'src/features/model-engines/**'
       - 'src/features/irrigation/services/historicalKcReconstruction.service.ts'
+      - 'supabase/functions/model-engine-shadow/**'
+      - 'tools/check-model-engine-contracts.py'
       - '.github/workflows/model-gateway-ci.yml'
 
 permissions:
   contents: read
 
 jobs:
+  contract-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify model-engine contracts stay synchronized
+        run: python tools/check-model-engine-contracts.py
+
   frontend-shadow-integration:
     runs-on: ubuntu-latest
     steps:
