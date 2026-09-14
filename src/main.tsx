@@ -5,6 +5,7 @@ import App from './App.tsx'
 import TaskOverlayHost from './features/tasks/components/TaskOverlayHost';
 import FieldOperationHost from './features/field-operations/components/FieldOperationHost';
 import NdviDeepLinkFocusHost from './features/satellite/components/NdviDeepLinkFocusHost';
+import UnifiedMapClimateHost from './features/map-data/components/UnifiedMapClimateHost';
 import { installDataAuthorityNetworkGuard } from './features/data-bridge/dataAuthorityNetworkGuard';
 import './styles/TarlaPusulaTheme.css';
 import './styles/MobileAppShell.css';
@@ -30,5 +31,6 @@ createRoot(document.getElementById('root')!).render(
     <TaskOverlayHost />
     <FieldOperationHost />
     <NdviDeepLinkFocusHost />
+    <UnifiedMapClimateHost />
   </StrictMode>,
 )
