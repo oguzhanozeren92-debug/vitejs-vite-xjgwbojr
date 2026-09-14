@@ -1,5 +1,6 @@
 import { listFieldObservationPoints } from './fieldObservation.service';
 import { loadFieldObservationTrend } from './fieldObservationTrend.service';
+import type { FieldObservationComparisonStatus } from '../types/fieldObservation';
 
 export type FieldObservationEvidenceItem = {
   pointId: string;
@@ -7,9 +8,14 @@ export type FieldObservationEvidenceItem = {
   status: string;
   lastDetectedAt: string;
   lastPhotoAt: string | null;
-  latestComparisonStatus: 'improving' | 'stable' | 'worsening' | 'unknown';
+  latestComparisonStatus: FieldObservationComparisonStatus;
+  recentComparisonStatuses: FieldObservationComparisonStatus[];
   photoCount: number;
   comparisonCount: number;
+  improvingCount: number;
+  stableCount: number;
+  worseningCount: number;
+  unknownCount: number;
   relativeHealthDelta: number | null;
   ndviDelta: number | null;
 };
@@ -58,8 +64,13 @@ export async function loadFieldObservationEvidence(
         lastDetectedAt: item.point.lastDetectedAt,
         lastPhotoAt: item.point.lastPhotoAt,
         latestComparisonStatus: trend?.latestComparisonStatus ?? 'unknown',
+        recentComparisonStatuses: trend?.recentComparisonStatuses ?? [],
         photoCount: trend?.photoCount ?? item.photoCount,
         comparisonCount: trend?.comparisonCount ?? (item.latestComparison ? 1 : 0),
+        improvingCount: trend?.improvingCount ?? 0,
+        stableCount: trend?.stableCount ?? 0,
+        worseningCount: trend?.worseningCount ?? 0,
+        unknownCount: trend?.unknownCount ?? 0,
         relativeHealthDelta: trend?.relativeHealthDelta ?? null,
         ndviDelta: trend?.ndviDelta ?? null,
       };
