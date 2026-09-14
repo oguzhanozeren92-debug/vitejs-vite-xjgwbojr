@@ -6,8 +6,11 @@ on:
       - 'services/model-gateway/**'
       - 'src/features/model-engines/**'
       - 'src/features/irrigation/services/historicalKcReconstruction.service.ts'
+      - 'src/features/irrigation/services/irrigationSchedulingPilot.service.ts'
+      - 'src/features/irrigation/types/irrigationSchedulingPilot.ts'
       - 'supabase/functions/model-engine-shadow/**'
       - 'supabase/functions/model-engine-readiness/**'
+      - 'supabase/functions/aquacrop-pilot-inputs/**'
       - 'tools/check-model-engine-contracts.py'
       - '.github/workflows/model-gateway-ci.yml'
   push:
@@ -17,8 +20,11 @@ on:
       - 'services/model-gateway/**'
       - 'src/features/model-engines/**'
       - 'src/features/irrigation/services/historicalKcReconstruction.service.ts'
+      - 'src/features/irrigation/services/irrigationSchedulingPilot.service.ts'
+      - 'src/features/irrigation/types/irrigationSchedulingPilot.ts'
       - 'supabase/functions/model-engine-shadow/**'
       - 'supabase/functions/model-engine-readiness/**'
+      - 'supabase/functions/aquacrop-pilot-inputs/**'
       - 'tools/check-model-engine-contracts.py'
       - '.github/workflows/model-gateway-ci.yml'
 
@@ -44,6 +50,12 @@ jobs:
             echo "Client-controlled readiness inputs reintroduced"
             exit 1
           fi
+      - name: Verify AquaCrop pilot input trust boundary
+        run: |
+          grep -q "production_authority: false" supabase/functions/aquacrop-pilot-inputs/index.ts
+          grep -q "input_authority: 'server-derived'" supabase/functions/aquacrop-pilot-inputs/index.ts
+          grep -q "client_supplied_agricultural_values_accepted: false" supabase/functions/aquacrop-pilot-inputs/index.ts
+          grep -q "productionAuthority: false" src/features/irrigation/services/irrigationSchedulingPilot.service.ts
 
   frontend-shadow-integration:
     runs-on: ubuntu-latest
@@ -55,11 +67,14 @@ jobs:
           cache: 'npm'
       - name: Install frontend dependencies
         run: npm ci
-      - name: Lint shadow integration files
+      - name: Lint shadow and pilot integration files
         run: >-
           npx oxlint
           src/features/model-engines/services/modelEngineShadow.service.ts
+          src/features/model-engines/services/aquacropPilotInputs.service.ts
           src/features/irrigation/services/historicalKcReconstruction.service.ts
+          src/features/irrigation/services/irrigationSchedulingPilot.service.ts
+          src/features/irrigation/types/irrigationSchedulingPilot.ts
       - name: Build frontend
         run: npm run build
 
