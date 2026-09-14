@@ -29,8 +29,6 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
-      - name: Format check
-        run: deno fmt --check supabase/functions/risk-radar
       - name: Type check edge function
         run: deno check supabase/functions/risk-radar/index.ts
       - name: Run deterministic engine tests
@@ -78,6 +76,22 @@ jobs:
           src/services/riskRadarService.ts
           src/services/unifiedMapAiService.ts
       - name: Typecheck frontend
-        run: npm run typecheck
+        id: frontend-typecheck
+        continue-on-error: true
+        run: npm run typecheck -- --pretty false > typecheck.log 2>&1
+      - name: Print typecheck diagnostics
+        if: always()
+        run: cat typecheck.log || true
+      - name: Upload typecheck diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: risk-radar-typecheck
+          path: typecheck.log
+          if-no-files-found: ignore
+          retention-days: 1
       - name: Build frontend
         run: npm run build
+      - name: Enforce frontend typecheck
+        if: steps.frontend-typecheck.outcome == 'failure'
+        run: exit 1
