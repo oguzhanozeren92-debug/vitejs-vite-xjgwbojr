@@ -10,10 +10,12 @@ export type AquaCropPilotInputsResult = {
   availableInputs: string[];
   missingInputs: string[];
   adapters: {
-    soilProfileCandidate: Record<string, unknown>;
+    cropParameters: Record<string, unknown>;
+    soilProfile: Record<string, unknown>;
     initialWaterContent: Record<string, unknown>;
     irrigationManagement: Record<string, unknown>;
   };
+  context: Record<string, unknown>;
   note: string;
 };
 
@@ -55,9 +57,13 @@ export async function loadAquaCropPilotInputs(
       ? data.missing_inputs.map(String)
       : [],
     adapters: {
-      soilProfileCandidate:
-        data?.adapters?.soil_profile_candidate && typeof data.adapters.soil_profile_candidate === 'object'
-          ? data.adapters.soil_profile_candidate
+      cropParameters:
+        data?.adapters?.crop_parameters && typeof data.adapters.crop_parameters === 'object'
+          ? data.adapters.crop_parameters
+          : {},
+      soilProfile:
+        data?.adapters?.soil_profile && typeof data.adapters.soil_profile === 'object'
+          ? data.adapters.soil_profile
           : {},
       initialWaterContent:
         data?.adapters?.initial_water_content && typeof data.adapters.initial_water_content === 'object'
@@ -68,6 +74,10 @@ export async function loadAquaCropPilotInputs(
           ? data.adapters.irrigation_management
           : {},
     },
+    context:
+      data?.context && typeof data.context === 'object'
+        ? data.context
+        : {},
     note: String(data.note ?? ''),
   };
 }
