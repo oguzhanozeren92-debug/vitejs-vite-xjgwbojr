@@ -4,12 +4,18 @@ on:
   pull_request:
     paths:
       - 'src/features/field-observations/**'
+      - 'src/features/pusula/hooks/useHomePusula.ts'
+      - 'src/features/pusula/hooks/useHomePusulaBase.ts'
+      - 'src/features/pusula/hooks/useHomePusulaObserved.ts'
       - '.github/workflows/field-observations-ci.yml'
   push:
     branches:
       - 'feat/open-source-engines-20260913'
     paths:
       - 'src/features/field-observations/**'
+      - 'src/features/pusula/hooks/useHomePusula.ts'
+      - 'src/features/pusula/hooks/useHomePusulaBase.ts'
+      - 'src/features/pusula/hooks/useHomePusulaObserved.ts'
       - '.github/workflows/field-observations-ci.yml'
 
 permissions:
@@ -27,13 +33,28 @@ jobs:
           grep -q "field_observation_photos" src/features/field-observations/services/fieldObservationTrend.service.ts
           grep -q "field_observation_comparisons" src/features/field-observations/services/fieldObservationTrend.service.ts
           grep -q "field_observation_points" src/features/field-observations/services/fieldObservationTrend.service.ts
+          grep -q "recentComparisonStatuses" src/features/field-observations/types/fieldObservationTrend.ts
+          grep -q "recentComparisonStatuses" src/features/field-observations/services/fieldObservationTrend.service.ts
           grep -q "persisted_field_observations" src/features/field-observations/services/fieldObservationEvidence.service.ts
           grep -q "productionAuthority: false" src/features/field-observations/services/fieldObservationEvidence.service.ts
           grep -q "listFieldObservationPoints" src/features/field-observations/services/fieldObservationEvidence.service.ts
           grep -q "loadFieldObservationTrend" src/features/field-observations/services/fieldObservationEvidence.service.ts
           grep -q "useFieldObservationTrend" src/features/field-observations/components/NdviObservationTimelineModal.tsx
           grep -q "İlk → son değişim" src/features/field-observations/components/NdviObservationTimelineModal.tsx
-          if grep -R "Math.random\|synthetic\|mock" src/features/field-observations/services/fieldObservationTrend.service.ts src/features/field-observations/services/fieldObservationEvidence.service.ts src/features/field-observations/hooks/useFieldObservationTrend.ts; then
+      - name: Verify Pusula uses grounded observation streaks
+        run: |
+          grep -q "son 3 karşılaştırmada zayıflıyor" src/features/field-observations/services/applyFieldObservationEvidence.service.ts
+          grep -q "tek başına hastalık" src/features/field-observations/services/applyFieldObservationEvidence.service.ts
+          grep -q "recentComparisonStatuses.slice(0, 3)" src/features/field-observations/services/applyFieldObservationEvidence.service.ts
+          grep -q "loadFieldObservationEvidence" src/features/pusula/hooks/useHomePusulaObserved.ts
+          grep -q "applyFieldObservationEvidenceToSynthesis" src/features/pusula/hooks/useHomePusulaObserved.ts
+          grep -q "useHomePusulaObserved as useHomePusula" src/features/pusula/hooks/useHomePusula.ts
+          if grep -R "Math.random\|synthetic\|mock" \
+            src/features/field-observations/services/fieldObservationTrend.service.ts \
+            src/features/field-observations/services/fieldObservationEvidence.service.ts \
+            src/features/field-observations/services/applyFieldObservationEvidence.service.ts \
+            src/features/field-observations/hooks/useFieldObservationTrend.ts \
+            src/features/pusula/hooks/useHomePusulaObserved.ts; then
             echo "Synthetic field-observation trend/evidence data introduced"
             exit 1
           fi
@@ -54,7 +75,9 @@ jobs:
           src/features/field-observations/types/fieldObservationTrend.ts
           src/features/field-observations/services/fieldObservationTrend.service.ts
           src/features/field-observations/services/fieldObservationEvidence.service.ts
+          src/features/field-observations/services/applyFieldObservationEvidence.service.ts
           src/features/field-observations/hooks/useFieldObservationTrend.ts
           src/features/field-observations/components/NdviObservationTimelineModal.tsx
+          src/features/pusula/hooks/useHomePusulaObserved.ts
       - name: Build frontend
         run: npm run build
