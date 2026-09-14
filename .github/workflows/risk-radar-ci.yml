@@ -37,10 +37,26 @@ jobs:
           deno-version: v2.x
       - name: Type check user Risk Radar
         run: deno check supabase/functions/risk-radar/index.ts
-      - name: Type check proactive dispatcher
-        run: deno check supabase/functions/risk-radar-dispatch/index.ts
+      - name: Capture proactive dispatcher typecheck
+        id: dispatcher-check
+        continue-on-error: true
+        run: deno check supabase/functions/risk-radar-dispatch/index.ts > dispatcher-check.log 2>&1
+      - name: Print dispatcher diagnostics
+        if: always()
+        run: cat dispatcher-check.log || true
+      - name: Upload dispatcher diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: risk-radar-dispatch-typecheck
+          path: dispatcher-check.log
+          if-no-files-found: ignore
+          retention-days: 1
       - name: Run deterministic engine tests
         run: deno test supabase/functions/risk-radar/risk-engine.test.ts
+      - name: Enforce dispatcher typecheck
+        if: steps.dispatcher-check.outcome == 'failure'
+        run: exit 1
 
   trust-boundary:
     runs-on: ubuntu-latest
