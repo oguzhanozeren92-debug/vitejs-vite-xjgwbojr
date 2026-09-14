@@ -5,6 +5,7 @@ on:
     paths:
       - 'supabase/functions/field-climate-layers/**'
       - 'supabase/functions/field-chirps-rain/**'
+      - 'src/features/map-data/services/**'
       - '.github/workflows/climate-layers-ci.yml'
   push:
     branches:
@@ -12,6 +13,7 @@ on:
     paths:
       - 'supabase/functions/field-climate-layers/**'
       - 'supabase/functions/field-chirps-rain/**'
+      - 'src/features/map-data/services/**'
       - '.github/workflows/climate-layers-ci.yml'
 
 permissions:
@@ -45,3 +47,23 @@ jobs:
           grep -q "parcel_geometry" supabase/functions/field-chirps-rain/index.ts
           grep -q "datatype: CHIRPS_DATATYPE" supabase/functions/field-chirps-rain/index.ts
           grep -q "operationtype: AVERAGE_OPERATION" supabase/functions/field-chirps-rain/index.ts
+          grep -q "field-chirps-rain" src/features/map-data/services/chirpsRain.service.ts
+          grep -q "client_supplied_geometry_accepted" src/features/map-data/services/chirpsRain.service.ts
+
+  frontend-client:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Lint climate layer clients
+        run: >-
+          npx oxlint
+          src/features/map-data/services/fieldClimateLayers.service.ts
+          src/features/map-data/services/chirpsRain.service.ts
+      - name: Build frontend
+        run: npm run build
