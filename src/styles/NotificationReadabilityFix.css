@@ -1,0 +1,66 @@
+/* TarlaPusula notification/settings readability hotfix.
+   Loaded after UiRegressionFixes.css to ensure the phone shell stays dark
+   even when the desktop browser canvas is white. */
+
+html body .tp-placeholder-page.tp-utility-page {
+  background: #020804 !important;
+  color: #f3f8f5 !important;
+}
+
+html body .tp-placeholder-page .tp-utility-main {
+  background: #020804 !important;
+}
+
+html body .tp-placeholder-page .tp-utility-hero h1,
+html body .tp-placeholder-page .tp-utility-section-head strong,
+html body .tp-placeholder-page .tp-notification-copy strong,
+html body .tp-placeholder-page .tp-settings-copy strong,
+html body .tp-placeholder-page .tp-generic-card h3 {
+  color: #f7fbf8 !important;
+}
+
+html body .tp-placeholder-page .tp-utility-hero p,
+html body .tp-placeholder-page .tp-notification-copy p,
+html body .tp-placeholder-page .tp-settings-copy p,
+html body .tp-placeholder-page .tp-generic-card p {
+  color: #b7c8be !important;
+}
+
+html body .tp-placeholder-page .tp-notification-copy small,
+html body .tp-placeholder-page .tp-generic-card small,
+html body .tp-placeholder-page .tp-utility-top-title small {
+  color: #8fa39a !important;
+}
+
+html body .tp-placeholder-page .tp-utility-section-head button,
+html body .tp-placeholder-page .tp-settings-link,
+html body .tp-placeholder-page .tp-notification-calendar {
+  color: #bfe7cc !important;
+}
+
+html body .tp-placeholder-page .tp-notification-card,
+html body .tp-placeholder-page .tp-settings-card,
+html body .tp-placeholder-page .tp-generic-card,
+html body .tp-placeholder-page .tp-notification-empty {
+  background: linear-gradient(180deg, rgba(9, 21, 15, .98), rgba(4, 11, 7, .98)) !important;
+  border-color: rgba(101, 139, 116, .32) !important;
+}
+
+html body .tp-placeholder-page .tp-notification-card.unread {
+  background: linear-gradient(180deg, rgba(11, 29, 18, .99), rgba(5, 14, 9, .99)) !important;
+  border-color: rgba(34, 197, 94, .38) !important;
+}
+
+html body .tp-placeholder-page .tp-notification-icon,
+html body .tp-placeholder-page .tp-settings-card-icon {
+  color: #9ce8b8 !important;
+  background: rgba(34, 197, 94, .10) !important;
+  border-color: rgba(34, 197, 94, .28) !important;
+}
+
+html body .tp-placeholder-page .tp-utility-badge,
+html body .tp-placeholder-page .tp-utility-section-head button,
+html body .tp-placeholder-page .tp-settings-link {
+  background: rgba(255,255,255,.045) !important;
+  border-color: rgba(255,255,255,.10) !important;
+}
