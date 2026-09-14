@@ -48,9 +48,16 @@ function findLayerChipRow(page: Element | null): { target: HTMLElement | null; g
   return { target: null, group: null };
 }
 
+function findMapControlTarget(page: Element | null) {
+  if (!page) return null;
+  const controls = Array.from(page.querySelectorAll('.maplibregl-ctrl-top-right'));
+  return controls.find((item) => item instanceof HTMLElement && item.offsetParent !== null) as HTMLElement | undefined ?? null;
+}
+
 export default function UnifiedMapClimateHost() {
   const [page, setPage] = useState<Element | null>(null);
   const [target, setTarget] = useState<HTMLElement | null>(null);
+  const [controlTarget, setControlTarget] = useState<HTMLElement | null>(null);
   const [group, setGroup] = useState<DockGroup>(null);
   const [fieldId, setFieldId] = useState('');
   const [field, setField] = useState<FieldContext | null>(null);
@@ -68,6 +75,7 @@ export default function UnifiedMapClimateHost() {
       const chip = findLayerChipRow(nextPage);
       setTarget(chip.target);
       setGroup(chip.group);
+      setControlTarget(findMapControlTarget(nextPage));
 
       const nextSelect = findFieldSelect(nextPage);
       if (fieldSelect !== nextSelect) {
@@ -92,6 +100,11 @@ export default function UnifiedMapClimateHost() {
       if (fieldSelect && onFieldChange) fieldSelect.removeEventListener('change', onFieldChange);
     };
   }, []);
+
+  useEffect(() => {
+    if (group === 'water' && (mode === 'modis_lst' || mode === 'frost')) setMode('et0');
+    if (group === 'risk' && (mode === 'et0' || mode === 'chirps')) setMode('modis_lst');
+  }, [group, mode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -166,7 +179,7 @@ export default function UnifiedMapClimateHost() {
                 border: '1px solid rgba(6,182,212,.42)',
                 borderRadius: 9,
                 padding: '0 11px',
-                background: 'rgba(4,46,55,.78)',
+                background: mode === item.mode ? 'rgba(8,75,88,.92)' : 'rgba(4,46,55,.78)',
                 color: '#cffafe',
                 fontSize: 8.7,
                 fontWeight: 800,
@@ -179,6 +192,30 @@ export default function UnifiedMapClimateHost() {
           ))}
         </>,
         target,
+      )
+    : null;
+
+  const historyPortal = controlTarget && group
+    ? createPortal(
+        <div className="maplibregl-ctrl maplibregl-ctrl-group" style={{ overflow: 'visible' }}>
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-label="Geçmiş iklim verisini aç"
+            title="Geçmiş veri"
+            style={{
+              width: 46,
+              minHeight: 38,
+              padding: '0 5px',
+              fontSize: 8,
+              fontWeight: 850,
+              letterSpacing: '.02em',
+            }}
+          >
+            Geçmiş
+          </button>
+        </div>,
+        controlTarget,
       )
     : null;
 
@@ -256,6 +293,7 @@ export default function UnifiedMapClimateHost() {
   return (
     <>
       {chipPortal}
+      {historyPortal}
       {overlayPortal}
     </>
   );
