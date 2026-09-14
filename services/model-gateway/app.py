@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 
 from engine_registry import ENGINE_REGISTRY
 
-app = FastAPI(title="TarlaPusula Model Gateway", version="0.2.1")
+app = FastAPI(title="TarlaPusula Model Gateway", version="0.2.2")
 
 
 class WeatherDay(BaseModel):
@@ -61,20 +61,31 @@ REQUIRED_AQUACROP_INPUTS = {
 }
 
 
+def _environment() -> str:
+    return os.getenv("MODEL_GATEWAY_ENV", "production").strip().lower() or "production"
+
+
+def _configured_shared_key() -> str:
+    return os.getenv("MODEL_GATEWAY_SHARED_KEY", "").strip()
+
+
 def _auth_required() -> bool:
-    expected = os.getenv("MODEL_GATEWAY_SHARED_KEY", "").strip()
-    environment = os.getenv("MODEL_GATEWAY_ENV", "production").strip().lower()
-    return not (environment == "development" and not expected)
+    return not (_environment() == "development" and not _configured_shared_key())
+
+
+def _auth_configured() -> bool:
+    if not _auth_required():
+        return True
+    return bool(_configured_shared_key())
 
 
 def _authorize(shared_key: str | None) -> None:
-    expected = os.getenv("MODEL_GATEWAY_SHARED_KEY", "").strip()
-    environment = os.getenv("MODEL_GATEWAY_ENV", "production").strip().lower()
+    expected = _configured_shared_key()
 
     # Auth'suz kullanım yalnız bilinçli olarak development seçildiğinde ve
     # shared key tanımlanmadığında mümkündür. Deploy ortamı yanlış yapılandırılsa
     # bile varsayılan davranış kapalı/güvenlidir.
-    if environment == "development" and not expected:
+    if not _auth_required():
         return
 
     supplied = (shared_key or "").strip()
@@ -89,19 +100,27 @@ def _module_status(module_name: str) -> dict[str, Any]:
             "available": True,
             "version": getattr(module, "__version__", None),
         }
-    except Exception as exc:
-        return {"available": False, "error": str(exc)}
+    except Exception:
+        # Public health endpoint iç paket/traceback ayrıntısı sızdırmaz.
+        return {"available": False, "version": None}
 
 
 @app.get("/health")
 def health() -> dict[str, Any]:
+    pyfao56 = _module_status("pyfao56")
+    auth_configured = _auth_configured()
+    ready = bool(pyfao56["available"]) and auth_configured
     return {
-        "ok": True,
+        "ok": ready,
+        "ready": ready,
         "service": "tarlapusula-model-gateway",
         "version": app.version,
+        "environment": _environment(),
         "auth_required": _auth_required(),
+        "auth_configured": auth_configured,
+        "production_authority": False,
         "engines": {
-            "pyfao56": _module_status("pyfao56"),
+            "pyfao56": pyfao56,
             "pcse": _module_status("pcse"),
             "aquacrop": _module_status("aquacrop"),
         },
