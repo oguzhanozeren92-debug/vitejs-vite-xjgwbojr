@@ -1,0 +1,63 @@
+name: Field Risk Engine CI
+
+on:
+  pull_request:
+    paths:
+      - 'src/features/risk/**'
+      - 'supabase/functions/field-risk-weather/**'
+      - '.github/workflows/field-risk-engine-ci.yml'
+  push:
+    branches:
+      - 'feat/field-risk-engine-20260914'
+    paths:
+      - 'src/features/risk/**'
+      - 'supabase/functions/field-risk-weather/**'
+      - '.github/workflows/field-risk-engine-ci.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  risk-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify risk trust boundaries
+        run: |
+          grep -q "productionAuthority: false" src/features/risk/services/fieldRiskEngine.service.ts
+          grep -q "ordinal_no_composite_score" src/features/risk/services/fieldRiskEngine.service.ts
+          grep -q "calculateIrrigationDecision" src/features/risk/services/fieldRiskEngine.service.ts
+          grep -q "loadFieldObservationEvidence" src/features/risk/services/fieldRiskEngine.service.ts
+          grep -q "crop_stage_heat_stress_threshold" src/features/risk/services/fieldRiskEngine.service.ts
+          grep -q "validated_drainage_or_radar_waterlogging_signal" src/features/risk/services/fieldRiskEngine.service.ts
+          grep -q "client_supplied_coordinates_accepted: false" supabase/functions/field-risk-weather/index.ts
+          grep -q "'latitude' in body" supabase/functions/field-risk-weather/index.ts
+          grep -q "'geometry' in body" supabase/functions/field-risk-weather/index.ts
+          if grep -R "Math.random\|synthetic\|mock" src/features/risk supabase/functions/field-risk-weather; then
+            echo "Synthetic risk data introduced"
+            exit 1
+          fi
+          if grep -R "riskScore\|risk_score\|0-100" src/features/risk; then
+            echo "Fabricated composite risk score introduced"
+            exit 1
+          fi
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Lint risk engine files
+        run: >-
+          npx oxlint
+          src/features/risk/types/fieldRisk.ts
+          src/features/risk/services/fieldRiskWeather.service.ts
+          src/features/risk/services/fieldRiskEngine.service.ts
+          src/features/risk/hooks/useFieldRiskEngine.ts
+      - name: Build frontend
+        run: npm run build
