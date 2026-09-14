@@ -8,6 +8,8 @@ on:
       - 'src/features/map-data/services/**'
       - 'src/features/map-data/hooks/useClimateLayerHistory.ts'
       - 'src/features/map-data/components/ClimateLayerHistorySheet.tsx'
+      - 'src/features/map-data/components/ClimateLayerMapSurface.tsx'
+      - 'src/features/map-data/components/ClimateLayerPanel.tsx'
       - 'src/features/map-data/climateLayerRegistry.ts'
       - '.github/workflows/climate-layers-ci.yml'
   push:
@@ -19,6 +21,8 @@ on:
       - 'src/features/map-data/services/**'
       - 'src/features/map-data/hooks/useClimateLayerHistory.ts'
       - 'src/features/map-data/components/ClimateLayerHistorySheet.tsx'
+      - 'src/features/map-data/components/ClimateLayerMapSurface.tsx'
+      - 'src/features/map-data/components/ClimateLayerPanel.tsx'
       - 'src/features/map-data/climateLayerRegistry.ts'
       - '.github/workflows/climate-layers-ci.yml'
 
@@ -72,8 +76,10 @@ jobs:
           grep -q "renderKind: 'dated-raster'" src/features/map-data/climateLayerRegistry.ts
           grep -q "renderKind: 'field-value'" src/features/map-data/climateLayerRegistry.ts
           grep -q "Yalnız daha önce gerçek kaynaktan alınmış" src/features/map-data/components/ClimateLayerHistorySheet.tsx
-          if grep -q "Math.random\|mock\|synthetic" src/features/map-data/hooks/useClimateLayerHistory.ts; then
-            echo "Synthetic climate history data introduced"
+          grep -q "Bölgesel değeri tarla içi yapay ısı haritasına çevirmiyoruz" src/features/map-data/components/ClimateLayerMapSurface.tsx
+          grep -q "ClimateLayerHistorySheet" src/features/map-data/components/ClimateLayerPanel.tsx
+          if grep -q "Math.random\|mock\|synthetic" src/features/map-data/hooks/useClimateLayerHistory.ts src/features/map-data/components/ClimateLayerMapSurface.tsx src/features/map-data/components/ClimateLayerPanel.tsx; then
+            echo "Synthetic climate map/history data introduced"
             exit 1
           fi
 
@@ -96,6 +102,8 @@ jobs:
           src/features/map-data/services/fieldClimateHistory.service.ts
           src/features/map-data/hooks/useClimateLayerHistory.ts
           src/features/map-data/components/ClimateLayerHistorySheet.tsx
+          src/features/map-data/components/ClimateLayerMapSurface.tsx
+          src/features/map-data/components/ClimateLayerPanel.tsx
           src/features/map-data/climateLayerRegistry.ts
       - name: Build frontend
         run: npm run build
