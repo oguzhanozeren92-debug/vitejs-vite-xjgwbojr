@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TarlaPusula · pyfao56 Shadow Test</title>
+  <style>
+    :root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#020804;color:#e7f7eb;display:grid;place-items:center;padding:24px}.card{width:min(560px,100%);background:rgba(6,19,8,.92);border:1px solid #1e3a24;border-radius:24px;padding:24px;box-shadow:0 0 40px rgba(34,197,94,.10)}h1{font-size:22px;margin:0 0 8px}.sub{color:#9fb4a4;font-size:14px;line-height:1.5;margin-bottom:20px}.field{padding:14px 16px;border:1px solid #1e3a24;border-radius:16px;background:#041008;margin-bottom:16px}.field b{display:block;margin-bottom:4px}.field span{font-size:13px;color:#9fb4a4}button{width:100%;border:0;border-radius:16px;padding:15px 18px;font-weight:800;font-size:15px;cursor:pointer;background:linear-gradient(135deg,#22c55e,#16a34a);color:#021006;box-shadow:0 0 24px rgba(34,197,94,.18)}button:disabled{opacity:.55;cursor:wait}.status{margin-top:16px;border-radius:16px;padding:14px 16px;background:#041008;border:1px solid #1e3a24;white-space:pre-wrap;word-break:break-word;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;min-height:76px}.ok{border-color:#22c55e}.err{border-color:#ef4444}.note{margin-top:12px;font-size:12px;color:#78917e;line-height:1.45}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>pyfao56 Shadow Test</h1>
+    <div class="sub">Bu sayfa yalnız bu preview branch’indeki gerçek entegrasyon testini tetikler. Production karar mekanizmasını değiştirmez.</div>
+    <div class="field"><b>dağlık · Antep Fıstığı</b><span>Gerçek field_id + mevcut Kc/konum verisi kullanılır.</span></div>
+    <button id="run">Gerçek Shadow Testini Başlat</button>
+    <div id="status" class="status">Hazır. Önce aynı Vercel preview’da TarlaPusula hesabınla giriş yapmış ol.</div>
+    <div class="note">Shared gateway anahtarı tarayıcıya gelmez. Çağrı: kullanıcı JWT’si → Supabase Edge Function → Render Model Gateway → pyfao56.</div>
+  </main>
+<script>
+(() => {
+  const FIELD_ID = 'bbcdea40-5b87-4e1c-8d45-52152afec801';
+  const FUNCTION_URL = 'https://xwyfidtktauxivsosmex.supabase.co/functions/v1/model-engine-shadow';
+  const PUBLISHABLE_KEY = 'sb_publishable_Ans_S4Zx2A1LXLT7FMfEZA_h-n-kfu_';
+  const button = document.getElementById('run');
+  const status = document.getElementById('status');
+
+  function setStatus(text, kind) {
+    status.textContent = text;
+    status.className = 'status' + (kind ? ' ' + kind : '');
+  }
+
+  function getAccessToken() {
+    const raw = localStorage.getItem('tarlapusula-auth');
+    if (!raw) throw new Error('Oturum bulunamadı. Önce preview ana sayfasında hesabına giriş yap.');
+    const parsed = JSON.parse(raw);
+    const token = parsed?.access_token || parsed?.currentSession?.access_token || parsed?.session?.access_token;
+    if (!token) throw new Error('Oturum tokenı bulunamadı. Çıkış yapıp tekrar giriş yapmayı dene.');
+    return token;
+  }
+
+  button.addEventListener('click', async () => {
+    button.disabled = true;
+    setStatus('Çalışıyor… NASA POWER / Open-Meteo / Render / pyfao56 zinciri bekleniyor.');
+    try {
+      const token = getAccessToken();
+      const response = await fetch(FUNCTION_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token,
+          'apikey': PUBLISHABLE_KEY,
+        },
+        body: JSON.stringify({
+          engine: 'pyfao56',
+          operation: 'shadow-run-field',
+          payload: { field_id: FIELD_ID },
+        }),
+      });
+      const text = await response.text();
+      let payload;
+      try { payload = JSON.parse(text); } catch { payload = { raw: text }; }
+      setStatus('HTTP ' + response.status + '\n\n' + JSON.stringify(payload, null, 2), response.ok ? 'ok' : 'err');
+    } catch (error) {
+      setStatus(String(error?.message || error), 'err');
+    } finally {
+      button.disabled = false;
+    }
+  });
+})();
+</script>
+</body>
+</html>
