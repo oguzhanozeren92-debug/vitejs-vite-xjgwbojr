@@ -49,6 +49,13 @@ jobs:
           grep -q "operationtype: AVERAGE_OPERATION" supabase/functions/field-chirps-rain/index.ts
           grep -q "field-chirps-rain" src/features/map-data/services/chirpsRain.service.ts
           grep -q "client_supplied_geometry_accepted" src/features/map-data/services/chirpsRain.service.ts
+      - name: Verify MODIS LST uses public NASA GIBS raster only
+        run: |
+          grep -q "MODIS_Terra_Land_Surface_Temp_Day" src/features/map-data/services/modisLstTiles.service.ts
+          grep -q "MODIS_Aqua_Land_Surface_Temp_Day" src/features/map-data/services/modisLstTiles.service.ts
+          grep -q "GoogleMapsCompatible_Level7" src/features/map-data/services/modisLstTiles.service.ts
+          grep -q "numericValuesAvailableFromTiles: false" src/features/map-data/services/modisLstTiles.service.ts
+          grep -q "productionAuthority: false" src/features/map-data/services/modisLstTiles.service.ts
 
   frontend-client:
     runs-on: ubuntu-latest
@@ -65,5 +72,6 @@ jobs:
           npx oxlint
           src/features/map-data/services/fieldClimateLayers.service.ts
           src/features/map-data/services/chirpsRain.service.ts
+          src/features/map-data/services/modisLstTiles.service.ts
       - name: Build frontend
         run: npm run build
