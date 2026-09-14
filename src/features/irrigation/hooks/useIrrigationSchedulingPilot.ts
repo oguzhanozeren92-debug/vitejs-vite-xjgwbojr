@@ -75,6 +75,51 @@ export function useIrrigationSchedulingPilot(field: any | null | undefined) {
     };
   }, [fieldKey, isDemo, refreshKey]);
 
+  useEffect(() => {
+    if (!fieldKey || isDemo || typeof window === 'undefined') return;
+
+    const handleContextUpdated = (event: Event) => {
+      const detail = (event as CustomEvent)?.detail ?? {};
+      const changedFieldId = String(detail?.fieldId ?? '');
+      if (changedFieldId !== fieldKey) return;
+
+      const changedFields = Array.isArray(detail?.changedFields)
+        ? detail.changedFields.map((item: unknown) => String(item))
+        : [];
+
+      if (
+        changedFields.length > 0 &&
+        !changedFields.some((name) =>
+          [
+            'aquacrop_initial_water_content',
+            'aquacrop_irrigation_management',
+            'irrigation_status',
+            'activities',
+            'irrigation_history',
+            'soil_analysis',
+            'field_data_snapshot',
+          ].includes(name),
+        )
+      ) {
+        return;
+      }
+
+      setRefreshKey((value) => value + 1);
+    };
+
+    window.addEventListener(
+      'tp:field-context-updated',
+      handleContextUpdated as EventListener,
+    );
+
+    return () => {
+      window.removeEventListener(
+        'tp:field-context-updated',
+        handleContextUpdated as EventListener,
+      );
+    };
+  }, [fieldKey, isDemo]);
+
   const refresh = useCallback(() => {
     if (!fieldKey || isDemo) return;
     setRefreshKey((value) => value + 1);
