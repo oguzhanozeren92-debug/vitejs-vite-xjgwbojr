@@ -12,6 +12,7 @@ on:
       - 'supabase/functions/model-engine-shadow/**'
       - 'supabase/functions/model-engine-readiness/**'
       - 'supabase/functions/aquacrop-pilot-inputs/**'
+      - 'supabase/functions/aquacrop-soil-profile/**'
       - 'tools/check-model-engine-contracts.py'
       - '.github/workflows/model-gateway-ci.yml'
   push:
@@ -27,6 +28,7 @@ on:
       - 'supabase/functions/model-engine-shadow/**'
       - 'supabase/functions/model-engine-readiness/**'
       - 'supabase/functions/aquacrop-pilot-inputs/**'
+      - 'supabase/functions/aquacrop-soil-profile/**'
       - 'tools/check-model-engine-contracts.py'
       - '.github/workflows/model-gateway-ci.yml'
 
@@ -58,6 +60,11 @@ jobs:
           grep -q "input_authority: 'server-derived'" supabase/functions/aquacrop-pilot-inputs/index.ts
           grep -q "client_supplied_agricultural_values_accepted: false" supabase/functions/aquacrop-pilot-inputs/index.ts
           grep -q "productionAuthority: false" src/features/irrigation/services/irrigationSchedulingPilot.service.ts
+      - name: Verify AquaCrop soil adapter trust boundary
+        run: |
+          grep -q "production_authority: false" supabase/functions/aquacrop-soil-profile/index.ts
+          grep -q "input_authority: 'server-derived'" supabase/functions/aquacrop-soil-profile/index.ts
+          grep -q "model_ready: modelReady" supabase/functions/aquacrop-soil-profile/index.ts
 
   frontend-shadow-integration:
     runs-on: ubuntu-latest
@@ -127,6 +134,13 @@ jobs:
         run: pip check
       - name: Import pilot engines
         run: python -c "import pcse, aquacrop; print('pilot imports ok')"
+      - name: Verify AquaCrop built-in crop aliases
+        run: >-
+          python -c "from aquacrop.entities.crops.crop_params import crop_params;
+          expected={'Wheat','Barley','Maize','Cotton','Potato'};
+          missing=expected-set(crop_params);
+          assert not missing, f'missing AquaCrop built-ins: {sorted(missing)}';
+          print('aquacrop crop aliases ok')"
 
   docker-build:
     runs-on: ubuntu-latest
