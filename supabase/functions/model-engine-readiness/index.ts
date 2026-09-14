@@ -8,6 +8,7 @@ const corsHeaders = {
 };
 
 const OPEN_METEO_ARCHIVE = 'https://archive-api.open-meteo.com/v1/archive';
+
 const REQUIRED_INPUTS = {
   pcse: [
     'daily_weather',
@@ -26,10 +27,7 @@ const REQUIRED_INPUTS = {
   ],
 } as const;
 
-const ROLLOUT = {
-  pcse: 'pilot',
-  aquacrop: 'pilot',
-} as const;
+const ROLLOUT = { pcse: 'pilot', aquacrop: 'pilot' } as const;
 
 type Engine = keyof typeof REQUIRED_INPUTS;
 
@@ -52,18 +50,8 @@ function finite(value: unknown): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-function nonEmpty(value: unknown) {
-  if (typeof value === 'string') return value.trim().length > 0;
-  if (Array.isArray(value)) return value.length > 0;
-  if (value && typeof value === 'object') return Object.keys(value as Record<string, unknown>).length > 0;
-  return value !== null && value !== undefined;
-}
-
-function firstPresent(field: Record<string, unknown>, keys: string[]) {
-  for (const key of keys) {
-    if (nonEmpty(field[key])) return { key, value: field[key] };
-  }
-  return null;
+function meaningfulObject(value: unknown) {
+  return Boolean(value && typeof value === 'object' && Object.keys(value as Record<string, unknown>).length);
 }
 
 function collectCoordinates(value: unknown, sink: Array<[number, number]>) {
@@ -78,9 +66,7 @@ function collectCoordinates(value: unknown, sink: Array<[number, number]>) {
     if (
       longitude >= -180 && longitude <= 180 &&
       latitude >= -90 && latitude <= 90
-    ) {
-      sink.push([longitude, latitude]);
-    }
+    ) sink.push([longitude, latitude]);
     return;
   }
   for (const child of value) collectCoordinates(child, sink);
@@ -122,6 +108,7 @@ function resolveLocation(field: Record<string, unknown>) {
     south = Math.min(south, lat);
     north = Math.max(north, lat);
   }
+
   return {
     latitude: (south + north) / 2,
     longitude: (west + east) / 2,
@@ -155,6 +142,7 @@ async function fetchWeatherEvidence(latitude: number, longitude: number): Promis
     if (!response.ok) {
       return { available: false, source: null, detail: `Open-Meteo archive HTTP ${response.status}` };
     }
+
     const payload = await response.json();
     const dates = Array.isArray(payload?.daily?.time) ? payload.daily.time : [];
     const tmax = Array.isArray(payload?.daily?.temperature_2m_max) ? payload.daily.temperature_2m_max : [];
@@ -217,81 +205,126 @@ async function authenticatedClients(req: Request) {
   return { user: data.user, serviceClient };
 }
 
-function objectEvidence(
-  field: Record<string, unknown>,
-  keys: string[],
-  sourcePrefix = 'fields',
-): Evidence {
-  const found = firstPresent(field, keys);
-  return found
-    ? { available: true, source: `${sourcePrefix}.${found.key}` }
-    : { available: false, source: null };
+async function loadCanonicalContext(serviceClient: any, userId: string, fieldId: string, field: any) {
+  const currentSeason = Number.isInteger(Number(field?.season)) ? Number(field.season) : null;
+
+  let seasonQuery = serviceClient
+    .from('field_seasons')
+    .select('id,year,crop,planting_date,harvest_date,created_at')
+    .eq('user_id', userId)
+    .eq('field_id', fieldId)
+    .order('year', { ascending: false })
+    .limit(1);
+  if (currentSeason !== null) seasonQuery = seasonQuery.eq('year', currentSeason);
+
+  const [seasonResult, soilResult, irrigationResult] = await Promise.all([
+    seasonQuery.maybeSingle(),
+    serviceClient
+      .from('soil_analyses')
+      .select('id,status,extracted_values,ai_result,created_at,updated_at')
+      .eq('user_id', userId)
+      .eq('field_id', fieldId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    serviceClient
+      .from('activities')
+      .select('id,activity_date,quantity,unit,notes,created_at')
+      .eq('user_id', userId)
+      .eq('field_id', fieldId)
+      .eq('activity_type', 'Sulama')
+      .order('activity_date', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
+
+  if (seasonResult.error) throw seasonResult.error;
+  if (soilResult.error) throw soilResult.error;
+  if (irrigationResult.error) throw irrigationResult.error;
+
+  return {
+    season: seasonResult.data ?? null,
+    soilAnalysis: soilResult.data ?? null,
+    lastIrrigation: irrigationResult.data ?? null,
+  };
+}
+
+function unavailable(detail: string): Evidence {
+  return { available: false, source: null, detail };
 }
 
 async function deriveEvidence(
   engine: Engine,
   field: Record<string, unknown>,
+  canonical: {
+    season: any;
+    soilAnalysis: any;
+    lastIrrigation: any;
+  },
 ) {
   const location = resolveLocation(field);
   const weather = location
     ? await fetchWeatherEvidence(location.latitude, location.longitude)
-    : { available: false, source: null, detail: 'Field location missing' } satisfies Evidence;
+    : unavailable('Field location missing');
 
-  const cropParameters = objectEvidence(field, [
-    'crop_parameters',
-    'model_crop_parameters',
-    'pcse_crop_parameters',
-    'aquacrop_crop_parameters',
-  ]);
-  const plantingDate = objectEvidence(field, [
-    'planting_date',
-    'sowing_date',
-    'plant_date',
-    'ekim_tarihi',
-  ]);
-  const soilParameters = objectEvidence(field, [
-    'soil_parameters',
-    'pcse_soil_parameters',
-  ]);
-  const soilProfile = objectEvidence(field, [
-    'soil_profile',
-    'aquacrop_soil_profile',
-  ]);
-  const siteParameters = objectEvidence(field, [
-    'site_parameters',
-    'pcse_site_parameters',
-  ]);
-  const agromanagement = objectEvidence(field, [
-    'agromanagement',
-    'pcse_agromanagement',
-  ]);
-  const initialWaterContent = objectEvidence(field, [
-    'initial_water_content',
-    'initial_soil_water_content',
-    'soil_water_content_initial',
-  ]);
-  const irrigationManagement = objectEvidence(field, [
-    'irrigation_management',
-    'aquacrop_irrigation_management',
-  ]);
+  const plantingDate: Evidence = canonical.season?.planting_date
+    ? {
+        available: true,
+        source: 'field_seasons.planting_date',
+        detail: String(canonical.season.planting_date),
+      }
+    : unavailable('No real planting date recorded for the active/latest season');
 
-  const cropIdentity = objectEvidence(field, ['crop', 'crop_name', 'product_name']);
-  const irrigationStatus = objectEvidence(field, [
-    'irrigation_status',
-    'irrigation_type',
-    'watering_status',
-  ]);
+  const cropIdentity: Evidence = String(canonical.season?.crop ?? field.crop ?? '').trim()
+    ? {
+        available: true,
+        source: canonical.season?.crop ? 'field_seasons.crop' : 'fields.crop',
+        detail: String(canonical.season?.crop ?? field.crop),
+      }
+    : unavailable('Crop identity missing');
 
+  const irrigationStatus: Evidence = String(field.irrigation_status ?? '').trim()
+    ? {
+        available: true,
+        source: 'fields.irrigation_status',
+        detail: String(field.irrigation_status),
+      }
+    : unavailable('Irrigation status missing');
+
+  const soilAnalysis: Evidence = canonical.soilAnalysis &&
+    (meaningfulObject(canonical.soilAnalysis.extracted_values) || meaningfulObject(canonical.soilAnalysis.ai_result))
+    ? {
+        available: true,
+        source: 'soil_analyses',
+        detail: `analysis ${canonical.soilAnalysis.id}`,
+      }
+    : unavailable('No parsed soil analysis is available');
+
+  const lastIrrigation: Evidence = canonical.lastIrrigation?.activity_date
+    ? {
+        available: true,
+        source: 'activities.Sulama',
+        detail: `${canonical.lastIrrigation.activity_date}${
+          canonical.lastIrrigation.quantity != null
+            ? ` · ${canonical.lastIrrigation.quantity} ${canonical.lastIrrigation.unit ?? ''}`.trim()
+            : ''
+        }`,
+      }
+    : unavailable('No irrigation operation recorded');
+
+  // Important: contextual evidence is NOT silently promoted to model parameters.
+  // A crop name is not a calibrated crop parameter set; a soil report is not yet a
+  // PCSE/AquaCrop soil adapter; an irrigation operation is not an AquaCrop strategy.
   const evidence: Record<string, Evidence> = {
     daily_weather: weather,
-    crop_parameters: cropParameters,
-    soil_parameters: soilParameters,
-    site_parameters: siteParameters,
-    agromanagement,
-    soil_profile: soilProfile,
+    crop_parameters: unavailable('Canonical crop identity exists only as context; calibrated model crop parameters are not stored yet'),
+    soil_parameters: unavailable('Soil analysis exists only as context; PCSE soil-parameter adapter is not implemented yet'),
+    site_parameters: unavailable('Field coordinates are context only; PCSE site parameters are not stored yet'),
+    agromanagement: unavailable('Planting date/crop context exists, but a complete PCSE agromanagement object is not stored yet'),
+    soil_profile: unavailable('Soil analysis exists only as context; AquaCrop soil-profile adapter is not implemented yet'),
     planting_date: plantingDate,
-    initial_water_content: initialWaterContent,
-    irrigation_management: irrigationManagement,
+    initial_water_content: unavailable('No measured/validated initial soil-water state is stored yet'),
+    irrigation_management: unavailable('Irrigation status/history is context only; AquaCrop irrigation-management parameters are not stored yet'),
   };
 
   const availableInputs = REQUIRED_INPUTS[engine].filter((key) => evidence[key]?.available);
@@ -307,9 +340,27 @@ async function deriveEvidence(
         : { available: false, source: null },
       crop_identity: cropIdentity,
       irrigation_status: irrigationStatus,
-      note: 'Crop name or irrigation status alone is not promoted to model parameters.',
+      planting_date: plantingDate,
+      soil_analysis: soilAnalysis,
+      last_irrigation: lastIrrigation,
+      note: 'Context records are exposed for adapter work but are not promoted to model-ready parameters without an explicit validated adapter.',
     },
   };
+}
+
+async function persistSnapshot(
+  serviceClient: any,
+  values: Record<string, unknown>,
+) {
+  const { error } = await serviceClient
+    .from('model_engine_readiness_snapshots')
+    .upsert(values, { onConflict: 'user_id,field_id,engine' });
+
+  if (error) {
+    console.warn('[model-engine-readiness] snapshot persistence failed', error.message);
+    return false;
+  }
+  return true;
 }
 
 Deno.serve(async (req) => {
@@ -337,13 +388,30 @@ Deno.serve(async (req) => {
     if (fieldError) throw fieldError;
     if (!field) return json({ ok: false, error: 'Tarla bulunamadı veya bu kullanıcıya ait değil.' }, 404);
 
-    const derived = await deriveEvidence(engine, field as Record<string, unknown>);
+    const canonical = await loadCanonicalContext(serviceClient, user.id, fieldId, field);
+    const derived = await deriveEvidence(engine, field as Record<string, unknown>, canonical);
+    const checkedAt = new Date().toISOString();
+    const ready = derived.missingInputs.length === 0;
+
+    const snapshotPersisted = await persistSnapshot(serviceClient, {
+      user_id: user.id,
+      field_id: fieldId,
+      engine,
+      rollout: ROLLOUT[engine],
+      ready,
+      available_inputs: derived.availableInputs,
+      missing_inputs: derived.missingInputs,
+      evidence: derived.evidence,
+      context: derived.context,
+      input_authority: 'server-derived',
+      checked_at: checkedAt,
+    });
 
     return json({
       ok: true,
       engine,
       field_id: fieldId,
-      ready: derived.missingInputs.length === 0,
+      ready,
       available_inputs: derived.availableInputs,
       missing_inputs: derived.missingInputs,
       evidence: derived.evidence,
@@ -352,9 +420,11 @@ Deno.serve(async (req) => {
       production_authority: false,
       input_authority: 'server-derived',
       client_supplied_available_inputs_ignored: true,
-      note: derived.missingInputs.length === 0
+      checked_at: checkedAt,
+      snapshot_persisted: snapshotPersisted,
+      note: ready
         ? 'Gerçek sunucu verileri gerekli readiness sözleşmesini karşılıyor; pilot çalıştırma ayrıca kontrollü etkinleştirilmelidir.'
-        : 'Eksik girdiler için sentetik değer üretilmedi. Gerçek tarla/model parametreleri tamamlanmadan motor çalıştırılmaz.',
+        : 'Eksik girdiler için sentetik değer üretilmedi. Gerçek tarla/model parametreleri ve doğrulanmış adapterlar tamamlanmadan motor çalıştırılmaz.',
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Model readiness isteği başarısız oldu.';
