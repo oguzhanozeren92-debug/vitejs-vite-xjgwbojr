@@ -1,5 +1,6 @@
 import { calculateIrrigationDecision } from './irrigationDecision.service';
 import { checkCropModelReadiness } from '../../model-engines/services/modelEngineShadow.service';
+import { loadAquaCropPilotInputs } from '../../model-engines/services/aquacropPilotInputs.service';
 import type { IrrigationSchedulingPilotResult } from '../types/irrigationSchedulingPilot';
 
 function normalizeFieldId(field: { id?: unknown } | null | undefined) {
@@ -30,18 +31,35 @@ export async function calculateIrrigationSchedulingPilot(
 ): Promise<IrrigationSchedulingPilotResult> {
   const fieldId = normalizeFieldId(field);
 
-  const [authoritativeDecision, aquaCrop] = await Promise.all([
+  const [authoritativeDecision, aquaCropReadiness, aquaCropInputs] = await Promise.all([
     calculateIrrigationDecision({ id: fieldId }),
     checkCropModelReadiness('aquacrop', fieldId),
+    loadAquaCropPilotInputs(fieldId),
   ]);
 
+  const availableInputs = new Set<string>([
+    ...aquaCropReadiness.availableInputs,
+    ...aquaCropInputs.availableInputs,
+  ]);
+
+  const missingInputs = aquaCropReadiness.missingInputs.filter(
+    (item) => !availableInputs.has(item),
+  );
+
+  for (const item of aquaCropInputs.missingInputs) {
+    if (!availableInputs.has(item) && !missingInputs.includes(item)) {
+      missingInputs.push(item);
+    }
+  }
+
+  const aquaCropReady = missingInputs.length === 0;
   const blockedBy = new Set<string>();
 
   for (const item of authoritativeDecision.missing) {
     blockedBy.add(`irrigation:${item}`);
   }
 
-  for (const item of aquaCrop.missingInputs) {
+  for (const item of missingInputs) {
     blockedBy.add(`aquacrop:${item}`);
   }
 
@@ -57,7 +75,7 @@ export async function calculateIrrigationSchedulingPilot(
   if (rainfed) {
     status = 'rainfed_monitoring';
     basis = 'rainfed_monitoring';
-  } else if (decisionNeedsData || !aquaCrop.ready) {
+  } else if (decisionNeedsData || !aquaCropReady) {
     status = 'needs_data';
     basis = 'blocked_missing_real_inputs';
   } else {
@@ -84,12 +102,16 @@ export async function calculateIrrigationSchedulingPilot(
 
     aquaCrop: {
       rollout: 'pilot',
-      ready: aquaCrop.ready,
+      ready: aquaCropReady,
       productionAuthority: false,
-      availableInputs: aquaCrop.availableInputs,
-      missingInputs: aquaCrop.missingInputs,
-      evidence: aquaCrop.evidence,
-      context: aquaCrop.context,
+      availableInputs: Array.from(availableInputs),
+      missingInputs,
+      evidence: aquaCropReadiness.evidence,
+      context: {
+        ...aquaCropReadiness.context,
+        pilotInputAdapterAuthority: aquaCropInputs.inputAuthority,
+      },
+      inputAdapters: aquaCropInputs.adapters,
     },
 
     etContext: {
