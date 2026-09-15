@@ -19,12 +19,10 @@ export function useSatelliteHistory(
   const [loading, setLoading] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selection, setSelection] = useState<{
-    fieldId: string;
-    data: SatelliteHealthResult;
-  } | null>(null);
+  const [selection, setSelection] = useState<{ fieldId: string; data: SatelliteHealthResult } | null>(null);
   const request = useRef(0);
   const cache = useRef(new Map<string, SatelliteHealthResult>());
+  const previewInflight = useRef(new Map<string, Promise<string>>());
 
   useEffect(() => {
     request.current++;
@@ -36,43 +34,44 @@ export function useSatelliteHistory(
     setLoading(false);
     setPreviewLoading(false);
     cache.current.clear();
+    previewInflight.current.clear();
     clearSatelliteHistoryPreviewCache();
-    return () => {
-      request.current++;
-    };
+    return () => { request.current++; };
   }, [fieldId]);
 
-  async function warmPreviews(
-    previewDates: string[],
-    requestId: number,
-  ) {
+  async function ensurePreview(date: string) {
+    if (!geometry || !date) return null;
+    if (previews[date]) return previews[date];
+
+    const fullResult = cache.current.get(date);
+    if (fullResult?.ndviImage) {
+      setPreviews((current) => ({ ...current, [date]: fullResult.ndviImage! }));
+      return fullResult.ndviImage;
+    }
+
+    let pending = previewInflight.current.get(date);
+    if (!pending) {
+      pending = fetchHistoricalSatellitePreview(geometry, date);
+      previewInflight.current.set(date, pending);
+      void pending.finally(() => previewInflight.current.delete(date));
+    }
+
+    try {
+      const image = await pending;
+      setPreviews((current) => ({ ...current, [date]: image }));
+      return image;
+    } catch {
+      return null;
+    }
+  }
+
+  async function warmPreviews(previewDates: string[], requestId: number) {
     if (!geometry || !previewDates.length) return;
-
     setPreviewLoading(true);
-
     try {
       for (const date of previewDates.slice(0, PREVIEW_LIMIT)) {
         if (requestId !== request.current) return;
-
-        const fullResult = cache.current.get(date);
-        if (fullResult?.ndviImage) {
-          setPreviews((current) => ({
-            ...current,
-            [date]: fullResult.ndviImage,
-          }));
-          continue;
-        }
-
-        try {
-          const image = await fetchHistoricalSatellitePreview(geometry, date);
-          if (requestId !== request.current) return;
-          setPreviews((current) => ({
-            ...current,
-            [date]: image,
-          }));
-        } catch {
-          // Tek bir sahne önizleme üretmezse bütün arşiv galerisi bozulmaz.
-        }
+        await ensurePreview(date);
       }
     } finally {
       if (requestId === request.current) setPreviewLoading(false);
@@ -82,24 +81,18 @@ export function useSatelliteHistory(
   async function show() {
     setOpen(true);
     setError(null);
-
     if (!fieldId || !geometry) {
       setError('Önce parsel sınırları olan bir tarla ekle.');
       return;
     }
-
     if (dates.length) {
       const id = request.current;
-      void warmPreviews(
-        dates.filter((date) => !previews[date]),
-        id,
-      );
+      void warmPreviews(dates.filter((date) => !previews[date]), id);
       return;
     }
 
     const id = ++request.current;
     setLoading(true);
-
     try {
       const result = await listSatelliteDates(geometry);
       if (id !== request.current) return;
@@ -107,13 +100,7 @@ export function useSatelliteHistory(
       setLoading(false);
       void warmPreviews(result, id);
     } catch (caught) {
-      if (id === request.current) {
-        setError(
-          caught instanceof Error
-            ? caught.message
-            : 'Tarihler alınamadı.',
-        );
-      }
+      if (id === request.current) setError(caught instanceof Error ? caught.message : 'Tarihler alınamadı.');
     } finally {
       if (id === request.current) setLoading(false);
     }
@@ -128,35 +115,19 @@ export function useSatelliteHistory(
       setOpen(false);
       return;
     }
-
     if (!fieldId || !geometry) return;
     const id = ++request.current;
     setError(null);
     setLoading(true);
-
     try {
-      const result =
-        cache.current.get(date) ??
-        (await fetchHistoricalSatellite(geometry, date));
+      const result = cache.current.get(date) ?? (await fetchHistoricalSatellite(geometry, date));
       if (id !== request.current) return;
-
       cache.current.set(date, result);
-      if (result.ndviImage) {
-        setPreviews((current) => ({
-          ...current,
-          [date]: result.ndviImage,
-        }));
-      }
+      if (result.ndviImage) setPreviews((current) => ({ ...current, [date]: result.ndviImage! }));
       setSelection({ fieldId, data: result });
       setOpen(false);
     } catch (caught) {
-      if (id === request.current) {
-        setError(
-          caught instanceof Error
-            ? caught.message
-            : 'Görüntü alınamadı.',
-        );
-      }
+      if (id === request.current) setError(caught instanceof Error ? caught.message : 'Görüntü alınamadı.');
     } finally {
       if (id === request.current) setLoading(false);
     }
@@ -170,18 +141,8 @@ export function useSatelliteHistory(
   }
 
   return {
-    open,
-    dates,
-    previews,
-    loading,
-    previewLoading,
-    error,
-    show,
-    select,
-    close,
-    data:
-      selection?.fieldId === fieldId
-        ? selection?.data ?? null
-        : null,
+    open, dates, previews, loading, previewLoading, error,
+    show, select, close, ensurePreview,
+    data: selection?.fieldId === fieldId ? selection?.data ?? null : null,
   };
 }
