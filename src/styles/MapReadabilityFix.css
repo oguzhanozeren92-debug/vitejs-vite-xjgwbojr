@@ -59,6 +59,26 @@
   color: #111827 !important;
 }
 
+/* NDVI takip noktaları kendi History ikonunu korur. Uydu geçmişi ise
+   ayrı bir uydu sembolü kullanır; iki farklı işlev artık aynı görünmez. */
+.tp-map-first-shell .tp-map-history-label > svg {
+  display: none !important;
+}
+
+.tp-map-first-shell .tp-map-history-label::before {
+  content: '';
+  width: 22px;
+  height: 22px;
+  display: block;
+  flex: 0 0 22px;
+  background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23111827' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M13 7 9 3 5 7l4 4'/%3E%3Cpath d='m11 9 4 4'/%3E%3Cpath d='m15 13 4 4-4 4-4-4'/%3E%3Cpath d='M6.5 14.5a5 5 0 0 0 3 3'/%3E%3Cpath d='M4 17a8 8 0 0 0 3 3'/%3E%3C/svg%3E") !important;
+}
+
+.tp-map-first-shell .tp-map-history-label span {
+  /* Dikey rayda ikon tek başına kalsın; erişilebilir isim aria-label'da. */
+  display: none !important;
+}
+
 /* Pusula summary used to become an almost-black slab on the white theme. */
 .tp-home-map-pusula-strip {
   background: rgba(255,255,255,.985) !important;
