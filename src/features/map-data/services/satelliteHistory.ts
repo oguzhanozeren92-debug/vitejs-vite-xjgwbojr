@@ -38,7 +38,7 @@ async function requestAnalysis(geometry: unknown, options: Record<string, unknow
   return data;
 }
 
-async function requestSceneListFallback(geometry: unknown) {
+async function requestSceneList(geometry: unknown) {
   if (!supabase) throw new Error('Uydu servisine bağlanılamadı.');
   const { data, error } = await supabase.functions.invoke('satellite-scene-list', {
     body: { geometry: normalizeParcelGeometry(geometry), daysBack: 180, maxCloudCoverage: 35 },
@@ -48,14 +48,22 @@ async function requestSceneListFallback(geometry: unknown) {
 }
 
 export async function listSatelliteDates(geometry: unknown): Promise<string[]> {
+  // Geçmiş galerisi için bağımsız scene-list servisi kanonik kaynaktır. Bu servis
+  // 180 günlük katalog sonuçlarını sayfalayarak toplar; analiz endpoint'i yalnızca
+  // geriye dönük yedek olarak kullanılır.
   try {
-    const data = await requestAnalysis(geometry, { listScenes: true, daysBack: 180, maxCloudCoverage: 35 });
-    const dates = normalizeDates(data.dates);
+    const dates = await requestSceneList(geometry);
     if (dates.length) return dates;
   } catch {
-    // Bağımsız scene-list deployment'ı geriye dönük yedek olarak kalır.
+    // Eski deployment'larla uyumluluk için analiz endpoint'ini yedek olarak dene.
   }
-  return requestSceneListFallback(geometry);
+
+  const data = await requestAnalysis(geometry, {
+    listScenes: true,
+    daysBack: 180,
+    maxCloudCoverage: 35,
+  });
+  return normalizeDates(data.dates);
 }
 
 export async function fetchHistoricalSatellitePreview(geometry: unknown, date: string): Promise<string> {
