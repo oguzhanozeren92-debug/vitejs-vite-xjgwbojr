@@ -8,6 +8,7 @@
     "build": "vite build",
     "typecheck": "tsc -b",
     "lint": "oxlint",
+    "test": "node --test \"src/**/*.test.mjs\" \"supabase/functions/**/*.test.mjs\"",
     "preview": "vite preview"
   },
   "dependencies": {
