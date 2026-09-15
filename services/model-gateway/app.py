@@ -137,11 +137,9 @@ def _fao56_control_et0(item: WeatherDay, station: StationInput) -> float:
         + _saturation_vapour_pressure(item.tmin_c)
     ) / 2.0
     ea = _saturation_vapour_pressure(item.dew_point_c)
-
     delta = 4098.0 * _saturation_vapour_pressure(tmean) / ((tmean + 237.3) ** 2)
     pressure = 101.3 * (((293.0 - 0.0065 * station.elevation_m) / 293.0) ** 5.26)
     gamma = 0.000665 * pressure
-
     doy = item.date.timetuple().tm_yday
     phi = math.radians(station.latitude)
     dr = 1.0 + 0.033 * math.cos((2.0 * math.pi / 365.0) * doy)
@@ -149,31 +147,23 @@ def _fao56_control_et0(item: WeatherDay, station: StationInput) -> float:
     sunset_arg = max(-1.0, min(1.0, -math.tan(phi) * math.tan(solar_declination)))
     sunset_hour_angle = math.acos(sunset_arg)
     extraterrestrial_radiation = (
-        (24.0 * 60.0 / math.pi)
-        * 0.0820
-        * dr
-        * (
-            sunset_hour_angle * math.sin(phi) * math.sin(solar_declination)
-            + math.cos(phi) * math.cos(solar_declination) * math.sin(sunset_hour_angle)
-        )
+        (24.0 * 60.0 / math.pi) * 0.0820 * dr
+        * (sunset_hour_angle * math.sin(phi) * math.sin(solar_declination)
+           + math.cos(phi) * math.cos(solar_declination) * math.sin(sunset_hour_angle))
     )
-
     clear_sky_radiation = (0.75 + 2e-5 * station.elevation_m) * extraterrestrial_radiation
     rs_rso = item.solar_radiation_mj_m2 / clear_sky_radiation if clear_sky_radiation > 0 else 0.0
     rs_rso = max(0.0, min(1.0, rs_rso))
-
     net_shortwave = (1.0 - 0.23) * item.solar_radiation_mj_m2
     sigma = 4.903e-9
     tmax_k = item.tmax_c + 273.16
     tmin_k = item.tmin_c + 273.16
     net_longwave = (
-        sigma
-        * ((tmax_k**4 + tmin_k**4) / 2.0)
+        sigma * ((tmax_k**4 + tmin_k**4) / 2.0)
         * (0.34 - 0.14 * math.sqrt(max(ea, 0.0)))
         * (1.35 * rs_rso - 0.35)
     )
     net_radiation = net_shortwave - net_longwave
-
     u2 = _wind_at_two_meters(item.wind_m_s, station.wind_height_m)
     numerator = (
         0.408 * delta * net_radiation
@@ -199,8 +189,7 @@ def health() -> dict[str, Any]:
         "aquacrop": _module_status("aquacrop"),
     }
     enabled_engines = [
-        name
-        for name in engine_statuses
+        name for name in engine_statuses
         if ENGINE_REGISTRY.get(name, {}).get("rollout") in {"shadow", "pilot", "production"}
     ]
     auth_configured = _auth_configured()
@@ -226,66 +215,38 @@ def registry(x_model_gateway_key: str | None = Header(default=None)) -> dict[str
 
 
 @app.post("/v1/irrigation/pyfao56/shadow")
-def run_pyfao56_shadow(
-    payload: PyFao56Request,
-    x_model_gateway_key: str | None = Header(default=None),
-) -> dict[str, Any]:
+def run_pyfao56_shadow(payload: PyFao56Request, x_model_gateway_key: str | None = Header(default=None)) -> dict[str, Any]:
     _authorize(x_model_gateway_key)
-
     if ENGINE_REGISTRY["pyfao56"]["rollout"] not in {"shadow", "pilot", "production"}:
         raise HTTPException(status_code=409, detail="pyfao56 rollout is disabled")
-
     duplicate_dates = sorted(
-        date_value.isoformat()
-        for date_value in {item.date for item in payload.days}
+        date_value.isoformat() for date_value in {item.date for item in payload.days}
         if sum(1 for item in payload.days if item.date == date_value) > 1
     )
     if duplicate_dates:
-        raise HTTPException(
-            status_code=422,
-            detail=f"Duplicate weather dates are not allowed: {', '.join(duplicate_dates)}",
-        )
-
+        raise HTTPException(status_code=422, detail=f"Duplicate weather dates are not allowed: {', '.join(duplicate_dates)}")
     try:
         import pyfao56 as fao
-
         ordered_days = sorted(payload.days, key=lambda item: item.date)
         weather = fao.Weather(comment="TarlaPusula ET0 shadow input")
         weather.rfcrp = "S"
         weather.z = payload.station.elevation_m
         weather.lat = payload.station.latitude
         weather.wndht = payload.station.wind_height_m
-
         results: list[dict[str, Any]] = []
         for item in ordered_days:
             if item.tmax_c < item.tmin_c:
                 raise HTTPException(status_code=422, detail=f"Invalid temperature range for {item.date.isoformat()}")
             if item.dew_point_c > item.tmax_c:
                 raise HTTPException(status_code=422, detail=f"Invalid dew point for {item.date.isoformat()}")
-
             key = f"{item.date.year}-{item.date.timetuple().tm_yday:03d}"
-            weather.wdata.loc[key] = [
-                item.solar_radiation_mj_m2,
-                item.tmax_c,
-                item.tmin_c,
-                math.nan,
-                item.dew_point_c,
-                math.nan,
-                math.nan,
-                item.wind_m_s,
-                item.rain_mm,
-                math.nan,
-                "M",
-            ]
-
+            weather.wdata.loc[key] = [item.solar_radiation_mj_m2, item.tmax_c, item.tmin_c, math.nan, item.dew_point_c, math.nan, math.nan, item.wind_m_s, item.rain_mm, math.nan, "M"]
             et0 = float(weather.compute_etref(key))
             if not math.isfinite(et0):
                 raise HTTPException(status_code=422, detail=f"pyfao56 could not compute ET0 for {item.date.isoformat()}")
-
             control_et0 = _fao56_control_et0(item, payload.station)
             algorithm_delta = et0 - control_et0
             algorithm_delta_pct = _delta_pct(control_et0, et0)
-
             results.append({
                 "date": item.date.isoformat(),
                 "reference_et_mm": round(et0, 3),
@@ -296,7 +257,6 @@ def run_pyfao56_shadow(
                 "same_weather_algorithm_delta_mm": round(algorithm_delta, 3),
                 "same_weather_algorithm_delta_pct": round(algorithm_delta_pct, 2) if algorithm_delta_pct is not None else None,
             })
-
         return {
             "ok": True,
             "mode": "shadow",
@@ -312,11 +272,7 @@ def run_pyfao56_shadow(
                 "note": "This diagnostic isolates implementation/formula delta from weather-provider delta; it does not change production irrigation decisions.",
             },
             "full_water_balance_ready": False,
-            "blocked_full_water_balance_inputs": [
-                "validated_basal_kcb",
-                "surface_evaporation_layer",
-                "current_soil_water_state",
-            ],
+            "blocked_full_water_balance_inputs": ["validated_basal_kcb", "surface_evaporation_layer", "current_soil_water_state"],
             "days": results,
         }
     except HTTPException:
@@ -336,28 +292,18 @@ def _readiness(engine: str, payload: EngineReadinessRequest, required: set[str])
         "missing_inputs": missing,
         "rollout": ENGINE_REGISTRY[engine]["rollout"],
         "production_authority": False,
-        "note": (
-            "Input contract is complete; the field-specific runner can be enabled for pilot validation."
-            if not missing
-            else "No synthetic values are filled. Complete the missing real field inputs before model execution."
-        ),
+        "note": "Input contract is complete; the field-specific runner can be enabled for pilot validation." if not missing else "No synthetic values are filled. Complete the missing real field inputs before model execution.",
     }
 
 
 @app.post("/v1/phenology/pcse/readiness")
-def pcse_readiness(
-    payload: EngineReadinessRequest,
-    x_model_gateway_key: str | None = Header(default=None),
-) -> dict[str, Any]:
+def pcse_readiness(payload: EngineReadinessRequest, x_model_gateway_key: str | None = Header(default=None)) -> dict[str, Any]:
     _authorize(x_model_gateway_key)
     return _readiness("pcse", payload, REQUIRED_PCSE_INPUTS)
 
 
 @app.post("/v1/phenology/pcse/pilot")
-def pcse_phenology_pilot(
-    payload: PCSEPhenologyPilotRequest,
-    x_model_gateway_key: str | None = Header(default=None),
-) -> dict[str, Any]:
+def pcse_phenology_pilot(payload: PCSEPhenologyPilotRequest, x_model_gateway_key: str | None = Header(default=None)) -> dict[str, Any]:
     _authorize(x_model_gateway_key)
     if ENGINE_REGISTRY["pcse"]["rollout"] not in {"pilot", "production"}:
         raise HTTPException(status_code=409, detail="PCSE pilot rollout is disabled")
@@ -370,19 +316,13 @@ def pcse_phenology_pilot(
 
 
 @app.post("/v1/scenario/aquacrop/readiness")
-def aquacrop_readiness(
-    payload: EngineReadinessRequest,
-    x_model_gateway_key: str | None = Header(default=None),
-) -> dict[str, Any]:
+def aquacrop_readiness(payload: EngineReadinessRequest, x_model_gateway_key: str | None = Header(default=None)) -> dict[str, Any]:
     _authorize(x_model_gateway_key)
     return _readiness("aquacrop", payload, REQUIRED_AQUACROP_INPUTS)
 
 
 @app.post("/v1/scenario/aquacrop/pilot")
-def aquacrop_pilot(
-    payload: AquaCropPilotRequest,
-    x_model_gateway_key: str | None = Header(default=None),
-) -> dict[str, Any]:
+def aquacrop_pilot(payload: AquaCropPilotRequest, x_model_gateway_key: str | None = Header(default=None)) -> dict[str, Any]:
     _authorize(x_model_gateway_key)
     if ENGINE_REGISTRY["aquacrop"]["rollout"] not in {"pilot", "production"}:
         raise HTTPException(status_code=409, detail="AquaCrop pilot rollout is disabled")
