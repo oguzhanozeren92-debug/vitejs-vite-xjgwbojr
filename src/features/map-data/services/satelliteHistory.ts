@@ -73,17 +73,53 @@ export async function fetchHistoricalSatellitePreview(geometry: unknown, date: s
   return data.ndviImage;
 }
 
-export async function fetchHistoricalSatellite(geometry: unknown, date: string): Promise<SatelliteHealthResult> {
-  const data = await requestAnalysis(geometry, { imageDate: date });
+function hasExactHistoricalImage(data: any, date: string) {
+  return data?.latestImageDate === date && typeof data?.ndviImage === 'string' && data.ndviImage.length > 0;
+}
 
-  // Bir sahnenin gerçek NDVI PNG'si üretilebildiği halde Statistics API, bulut/SCL
-  // maskesi nedeniyle ortalama döndürmeyebilir. Bu durum görüntüyü geçersiz yapmaz.
-  // Tarih eşleşmesi ve gerçek NDVI görüntüsü varsa haritada aç; istatistik yoksa UI
-  // mevcut "veri yok" durumunu gösterebilir.
-  if (data.latestImageDate !== date || typeof data.ndviImage !== 'string' || !data.ndviImage) {
+function previewOnlyHistoricalResult(date: string, ndviImage: string): SatelliteHealthResult {
+  // Bu bir sentetik analiz değildir: ndviImage aynı tarih için Copernicus Process API'den
+  // üretilmiş doğrulanmış Sentinel-2 NDVI görüntüsüdür. İstatistik üretilemediyse rakam
+  // uydurmak yerine null bırakılır.
+  return {
+    success: true,
+    source: 'Copernicus Data Space · Sentinel-2 L2A',
+    status: 'unknown',
+    statusLabel: 'Geçmiş görüntü',
+    summary: 'Seçilen tarihin Sentinel-2 NDVI görüntüsü gösteriliyor.',
+    recommendations: [],
+    latestImageDate: date,
+    ndviAverage: null,
+    ndviMin: null,
+    ndviMax: null,
+    ndviImage,
+    trueColorImage: null,
+    healthyPercent: null,
+    warningPercent: null,
+    stressedPercent: null,
+    generatedAt: new Date().toISOString(),
+  } as unknown as SatelliteHealthResult;
+}
+
+export async function fetchHistoricalSatellite(geometry: unknown, date: string): Promise<SatelliteHealthResult> {
+  // Galerideki küçük resim zaten aynı gün için doğrulanmış gerçek Copernicus NDVI'sıdır.
+  // Tam analiz başarılıysa onu kullan. Tam analiz görüntü üretemezse kullanıcıya galeride
+  // gösterdiğimiz doğrulanmış görüntüyü haritada aç; sahte istatistik üretme.
+  try {
+    const data = await requestAnalysis(geometry, { imageDate: date });
+    if (hasExactHistoricalImage(data, date)) {
+      cacheSatelliteHistoryPreview(date, data.ndviImage);
+      return data as SatelliteHealthResult;
+    }
+  } catch {
+    // Aşağıdaki doğrulanmış preview fallback'i denenecek.
+  }
+
+  const ndviImage = await fetchHistoricalSatellitePreview(geometry, date);
+  if (!ndviImage) {
     throw new Error('Bu güne ait geçerli NDVI görüntüsü bulunamadı. Başka bir tarih seç.');
   }
 
-  cacheSatelliteHistoryPreview(date, data.ndviImage);
-  return data as SatelliteHealthResult;
+  cacheSatelliteHistoryPreview(date, ndviImage);
+  return previewOnlyHistoricalResult(date, ndviImage);
 }
