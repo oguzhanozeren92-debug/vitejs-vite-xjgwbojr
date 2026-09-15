@@ -18,8 +18,10 @@ ENGINE_REGISTRY = {
         "upstream_commit": "0d51ae84f405fd9b061222f2a0130e5351f460df",
         "package": "pcse==6.0.13",
         "license": "EUPL-1.1-or-later (upstream LICENSE)",
-        "adapter_version": 1,
+        "adapter_version": 2,
         "production_authority": False,
+        "pilot_model": "Wofost72_PP",
+        "water_stress_authority": False,
     },
     "aquacrop": {
         "role": "seasonal_irrigation_yield_scenarios",
