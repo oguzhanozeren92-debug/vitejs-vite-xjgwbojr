@@ -125,6 +125,10 @@ def run_pcse_phenology_pilot(payload: PCSEPhenologyPilotRequest) -> dict[str, An
     cropdata = YAMLCropDataProvider(model=Wofost72_PP)
     cropdata.set_active_crop(payload.crop_key, payload.variety_key)
 
+    # WOFOST72_PP is the potential-production model. PCSE explicitly provides
+    # DummySoilDataProvider for this mode because soil-water limitation is not
+    # simulated here. TarlaPusula keeps real water-balance authority in
+    # pyfao56/AquaCrop instead of inventing field soil-water values for PCSE.
     soildata = DummySoilDataProvider()
     parameters = ParameterProvider(cropdata=cropdata, soildata=soildata)
 
