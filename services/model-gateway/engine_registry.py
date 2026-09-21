@@ -33,6 +33,32 @@ ENGINE_REGISTRY = {
         "adapter_version": 2,
         "production_authority": False,
     },
+    "plantcv": {
+        "role": "quantitative_photo_phenotyping",
+        "rollout": "pilot",
+        "upstream": "danforthcenter/plantcv",
+        "upstream_commit": "2b587bc08a957084d209f33dcfeefb33021eb4c9",
+        "package": "plantcv==4.11.3",
+        "license": "MPL-2.0",
+        "adapter_version": 1,
+        "production_authority": False,
+        "diagnostic_authority": False,
+        "input_contract": "server_derived_activity_photo_v1",
+        "output_contract": "photo_phenotyping_evidence_v1",
+    },
+    "plantvillage-shadow": {
+        "role": "independent_disease_image_shadow_classifier",
+        "rollout": "shadow",
+        "upstream": "imaflower/plantvillage-mobilenetv3",
+        "package": "onnxruntime-cpu runtime",
+        "license": "MIT",
+        "adapter_version": 1,
+        "production_authority": False,
+        "diagnostic_authority": False,
+        "confidence_authority": False,
+        "training_dataset": "PlantVillage",
+        "domain_shift_warning": "controlled_leaf_images_not_field_authority",
+    },
     "autogeobound": {
         "role": "automatic_field_boundary_research",
         "rollout": "off",
@@ -70,3 +96,10 @@ ENGINE_REGISTRY = {
         "production_authority": False,
     },
 }
+
+# Render's legacy service still starts `uvicorn app:app`. Install the new
+# vision routes before app.py constructs its FastAPI instance so we can keep
+# the existing protected service and its environment secrets unchanged.
+from gateway_vision_plugin import install_vision_routes
+
+install_vision_routes(ENGINE_REGISTRY)
